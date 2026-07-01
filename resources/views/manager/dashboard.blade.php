@@ -37,7 +37,7 @@
 
     .text-center { text-align: center; }
 
-    /* Minimalist Card Stats */
+    /* Card Stats - Green Theme */
     .card h5 {
         font-size: 13px;
         color: #64748b;
@@ -48,7 +48,7 @@
     .card h2 {
         font-size: 32px;
         font-weight: 700;
-        color: #1e293b;
+        color: #14b8a6;
     }
 
     .card p {
@@ -57,7 +57,7 @@
         margin: 0;
     }
 
-    /* Minimalist Calendar */
+    /* Calendar - Green Theme */
     .calendar-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
@@ -94,8 +94,8 @@
     }
 
     .btn-calendar {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
         border-radius: 8px;
         padding: 8px;
         cursor: pointer;
@@ -106,11 +106,11 @@
     }
 
     .btn-calendar:hover {
-        background: #f1f5f9;
+        background: #dcfce7;
     }
 
     .btn-calendar svg {
-        color: #64748b;
+        color: #14b8a6;
     }
 
     .calendar-grid {
@@ -122,8 +122,8 @@
     .calendar-weekdays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+        border-bottom: 1px solid #bbf7d0;
     }
 
     .calendar-weekdays div {
@@ -131,7 +131,7 @@
         text-align: center;
         font-size: 12px;
         font-weight: 600;
-        color: #64748b;
+        color: #166534;
         text-transform: uppercase;
     }
 
@@ -163,7 +163,7 @@
     }
 
     .calendar-day.today {
-        background: #f1f5f9;
+        background: #f0fdf4;
     }
 
     .day-number {
@@ -174,7 +174,7 @@
     }
 
     .today .day-number {
-        background: #1e293b;
+        background: #14b8a6;
         color: #ffffff;
         width: 28px;
         height: 28px;
@@ -195,7 +195,7 @@
         padding: 4px 8px;
         border-radius: 4px;
         color: #ffffff;
-        background: #64748b;
+        background: #14b8a6;
         cursor: pointer;
         white-space: nowrap;
         overflow: hidden;
@@ -207,9 +207,9 @@
         opacity: 0.8;
     }
 
-    .event-meeting { background: #3b82f6; }
+    .event-meeting { background: #14b8a6; }
     .event-harvest { background: #f59e0b; }
-    .event-maintenance { background: #94a3b8; }
+    .event-maintenance { background: #64748b; }
     .event-training { background: #8b5cf6; }
 
     .calendar-legend {
