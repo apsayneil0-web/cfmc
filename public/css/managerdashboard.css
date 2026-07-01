@@ -1,5 +1,5 @@
-/* FULL DASHBOARD DESIGN */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+/* MINIMALIST DASHBOARD DESIGN */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
     margin: 0;
@@ -12,10 +12,10 @@ html {
 }
 
 body {
-    background: linear-gradient(145deg, #0f2d19 0%, #0a4d25 48%, #0d6438 100%);
+    background: #f8fafc;
     min-height: 100vh;
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: #f8fafc;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1e293b;
     line-height: 1.6;
 }
 
@@ -34,13 +34,11 @@ body {
     max-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(24px);
-    border-right: 1px solid rgba(255, 255, 255, 0.16);
-    color: #f8fafc;
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    color: #1e293b;
     position: fixed;
     padding: 24px 18px;
-    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 100;
@@ -71,9 +69,9 @@ body {
 .avatar {
     width: 48px;
     height: 48px;
-    border-radius: 14px;
-    background: rgba(20, 184, 166, 0.18);
-    border: 2px solid #14b8a6;
+    border-radius: 12px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -82,7 +80,7 @@ body {
 .avatar svg {
     width: 24px;
     height: 24px;
-    fill: #a7f3d0;
+    fill: #64748b;
 }
 
 .profile-info {
@@ -93,14 +91,14 @@ body {
 
 .profile-label {
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.02em;
-    color: #a7f3d0;
+    color: #1e293b;
 }
 
 .profile-role {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.7);
+    color: #64748b;
 }
 
 .profile-toggle {
@@ -109,16 +107,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.08);
-    color: #a7f3d0;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
 }
 
 .profile-toggle:hover {
-    background: rgba(20, 184, 166, 0.18);
+    background: #f1f5f9;
     transform: scale(1.05);
 }
 
@@ -130,40 +128,40 @@ body {
 
 .divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.15);
+    background: #e2e8f0;
     margin-bottom: 20px;
 }
 
 .sidebar-menu {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     margin-bottom: 24px;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 14px;
-    border-radius: 12px;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
     text-decoration: none;
-    color: #e2e8f0;
+    color: #64748b;
     background: transparent;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     font-size: 14px;
     font-weight: 500;
 }
 
 .nav-item:hover {
-    background: rgba(20, 184, 166, 0.15);
-    transform: translateX(4px);
+    background: #f1f5f9;
+    color: #1e293b;
 }
 
 .nav-item.active {
-    background: rgba(20, 184, 166, 0.2);
-    border: 1px solid rgba(20, 184, 166, 0.3);
-    color: #a7f3d0;
+    background: #f1f5f9;
+    color: #0f172a;
+    font-weight: 600;
 }
 
 .nav-icon {
@@ -190,15 +188,16 @@ body {
 .sidebar-footer {
     margin-top: auto;
     padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid #e2e8f0;
 }
 
 .nav-item.logout {
-    background: rgba(255, 255, 255, 0.08);
+    color: #64748b;
 }
 
 .nav-item.logout:hover {
-    background: rgba(220, 53, 69, 0.3);
+    background: #fef2f2;
+    color: #dc2626;
 }
 
 /* =========================
@@ -210,27 +209,26 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background: #f8fafc;
 }
 
 /* NAVBAR */
 .navbar {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(24px);
+    background: #ffffff;
     padding: 16px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 50;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .navbar h3 {
     font-size: 18px;
-    font-weight: 700;
-    color: #f8fafc;
+    font-weight: 600;
+    color: #1e293b;
     margin: 0;
 }
 
@@ -244,20 +242,21 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(220, 53, 69, 0.2);
-    color: #f8fafc;
-    padding: 10px 18px;
-    border-radius: 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 10px 16px;
+    border-radius: 8px;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
     font-size: 14px;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(220, 53, 69, 0.3);
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
 }
 
 .btn-logout:hover {
-    background: rgba(220, 53, 69, 0.35);
-    transform: translateY(-1px);
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
 }
 
 .btn-logout span {
@@ -266,21 +265,21 @@ body {
 
 .menu-toggle {
     display: none;
-    background: #14b8a6;
-    color: #071b2f;
+    background: #1e293b;
+    color: #ffffff;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 10px 14px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     align-items: center;
     gap: 8px;
     transition: background 0.2s ease;
 }
 
 .menu-toggle:hover {
-    background: #0ea57d;
+    background: #334155;
 }
 
 /* CONTENT AREA */
@@ -296,28 +295,25 @@ body {
 }
 
 /* =========================
-   CARDS - Glassmorphism
+   CARDS - Minimal
 ========================= */
 .card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     padding: 24px;
     margin-bottom: 20px;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border-radius: 12px;
+    transition: box-shadow 0.2s ease;
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .card h3 {
     margin-bottom: 16px;
-    font-size: 18px;
-    color: #a7f3d0;
+    font-size: 16px;
+    color: #1e293b;
     font-weight: 600;
 }
 
@@ -326,37 +322,37 @@ body {
 ========================= */
 input, textarea, select {
     width: 100%;
-    padding: 12px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     outline: none;
-    background: rgba(255, 255, 255, 0.08);
-    color: #f8fafc;
+    background: #ffffff;
+    color: #1e293b;
     font-size: 14px;
     transition: all 0.2s ease;
 }
 
 input:focus, textarea:focus, select:focus {
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+    border-color: #1e293b;
+    box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
 }
 
 input::placeholder, textarea::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: #94a3b8;
 }
 
 /* =========================
    BUTTONS
 ========================= */
 button, .btn {
-    background: #14b8a6;
-    color: #071b2f;
+    background: #1e293b;
+    color: #ffffff;
     border: none;
-    padding: 12px 20px;
-    border-radius: 10px;
+    padding: 10px 18px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-flex;
@@ -366,20 +362,20 @@ button, .btn {
 }
 
 button:hover, .btn:hover {
-    background: #0ea57d;
+    background: #334155;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.25);
 }
 
 /* Secondary button */
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f8fafc;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: #f8fafc;
+    border-color: #cbd5e1;
 }
 
 /* =========================
@@ -394,27 +390,27 @@ button:hover, .btn:hover {
 table {
     width: 100%;
     border-collapse: collapse;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     overflow: hidden;
 }
 
 table th, table td {
     padding: 14px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #f1f5f9;
     text-align: left;
     white-space: nowrap;
 }
 
 table th {
-    background: rgba(20, 184, 166, 0.15);
-    color: #a7f3d0;
+    background: #f8fafc;
+    color: #64748b;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 1px solid rgba(20, 184, 166, 0.3);
+    border-bottom: 1px solid #e2e8f0;
 }
 
 table tbody tr {
@@ -422,7 +418,7 @@ table tbody tr {
 }
 
 table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: #f8fafc;
 }
 
 table tbody tr:last-child td {
@@ -440,21 +436,19 @@ table tbody tr:last-child td {
     top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(7, 27, 47, 0.72);
-    backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.5);
     overflow-y: auto;
     padding: 20px;
 }
 
 .modal-content {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(24px);
+    background: #ffffff;
     margin: 0 auto;
-    border-radius: 20px;
+    border-radius: 16px;
     width: 100%;
     max-width: 600px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
     animation: modalSlideIn 0.3s ease;
 }
 
@@ -474,12 +468,12 @@ table tbody tr:last-child td {
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .modal-header h2 {
-    font-size: 20px;
-    color: #f8fafc;
+    font-size: 18px;
+    color: #1e293b;
     margin: 0;
 }
 
@@ -489,16 +483,16 @@ table tbody tr:last-child td {
 
 .modal-footer {
     padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid #f1f5f9;
     display: flex;
     justify-content: flex-end;
     gap: 12px;
 }
 
 .close {
-    font-size: 28px;
-    font-weight: bold;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 24px;
+    font-weight: 300;
+    color: #94a3b8;
     cursor: pointer;
     transition: color 0.2s;
     line-height: 1;
@@ -508,7 +502,7 @@ table tbody tr:last-child td {
 }
 
 .close:hover {
-    color: #f8fafc;
+    color: #1e293b;
     transform: none;
     box-shadow: none;
 }
@@ -518,28 +512,25 @@ table tbody tr:last-child td {
 ========================= */
 .badge {
     display: inline-block;
-    padding: 5px 12px;
-    border-radius: 20px;
+    padding: 4px 10px;
+    border-radius: 6px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .badge-pending {
-    background: rgba(251, 191, 36, 0.2);
-    color: #fbbf24;
-    border: 1px solid rgba(251, 191, 36, 0.3);
+    background: #fef3c7;
+    color: #d97706;
 }
 
 .badge-approved {
-    background: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: #dcfce7;
+    color: #16a34a;
 }
 
 .badge-archived {
-    background: rgba(148, 163, 184, 0.2);
-    color: #94a3b8;
-    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: #f1f5f9;
+    color: #64748b;
 }
 
 /* =========================
@@ -548,7 +539,7 @@ table tbody tr:last-child td {
 .modal-form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
 }
 
 .modal-body {
@@ -561,16 +552,16 @@ table tbody tr:last-child td {
 
 .form-group label {
     display: block;
-    font-weight: 600;
-    color: #a7f3d0;
-    margin-bottom: 10px;
+    font-weight: 500;
+    color: #1e293b;
+    margin-bottom: 8px;
     font-size: 14px;
 }
 
 .form-row {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+    gap: 20px;
 }
 
 .file-upload {
@@ -581,16 +572,16 @@ table tbody tr:last-child td {
 
 .file-hint {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.6);
+    color: #64748b;
 }
 
 .form-actions {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
 }
 
 /* =========================
@@ -600,8 +591,7 @@ table tbody tr:last-child td {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(7, 27, 47, 0.72);
-    backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.5);
     z-index: 200;
     align-items: center;
     justify-content: center;
@@ -613,13 +603,12 @@ table tbody tr:last-child td {
 }
 
 .modal-card {
-    width: min(100%, 420px);
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(24px);
-    border-radius: 22px;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    padding: 32px 28px;
+    width: min(100%, 400px);
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+    padding: 28px 24px;
     text-align: center;
     position: relative;
 }
@@ -628,50 +617,50 @@ table tbody tr:last-child td {
     position: absolute;
     top: 16px;
     right: 16px;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: none;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #f8fafc;
-    font-size: 20px;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 18px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .modal-close:hover {
-    background: rgba(20, 184, 166, 0.2);
-    color: #a7f3d0;
+    background: #f1f5f9;
+    color: #1e293b;
 }
 
 .modal-icon {
-    width: 72px;
-    height: 72px;
-    margin: 0 auto 18px;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
     display: grid;
     place-items: center;
-    background: rgba(20, 184, 166, 0.18);
+    background: #f8fafc;
     border-radius: 50%;
-    color: #14b8a6;
+    color: #64748b;
 }
 
 .modal-icon svg {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     fill: currentColor;
 }
 
 .modal-card h2 {
-    font-size: 22px;
-    color: #f8fafc;
-    margin-bottom: 10px;
+    font-size: 18px;
+    color: #1e293b;
+    margin-bottom: 8px;
 }
 
 .modal-card p {
-    color: rgba(255, 255, 255, 0.75);
-    line-height: 1.7;
-    margin-bottom: 26px;
-    font-size: 15px;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    font-size: 14px;
 }
 
 .modal-actions {
@@ -682,11 +671,11 @@ table tbody tr:last-child td {
 }
 
 .modal-button {
-    min-width: 130px;
-    padding: 12px 18px;
-    border-radius: 10px;
+    min-width: 120px;
+    padding: 10px 16px;
+    border-radius: 8px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     border: none;
     cursor: pointer;
     text-decoration: none;
@@ -697,23 +686,23 @@ table tbody tr:last-child td {
 }
 
 .modal-button.primary {
-    background: #14b8a6;
-    color: #071b2f;
+    background: #1e293b;
+    color: #ffffff;
 }
 
 .modal-button.primary:hover {
-    background: #0ea57d;
+    background: #334155;
     transform: translateY(-1px);
 }
 
 .modal-button.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f8fafc;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #f8fafc;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
 }
 
 .modal-button.secondary:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: #f1f5f9;
 }
 
 /* =========================
@@ -723,8 +712,7 @@ table tbody tr:last-child td {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(7, 27, 47, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(15, 23, 42, 0.3);
     z-index: 90;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -746,14 +734,14 @@ table tbody tr:last-child td {
 }
 
 .header-content h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: #f8fafc;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
     margin-bottom: 4px;
 }
 
 .header-content p {
-    color: rgba(255, 255, 255, 0.7);
+    color: #64748b;
     font-size: 14px;
 }
 
@@ -772,12 +760,40 @@ table tbody tr:last-child td {
 
 /* Table Card */
 .table-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* =========================
+   STATS CARDS (if used)
+========================= */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.stat-card h4 {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.stat-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e293b;
 }
 
 /* =========================
@@ -934,7 +950,7 @@ table tbody tr:last-child td {
     }
 
     .header-content h1 {
-        font-size: 22px;
+        font-size: 20px;
     }
 
     .table th, .table td {
@@ -984,7 +1000,7 @@ table tbody tr:last-child td {
     }
 
     .header-content h1 {
-        font-size: 20px;
+        font-size: 18px;
     }
 }
 
@@ -1021,7 +1037,7 @@ table tbody tr:last-child td {
 
     .card, .table-card {
         box-shadow: none;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid #e2e8f0;
     }
 }
 

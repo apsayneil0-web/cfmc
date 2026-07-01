@@ -18,14 +18,14 @@
         }
 
         .header-content h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #f8fafc;
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e293b;
             margin-bottom: 4px;
         }
 
         .header-content p {
-            color: rgba(255, 255, 255, 0.7);
+            color: #64748b;
             font-size: 14px;
         }
 
@@ -44,10 +44,9 @@
 
         /* Table Card */
         .table-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
             overflow: hidden;
         }
 
@@ -74,7 +73,7 @@
 
         @media (max-width: 480px) {
             .header-content h1 {
-                font-size: 22px;
+                font-size: 20px;
             }
 
             .header-content p {
@@ -84,7 +83,7 @@
 
         @media (max-width: 360px) {
             .header-content h1 {
-                font-size: 20px;
+                font-size: 18px;
             }
         }
     </style>

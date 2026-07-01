@@ -350,30 +350,30 @@
 
 <!-- Additional Responsive Styles -->
 <style>
-    /* Modern Confirmation Dialog */
+    /* Modern Confirmation Dialog - Minimalist */
     .confirm-dialog-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(15, 23, 42, 0.5);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 10000;
-        backdrop-filter: blur(4px);
         animation: fadeIn 0.2s ease;
     }
 
     .confirm-dialog {
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 32px;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 24px;
         max-width: 400px;
         width: 90%;
         text-align: center;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e2e8f0;
         animation: slideUp 0.3s ease;
     }
 
@@ -388,10 +388,10 @@
     }
 
     .confirm-dialog-icon {
-        width: 64px;
-        height: 64px;
-        margin: 0 auto 20px;
-        background: #fff3cd;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 16px;
+        background: #fef3c7;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -399,22 +399,22 @@
     }
 
     .confirm-dialog-icon svg {
-        width: 32px;
-        height: 32px;
-        color: #ffc107;
+        width: 24px;
+        height: 24px;
+        color: #d97706;
     }
 
     .confirm-dialog-title {
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 600;
-        color: #212529;
+        color: #1e293b;
         margin: 0 0 8px 0;
     }
 
     .confirm-dialog-message {
         font-size: 14px;
-        color: #6c757d;
-        margin: 0 0 24px 0;
+        color: #64748b;
+        margin: 0 0 20px 0;
         line-height: 1.5;
     }
 
@@ -425,20 +425,20 @@
     }
 
     .confirm-dialog-actions .btn {
-        padding: 10px 24px;
+        padding: 10px 20px;
         border-radius: 8px;
         font-weight: 500;
-        min-width: 100px;
+        min-width: 90px;
     }
 
     .confirm-dialog-actions .btn-danger {
-        background: #dc3545;
+        background: #dc2626;
         color: white;
         border: none;
     }
 
     .confirm-dialog-actions .btn-danger:hover {
-        background: #c82333;
+        background: #b91c1c;
     }
 
     /* View Modal Styles */
@@ -447,8 +447,8 @@
     }
 
     .detail-section {
-        padding: 20px 24px;
-        border-bottom: 1px solid #e9ecef;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
     }
 
     .detail-section:last-child {
@@ -456,9 +456,9 @@
     }
 
     .detail-section-title {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
-        color: #6c757d;
+        color: #64748b;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin: 0 0 12px 0;
@@ -477,24 +477,24 @@
 
     .detail-label {
         font-size: 12px;
-        color: #6c757d;
+        color: #64748b;
         margin-bottom: 4px;
     }
 
     .detail-value {
         font-size: 14px;
-        color: #212529;
+        color: #1e293b;
         font-weight: 500;
     }
 
     /* Form Section Title */
     .form-section-title {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
-        color: #495057;
-        margin: 20px 0 12px 0;
+        color: #1e293b;
+        margin: 16px 0 12px 0;
         padding-bottom: 8px;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid #f1f5f9;
     }
 
     .form-section-title:first-of-type {
@@ -503,40 +503,43 @@
 
     /* Alert Message */
     .alert {
-        padding: 12px 20px;
-        border-radius: 6px;
-        margin-bottom: 20px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
     }
 
     .alert-success {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
     }
 
-    /* Badge Styles */
+    /* Badge Styles - Minimalist */
     .badge-approved {
-        background-color: #28a745;
-        color: white;
+        background-color: #dcfce7;
+        color: #166534;
         padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 11px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
     }
 
     .badge-archived {
-        background-color: #6c757d;
-        color: white;
+        background-color: #f1f5f9;
+        color: #64748b;
         padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 11px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
     }
 
     .badge-pending-approval {
-        background-color: #ffc107;
-        color: #212529;
+        background-color: #fef3c7;
+        color: #b45309;
         padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 11px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
     }
 
     /* Page Header - Responsive */
@@ -550,146 +553,21 @@
             width: 100%;
             justify-content: center;
         }
-
-        .header-content h1 {
-            font-size: 24px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .header-content h1 {
-            font-size: 22px;
-        }
-
-        .header-content p {
-            font-size: 13px;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .header-content h1 {
-            font-size: 20px;
-        }
-    }
-
-    /* Search Filter - Responsive */
-    @media (max-width: 768px) {
-        .search-filter-card {
-            flex-direction: column;
-        }
-
-        .search-box, .filter-box {
-            width: 100%;
-        }
-    }
-
-    /* Form Row - Responsive */
-    @media (max-width: 768px) {
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-
-        .form-actions {
-            flex-direction: column;
-        }
-
-        .form-actions .btn {
-            width: 100%;
-            justify-content: center;
-        }
-    }
-
-    /* Modal - Responsive */
-    @media (max-width: 768px) {
-        .modal-content {
-            margin: 5% auto;
-            width: 95%;
-            max-width: none;
-        }
-
-        .modal-body {
-            padding: 16px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .modal-header {
-            padding: 14px 16px;
-        }
-
-        .modal-header h2 {
-            font-size: 18px;
-        }
-
-        .modal-body {
-            padding: 14px;
-        }
-    }
-
-    /* Table - Responsive */
-    @media (max-width: 992px) {
-        .table-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .table {
-            min-width: 800px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .table th, .table td {
-            padding: 10px 8px;
-            font-size: 13px;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .action-buttons .btn {
-            width: 100%;
-            padding: 6px 10px;
-            font-size: 11px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .table th, .table td {
-            padding: 8px 6px;
-            font-size: 12px;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            font-size: 10px;
-        }
-
-        .btn-sm {
-            padding: 5px 8px;
-            font-size: 11px;
-        }
     }
 
     /* File Upload Hint */
-    .file-upload {
-        margin-bottom: 0;
-    }
-
     .file-hint {
         display: block;
         font-size: 12px;
-        color: #888;
+        color: #64748b;
         margin-top: 4px;
     }
 
     /* Documents Grid */
     .documents-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
     }
 
     .document-item {
@@ -697,9 +575,9 @@
         flex-direction: column;
         align-items: center;
         padding: 12px;
-        background: #f8f9fa;
+        background: #f8fafc;
         border-radius: 8px;
-        border: 1px solid #e9ecef;
+        border: 1px solid #e2e8f0;
     }
 
     .document-link {
@@ -710,22 +588,22 @@
 
     .document-preview {
         width: 100%;
-        height: 120px;
+        height: 80px;
         object-fit: cover;
         border-radius: 6px;
-        border: 1px solid #dee2e6;
+        border: 1px solid #e2e8f0;
         background: #fff;
     }
 
     .document-file-icon {
-        width: 60px;
-        height: 60px;
+        width: 48px;
+        height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 32px;
-        background: #e9ecef;
-        border-radius: 8px;
+        font-size: 24px;
+        background: #f1f5f9;
+        border-radius: 6px;
     }
 
     .document-info {
@@ -737,33 +615,29 @@
     .document-name {
         display: block;
         font-size: 11px;
-        color: #495057;
+        color: #64748b;
         word-break: break-all;
         margin-bottom: 4px;
-        max-width: 130px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
     .btn-download {
         display: inline-block;
-        padding: 4px 12px;
+        padding: 4px 10px;
         font-size: 11px;
-        color: #fff;
-        background: #007bff;
+        color: #ffffff;
+        background: #1e293b;
         border-radius: 4px;
         text-decoration: none;
     }
 
     .btn-download:hover {
-        background: #0056b3;
+        background: #334155;
     }
 
     /* Current Documents */
     .current-documents {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 12px;
     }
 
@@ -772,36 +646,35 @@
         flex-direction: column;
         align-items: center;
         padding: 8px;
-        background: #f8f9fa;
+        background: #f8fafc;
         border-radius: 8px;
-        border: 1px solid #e9ecef;
+        border: 1px solid #e2e8f0;
         position: relative;
     }
 
     .current-doc img {
-        width: 80px;
-        height: 80px;
+        width: 60px;
+        height: 60px;
         object-fit: cover;
         border-radius: 4px;
-        border: 1px solid #dee2e6;
     }
 
     .current-doc .doc-icon {
-        width: 60px;
-        height: 60px;
+        width: 48px;
+        height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 28px;
-        background: #e9ecef;
-        border-radius: 6px;
+        font-size: 20px;
+        background: #f1f5f9;
+        border-radius: 4px;
     }
 
     .current-doc .doc-name {
         font-size: 10px;
-        color: #495057;
+        color: #64748b;
         margin-top: 4px;
-        max-width: 100px;
+        max-width: 80px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -811,20 +684,20 @@
         position: absolute;
         top: 2px;
         right: 2px;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         padding: 0;
-        font-size: 12px;
+        font-size: 10px;
         line-height: 1;
         border-radius: 50%;
-        background: #dc3545;
+        background: #dc2626;
         color: white;
         border: none;
         cursor: pointer;
     }
 
     .current-doc .btn-remove:hover {
-        background: #c82333;
+        background: #b91c1c;
     }
 
     /* Action Buttons Container */
@@ -836,6 +709,32 @@
     /* Button Icons */
     .btn svg {
         flex-shrink: 0;
+    }
+
+    /* Minimalist Button Variants */
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .btn-info {
+        background: #f1f5f9;
+        color: #1e293b;
+    }
+
+    .btn-warning {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .btn-danger {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .btn-success {
+        background: #1e293b;
+        color: #ffffff;
     }
 </style>
 

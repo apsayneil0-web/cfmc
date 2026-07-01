@@ -37,12 +37,31 @@
 
     .text-center { text-align: center; }
 
+    /* Minimalist Card Stats */
+    .card h5 {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .card h2 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .card p {
+        color: #64748b;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* Minimalist Calendar */
     .calendar-card {
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(24px);
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         padding: 24px;
     }
 
@@ -54,9 +73,9 @@
     }
 
     .calendar-header h5 {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 600;
-        color: #a7f3d0;
+        color: #1e293b;
         margin: 0;
     }
 
@@ -67,35 +86,35 @@
     }
 
     .current-month {
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 500;
-        color: #f8fafc;
+        color: #1e293b;
         min-width: 140px;
         text-align: center;
     }
 
     .btn-calendar {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 8px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background 0.2s;
+        transition: all 0.2s;
     }
 
     .btn-calendar:hover {
-        background: rgba(255, 255, 255, 0.18);
+        background: #f1f5f9;
     }
 
     .btn-calendar svg {
-        color: #a7f3d0;
+        color: #64748b;
     }
 
     .calendar-grid {
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
         overflow: hidden;
     }
@@ -103,16 +122,17 @@
     .calendar-weekdays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        background: rgba(255, 255, 255, 0.08);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .calendar-weekdays div {
         padding: 12px;
         text-align: center;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
-        color: rgba(255, 255, 255, 0.7);
+        color: #64748b;
+        text-transform: uppercase;
     }
 
     .calendar-days {
@@ -123,9 +143,9 @@
     .calendar-day {
         min-height: 100px;
         padding: 8px;
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
+        border-right: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+        background: #ffffff;
         transition: background 0.2s;
     }
 
@@ -134,28 +154,28 @@
     }
 
     .calendar-day:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: #f8fafc;
     }
 
     .calendar-day.other-month {
-        background: rgba(255, 255, 255, 0.03);
+        background: #f8fafc;
         opacity: 0.5;
     }
 
     .calendar-day.today {
-        background: rgba(20, 184, 166, 0.15);
+        background: #f1f5f9;
     }
 
     .day-number {
         font-size: 14px;
         font-weight: 500;
-        color: #f8fafc;
+        color: #1e293b;
         margin-bottom: 8px;
     }
 
     .today .day-number {
-        background: #14b8a6;
-        color: #071b2f;
+        background: #1e293b;
+        color: #ffffff;
         width: 28px;
         height: 28px;
         border-radius: 50%;
@@ -174,8 +194,8 @@
         font-size: 11px;
         padding: 4px 8px;
         border-radius: 4px;
-        color: #071b2f;
-        background: #a7f3d0;
+        color: #ffffff;
+        background: #64748b;
         cursor: pointer;
         white-space: nowrap;
         overflow: hidden;
@@ -187,28 +207,17 @@
         opacity: 0.8;
     }
 
-    .event-meeting {
-        background: #14b8a6;
-    }
-
-    .event-harvest {
-        background: #d4a017;
-    }
-
-    .event-maintenance {
-        background: rgba(255, 255, 255, 0.6);
-    }
-
-    .event-training {
-        background: #5c8db8;
-    }
+    .event-meeting { background: #3b82f6; }
+    .event-harvest { background: #f59e0b; }
+    .event-maintenance { background: #94a3b8; }
+    .event-training { background: #8b5cf6; }
 
     .calendar-legend {
         display: flex;
         gap: 20px;
         margin-top: 16px;
         padding-top: 16px;
-        border-top: 1px solid rgba(255, 255, 255, 0.16);
+        border-top: 1px solid #f1f5f9;
         flex-wrap: wrap;
     }
 
@@ -217,7 +226,7 @@
         align-items: center;
         gap: 8px;
         font-size: 13px;
-        color: rgba(255, 255, 255, 0.6);
+        color: #64748b;
     }
 
     .legend-color {
@@ -243,14 +252,19 @@
 
         .calendar-weekdays div {
             padding: 8px 4px;
-            font-size: 11px;
+            font-size: 10px;
         }
     }
 </style>
 
 <div class="dashboard-container">
 
-    <h1 class="mb-4">Manager Dashboard</h1>
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Manager Dashboard</h1>
+            <p>Real-time cooperative operations overview</p>
+        </div>
+    </div>
 
     <!-- SUMMARY CARDS -->
     <div class="dashboard-row">
