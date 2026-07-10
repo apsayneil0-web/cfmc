@@ -348,18 +348,18 @@
 <!-- Custom Styles -->
 <style>
     .btn-check:checked + .card {
-        border-color: #2563eb !important;
-        background-color: rgba(37, 99, 235, 0.05);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        border-color: var(--brand-primary) !important;
+        background-color: rgba(31, 111, 92, 0.05);
+        box-shadow: 0 0 0 3px rgba(31, 111, 92, 0.12);
     }
     .btn-check:checked + .card i {
-        color: #2563eb !important;
+        color: var(--brand-primary) !important;
     }
     .cursor-pointer {
         cursor: pointer;
     }
     .hover-border-primary:hover {
-        border-color: #2563eb !important;
+        border-color: var(--brand-primary) !important;
     }
     .form-control-lg, .form-select-lg {
         padding: 0.75rem 1rem;

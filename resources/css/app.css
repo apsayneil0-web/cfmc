@@ -8,6 +8,21 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Scaled up from Tailwind's defaults (12/14/16/18/20/24px) for readability
+       across the dashboard views, which lean heavily on text-sm/text-xs. */
+    --text-xs: 0.8125rem;
+    --text-xs--line-height: 1.25rem;
+    --text-sm: 0.9375rem;
+    --text-sm--line-height: 1.5rem;
+    --text-base: 1.0625rem;
+    --text-base--line-height: 1.65rem;
+    --text-lg: 1.1875rem;
+    --text-lg--line-height: 1.75rem;
+    --text-xl: 1.375rem;
+    --text-xl--line-height: 1.85rem;
+    --text-2xl: 1.625rem;
+    --text-2xl--line-height: 2rem;
 }
 
 /* =========================================================================
@@ -17,10 +32,10 @@
    ========================================================================= */
 
 :root {
-    --brand-primary: #2563eb;
-    --brand-primary-hover: #1d4ed8;
-    --brand-primary-active: #1e40af;
-    --brand-primary-light: #eff6ff;
+    --brand-primary: #1f6f5c;
+    --brand-primary-hover: #185b4b;
+    --brand-primary-active: #123f34;
+    --brand-primary-light: #e4f1ee;
     --brand-success: #16a34a;
     --brand-success-hover: #15803d;
     --brand-success-light: #f0fdf4;
@@ -53,7 +68,7 @@
        (buttons, badges, focus rings, form validation) pick up the palette
        automatically without touching any class in the markup. */
     --bs-primary: var(--brand-primary);
-    --bs-primary-rgb: 37, 99, 235;
+    --bs-primary-rgb: 31, 111, 92;
     --bs-success: var(--brand-success);
     --bs-success-rgb: 22, 163, 74;
     --bs-danger: var(--brand-danger);
@@ -127,7 +142,7 @@ body.bg-light {
 }
 .btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 0 0 3px rgba(31, 111, 92, 0.25);
 }
 .btn.btn-sm {
     border-radius: 0.4rem;
@@ -139,7 +154,7 @@ body.bg-light {
 .btn-primary {
     background-color: var(--brand-primary);
     border-color: var(--brand-primary);
-    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 1px 2px rgba(31, 111, 92, 0.15);
 }
 .btn-primary:hover {
     background-color: var(--brand-primary-hover);
@@ -242,7 +257,7 @@ body.bg-light {
     border: 1px solid #d7dce4;
     border-radius: var(--radius-sm);
     padding: 0.55rem 0.85rem;
-    font-size: 0.9rem;
+    font-size: 1rem;
     transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
 }
 .form-control:hover,
@@ -252,7 +267,7 @@ body.bg-light {
 .form-control:focus,
 .form-select:focus {
     border-color: var(--brand-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 0 0 3px rgba(31, 111, 92, 0.15);
 }
 .form-control.is-invalid,
 .form-select.is-invalid {
@@ -269,7 +284,7 @@ body.bg-light {
 .form-label {
     font-weight: 600;
     color: var(--text-primary);
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     margin-bottom: 0.4rem;
 }
 .form-check-input {
@@ -286,10 +301,10 @@ body.bg-light {
 }
 .form-check-input:focus {
     border-color: var(--brand-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 0 0 3px rgba(31, 111, 92, 0.15);
 }
 .invalid-feedback {
-    font-size: 0.8125rem;
+    font-size: 0.9rem;
 }
 
 /* -------------------------------------------------------------------------
@@ -297,12 +312,12 @@ body.bg-light {
    ------------------------------------------------------------------------- */
 .table {
     --bs-table-hover-bg: #f8fafc;
-    font-size: 0.9rem;
+    font-size: 1rem;
     vertical-align: middle;
 }
 .table thead th {
     text-transform: uppercase;
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     letter-spacing: 0.05em;
     font-weight: 700;
     color: var(--text-secondary);
@@ -408,7 +423,26 @@ body.bg-light {
     transition: transform 220ms var(--ease);
 }
 .app-sidebar .sidebar-brand {
-    background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, var(--brand-primary-light) 100%);
+}
+
+.sidebar-link {
+    color: var(--text-primary) !important;
+    text-decoration: none !important;
+    border: none;
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+}
+.sidebar-link:hover {
+    background-color: var(--brand-surface-muted);
+    color: var(--text-primary) !important;
+}
+.sidebar-link.active {
+    background-color: var(--brand-primary-light);
+    color: var(--brand-primary) !important;
+    font-weight: 700;
+}
+.sidebar-link i {
+    color: inherit !important;
 }
 
 .app-topbar {
@@ -472,6 +506,9 @@ body.bg-light {
 .stat-icon.text-info { background-color: var(--brand-info-light); color: var(--brand-info); }
 .stat-icon.text-purple { background-color: var(--brand-purple-light); color: var(--brand-purple); }
 .stat-icon.text-secondary { background-color: var(--brand-surface-muted); color: var(--brand-secondary); }
+
+.bg-brand-light { background-color: var(--brand-primary-light) !important; }
+.text-brand { color: var(--brand-primary) !important; }
 
 .avatar-initials {
     border-radius: 999px;

@@ -50,6 +50,7 @@
                     <option value="">All Status</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
             </div>
@@ -89,7 +90,7 @@
                         <span class="text-success"><i class="fas fa-check-circle"></i> Complete</span>
                     </td>
                     <td class="px-4 px-md-6 py-4">
-                        <x-status-badge :status="$farmer->status == 'archived' ? 'Archived' : 'Pending'" />
+                        <x-status-badge :status="ucfirst($farmer->status)" />
                     </td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
@@ -143,7 +144,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Status</label>
                                         <p class="fw-semibold mb-0">
-                                            <x-status-badge :status="$farmer->status == 'archived' ? 'Archived' : 'Pending'" />
+                                            <x-status-badge :status="ucfirst($farmer->status)" />
                                         </p>
                                     </div>
                                     <div class="col-md-6 mb-3">

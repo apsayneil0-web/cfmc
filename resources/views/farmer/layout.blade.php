@@ -28,29 +28,25 @@
                     Dashboard
                 </a>
 
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
-                    <i class="fas fa-id-card w-5"></i>
-                    My Membership
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
-
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
+                <a href="{{ route('farmer.schedule') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('farmer.schedule') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-tractor w-5"></i>
-                    Machine Schedule
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
+                    Request Schedule
+                </a>
 
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
+                <a href="{{ route('farmer.loan-appointment') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('farmer.loan-appointment') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-hand-holding-usd w-5"></i>
+                    Loan Appointment
+                </a>
+
+                <a href="{{ route('farmer.cbu') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('farmer.cbu') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-piggy-bank w-5"></i>
-                    CBU & Loans
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
+                    CBU Records
+                </a>
 
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
-                    <i class="fas fa-bullhorn w-5"></i>
-                    Announcements
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
+                <a href="{{ route('farmer.complaints') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('farmer.complaints') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-exclamation-circle w-5"></i>
+                    Complaints
+                </a>
 
                 <hr class="my-2 text-gray-200">
 

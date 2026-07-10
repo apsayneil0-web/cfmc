@@ -22,9 +22,20 @@ class Farmer extends Model
         'municipality',
         'barangay',
         'status',
+        'rejection_reason',
         'documents_path',
         'user_id',
     ];
+
+    /**
+     * Get the farmer's full name.
+     */
+    public function getFullNameAttribute(): string
+    {
+        $parts = [$this->first_name, $this->middle_initial, $this->last_name, $this->suffix];
+
+        return implode(' ', array_filter($parts, fn ($part) => filled($part)));
+    }
 
     /**
      * Get the crop that belongs to the farmer.

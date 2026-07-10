@@ -3,6 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MemberController;
+use App\Http\Controllers\Admin\MembershipApprovalController;
+use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController;
+use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
+use App\Http\Controllers\Farmer\LoanAppointmentController;
+use App\Http\Controllers\Farmer\ComplaintController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -11,9 +18,21 @@ Route::get('/', function () {
 // Dashboard routes
 Route::middleware(['auth'])->group(function () {
     // Admin Routes
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+    Route::get('/admin/members', [MemberController::class, 'index'])->name('admin.members');
+
+    Route::get('/admin/membership-approval', [MembershipApprovalController::class, 'index'])->name('admin.membership-approval');
+    Route::patch('/admin/membership-approval/{farmer}/approve', [MembershipApprovalController::class, 'approve'])->name('admin.membership-approval.approve');
+    Route::patch('/admin/membership-approval/{farmer}/reject', [MembershipApprovalController::class, 'reject'])->name('admin.membership-approval.reject');
+
+    Route::get('/admin/loan-approval', function () {
+        return view('admin.loan-approval');
+    })->name('admin.loan-approval');
+
+    Route::get('/admin/schedule', function () {
+        return view('admin.schedule');
+    })->name('admin.schedule');
 
     // Manager Routes
     Route::get('/manager/dashboard', function () {
@@ -82,9 +101,24 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/manager/user-management/{user}', [UserController::class, 'update'])->name('user.update');
 
     // Farmer Routes
-    Route::get('/farmer/dashboard', function () {
-        return view('farmer.dashboard');
-    })->name('farmer.dashboard');
+    Route::get('/farmer/dashboard', [FarmerDashboardController::class, 'index'])->name('farmer.dashboard');
+
+    Route::get('/farmer/schedule', [FarmerScheduleController::class, 'index'])->name('farmer.schedule');
+    Route::post('/farmer/schedule', [FarmerScheduleController::class, 'store'])->name('farmer.schedule.store');
+
+    Route::get('/farmer/loan-appointment', [LoanAppointmentController::class, 'index'])->name('farmer.loan-appointment');
+    Route::post('/farmer/loan-appointment', [LoanAppointmentController::class, 'store'])->name('farmer.loan-appointment.store');
+    Route::put('/farmer/loan-appointment/{loan_appointment}', [LoanAppointmentController::class, 'update'])->name('farmer.loan-appointment.update');
+    Route::patch('/farmer/loan-appointment/{loan_appointment}/cancel', [LoanAppointmentController::class, 'cancel'])->name('farmer.loan-appointment.cancel');
+
+    Route::get('/farmer/cbu', function () {
+        return view('farmer.cbu');
+    })->name('farmer.cbu');
+
+    Route::get('/farmer/complaints', [ComplaintController::class, 'index'])->name('farmer.complaints');
+    Route::post('/farmer/complaints', [ComplaintController::class, 'store'])->name('farmer.complaints.store');
+    Route::put('/farmer/complaints/{complaint}', [ComplaintController::class, 'update'])->name('farmer.complaints.update');
+    Route::delete('/farmer/complaints/{complaint}', [ComplaintController::class, 'destroy'])->name('farmer.complaints.destroy');
 });
 
 require __DIR__.'/auth.php';

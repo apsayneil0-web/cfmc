@@ -26,7 +26,7 @@
     <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">Recent Activities</h3>
-            <a href="{{ route('manager.reporting') }}" class="text-sm text-blue-600 hover:underline">View All</a>
+            <a href="{{ route('manager.reporting') }}" class="text-sm text-brand text-decoration-none">View All</a>
         </div>
         <div class="space-y-4">
             <div class="flex items-center gap-4 pb-4 border-b border-gray-100">
@@ -40,8 +40,8 @@
                 <p class="text-xs text-gray-400">2 hours ago</p>
             </div>
             <div class="flex items-center gap-4 pb-4 border-b border-gray-100">
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <i class="fas fa-calendar text-blue-600"></i>
+                <div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center">
+                    <i class="fas fa-calendar text-brand"></i>
                 </div>
                 <div class="flex-1">
                     <p class="text-sm font-medium text-gray-900">Schedule request submitted</p>
@@ -77,8 +77,8 @@
         <h3 class="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
         <div class="space-y-3">
             <a href="{{ route('manager.membership') }}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
-                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <i class="fas fa-user-plus text-blue-600"></i>
+                <div class="w-10 h-10 rounded-lg bg-brand-light flex items-center justify-center">
+                    <i class="fas fa-user-plus text-brand"></i>
                 </div>
                 <span class="text-sm font-medium text-gray-700">New Membership</span>
             </a>

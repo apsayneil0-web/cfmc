@@ -28,29 +28,25 @@
                     Dashboard
                 </a>
 
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
-                    <i class="fas fa-user-shield w-5"></i>
-                    User Oversight
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
+                <a href="{{ route('admin.members') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.members') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-users w-5"></i>
+                    Member Information
+                </a>
 
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
-                    <i class="fas fa-seedling w-5"></i>
-                    Farmer Directory
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
+                <a href="{{ route('admin.membership-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-user-check w-5"></i>
+                    Membership Approval
+                </a>
 
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
-                    <i class="fas fa-chart-pie w-5"></i>
-                    Reports & Analytics
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
+                <a href="{{ route('admin.loan-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.loan-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-hand-holding-usd w-5"></i>
+                    Loan Approval
+                </a>
 
-                <span class="sidebar-link d-flex align-items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400" style="pointer-events: none;">
-                    <i class="fas fa-gear w-5"></i>
-                    System Settings
-                    <span class="badge bg-secondary-subtle text-secondary ms-auto">Soon</span>
-                </span>
+                <a href="{{ route('admin.schedule') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.schedule') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-tractor w-5"></i>
+                    View Schedule
+                </a>
 
                 <hr class="my-2 text-gray-200">
 
