@@ -4,131 +4,104 @@
 @section('header', 'Announcement Management')
 
 @section('content')
-<div class="bg-white rounded-xl shadow-sm border border-gray-200">
-    <!-- Header Actions -->
-    <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <div class="relative">
-                <input type="text" placeholder="Search announcements..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+<div class="section-card">
+    <x-table-toolbar>
+        <x-slot:filters>
+            <div class="position-relative">
+                <input type="text" placeholder="Search announcements..." class="form-control ps-5" style="min-width: 220px;">
+                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
             </div>
-            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <select class="form-select" style="width: auto;">
                 <option value="">All Status</option>
                 <option>Published</option>
                 <option>Draft</option>
                 <option>Archived</option>
             </select>
-        </div>
-        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <i class="fas fa-plus mr-2"></i>Create Announcement
-        </button>
-    </div>
+        </x-slot:filters>
+        <x-slot:actions>
+            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#announcementModal">
+                <i class="fas fa-plus"></i><span>Create Announcement</span>
+            </button>
+        </x-slot:actions>
+    </x-table-toolbar>
 
     <!-- Table -->
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-gray-50">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purpose</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Selected Farmers</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Title</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Purpose</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Selected Farmers</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-medium text-gray-900">Schedule Maintenance Notice</p>
-                        <p class="text-xs text-gray-500">Harvester unit under maintenance</p>
+            <tbody>
+                <tr>
+                    <td class="px-4 px-md-6 py-4">
+                        <p class="mb-0 fw-medium text-dark">Schedule Maintenance Notice</p>
+                        <p class="mb-0 text-muted small">Harvester unit under maintenance</p>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Information</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 01, 2026</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">All Members</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Published</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg" title="Archive">
-                                <i class="fas fa-archive"></i>
-                            </button>
+                    <td class="px-4 px-md-6 py-4 text-muted">Information</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 01, 2026</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">All Members</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Published" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <div class="d-flex gap-1">
+                            <x-icon-button icon="fa-eye" color="primary" title="View" />
+                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#announcementModal" />
+                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" />
                         </div>
                     </td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-medium text-gray-900">Membership Renewal</p>
-                        <p class="text-xs text-gray-500">Annual membership renewal reminder</p>
+                <tr>
+                    <td class="px-4 px-md-6 py-4">
+                        <p class="mb-0 fw-medium text-dark">Membership Renewal</p>
+                        <p class="mb-0 text-muted small">Annual membership renewal reminder</p>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Reminder</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 05, 2026</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">All Members</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Published</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg" title="Archive">
-                                <i class="fas fa-archive"></i>
-                            </button>
+                    <td class="px-4 px-md-6 py-4 text-muted">Reminder</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 05, 2026</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">All Members</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Published" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <div class="d-flex gap-1">
+                            <x-icon-button icon="fa-eye" color="primary" title="View" />
+                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#announcementModal" />
+                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" />
                         </div>
                     </td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-medium text-gray-900">New Equipment Available</p>
-                        <p class="text-xs text-gray-500">Latest tractor models now available</p>
+                <tr>
+                    <td class="px-4 px-md-6 py-4">
+                        <p class="mb-0 fw-medium text-dark">New Equipment Available</p>
+                        <p class="mb-0 text-muted small">Latest tractor models now available</p>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Announcement</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">-</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">-</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">Draft</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg" title="Archive">
-                                <i class="fas fa-archive"></i>
-                            </button>
+                    <td class="px-4 px-md-6 py-4 text-muted">Announcement</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">-</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">-</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Draft" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <div class="d-flex gap-1">
+                            <x-icon-button icon="fa-eye" color="primary" title="View" />
+                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#announcementModal" />
+                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" />
                         </div>
                     </td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-medium text-gray-900">Upcoming Training</p>
-                        <p class="text-xs text-gray-500">Farmer training program</p>
+                <tr>
+                    <td class="px-4 px-md-6 py-4">
+                        <p class="mb-0 fw-medium text-dark">Upcoming Training</p>
+                        <p class="mb-0 text-muted small">Farmer training program</p>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Event</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Jun 15, 2026</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Selected (25)</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">Archived</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                    <td class="px-4 px-md-6 py-4 text-muted">Event</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jun 15, 2026</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Selected (25)</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Archived" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <div class="d-flex gap-1">
+                            <x-icon-button icon="fa-eye" color="primary" title="View" />
                         </div>
                     </td>
                 </tr>
@@ -136,71 +109,64 @@
         </table>
     </div>
 
-    <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-        <p class="text-sm text-gray-500">Showing 1-4 of 4 entries</p>
-        <div class="flex items-center gap-2">
-            <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Previous</button>
-            <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50">Next</button>
+    <div class="px-4 px-md-6 py-4 border-top d-flex align-items-center justify-content-between">
+        <p class="text-muted small mb-0">Showing 1-4 of 4 entries</p>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" disabled>Previous</button>
+            <button class="btn btn-outline-secondary btn-sm">Next</button>
         </div>
     </div>
 </div>
 
 <!-- Create/Edit Announcement Modal -->
-<div id="announcementModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">Create Announcement</h3>
-            <button onclick="document.getElementById('announcementModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
+<x-modal id="announcementModal" title="Create Announcement" size="modal-dialog-scrollable">
+    <form id="announcementForm">
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Title</label>
+            <input type="text" class="form-control" placeholder="Enter title">
         </div>
-        <form class="p-6 space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter title">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter description"></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
-                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <option>Information</option>
-                        <option>Reminder</option>
-                        <option>Event</option>
-                        <option>Announcement</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                    <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Resolution (Optional)</label>
-                <textarea rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter resolution details"></textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Select Farmers</label>
-                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option>All Members</option>
-                    <option>Selected Farmers</option>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea rows="3" class="form-control" placeholder="Enter description"></textarea>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <label class="form-label fw-semibold">Purpose</label>
+                <select class="form-select">
+                    <option>Information</option>
+                    <option>Reminder</option>
+                    <option>Event</option>
+                    <option>Announcement</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option>Draft</option>
-                    <option>Published</option>
-                </select>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Date</label>
+                <input type="date" class="form-control">
             </div>
-            <div class="flex justify-end gap-3 pt-4">
-                <button type="button" onclick="document.getElementById('announcementModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
-            </div>
-        </form>
-    </div>
-</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Resolution (Optional)</label>
+            <textarea rows="2" class="form-control" placeholder="Enter resolution details"></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Select Farmers</label>
+            <select class="form-select">
+                <option>All Members</option>
+                <option>Selected Farmers</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select">
+                <option>Draft</option>
+                <option>Published</option>
+            </select>
+        </div>
+    </form>
+
+    <x-slot:footer>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="announcementForm" class="btn btn-primary">Save</button>
+    </x-slot:footer>
+</x-modal>
 @endsection

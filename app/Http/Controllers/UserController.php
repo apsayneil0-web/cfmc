@@ -22,7 +22,6 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
             'Phonenumber' => 'nullable|string|max:20',
             'status' => 'required|in:active,inactive',
-            'role' => 'required|in:farmer,manager',
         ]);
 
         if ($validator->fails()) {
@@ -32,21 +31,13 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Determine role ID based on selection
-        $roleID = $request->role === 'manager' ? 2 : 3;
+        // Accounts created here are always Farmer accounts
+        $roleID = 3;
 
-        // If email is empty for farmer, generate a placeholder
+        // If email is empty, generate a placeholder
         $email = $request->email;
-        if (empty($email) && $request->role === 'farmer') {
+        if (empty($email)) {
             $email = $request->username . '@farm.local';
-        }
-
-        // Check if email is required for manager
-        if (empty($email) && $request->role === 'manager') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Email is required for manager accounts.'
-            ], 422);
         }
 
         try {
@@ -80,7 +71,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('role')->orderBy('created_at', 'desc')->paginate(10);
+        $users = User::with('role')->where('roleID', '!=', 2)->orderBy('created_at', 'desc')->paginate(10);
         return view('manager.user-management', compact('users'));
     }
 

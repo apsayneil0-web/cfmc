@@ -89,11 +89,7 @@
                         <span class="text-success"><i class="fas fa-check-circle"></i> Complete</span>
                     </td>
                     <td class="px-4 px-md-6 py-4">
-                        @if($farmer->status == 'archived')
-                            <span class="badge bg-secondary">Archived</span>
-                        @else
-                            <span class="badge bg-warning text-dark">Pending</span>
-                        @endif
+                        <x-status-badge :status="$farmer->status == 'archived' ? 'Archived' : 'Pending'" />
                     </td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
@@ -147,11 +143,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Status</label>
                                         <p class="fw-semibold mb-0">
-                                            @if($farmer->status == 'archived')
-                                                <span class="badge bg-secondary">Archived</span>
-                                            @else
-                                                <span class="badge bg-warning text-dark">Pending</span>
-                                            @endif
+                                            <x-status-badge :status="$farmer->status == 'archived' ? 'Archived' : 'Pending'" />
                                         </p>
                                     </div>
                                     <div class="col-md-6 mb-3">
@@ -611,29 +603,9 @@
     .borderdashed {
         border-style: dashed !important;
     }
-    .table-light {
-        --bs-table-bg: #f8f9fa;
-    }
-    .btn {
-        transition: all 0.2s ease;
-    }
-    .btn:hover {
-        transform: translateY(-1px);
-    }
     .form-control-lg, .form-select-lg {
         padding: 0.75rem 1rem;
         font-size: 1rem;
-    }
-    .modal-content {
-        border: none;
-        border-radius: 1rem;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-    .modal-header {
-        border-radius: 1rem 1rem 0 0;
-    }
-    .modal-footer {
-        border-radius: 0 0 1rem 1rem;
     }
     /* Confirmation Modal Styles */
     #confirmModal {

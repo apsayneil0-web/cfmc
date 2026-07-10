@@ -4,83 +4,83 @@
 @section('header', 'Machine Rental Scheduling')
 
 @section('content')
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+<div class="section-card mb-6">
     <!-- Header Actions -->
-    <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+    <div class="table-toolbar d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <select class="form-select" style="width: auto;">
                 <option>July 2026</option>
                 <option>August 2026</option>
                 <option>September 2026</option>
             </select>
-            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <select class="form-select" style="width: auto;">
                 <option>All Machines</option>
                 <option>Harvester</option>
                 <option>Tractor</option>
                 <option>Pump Boat</option>
             </select>
         </div>
-        <div class="flex items-center gap-3">
-            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <i class="fas fa-calendar-week mr-2"></i>Week
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="fas fa-calendar-week"></i><span>Week</span>
             </button>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                <i class="fas fa-plus mr-2"></i>Add Schedule
+            <button class="btn btn-primary d-flex align-items-center gap-2">
+                <i class="fas fa-plus"></i><span>Add Schedule</span>
             </button>
         </div>
     </div>
 
     <!-- Calendar View -->
-    <div class="p-6">
+    <div class="p-4 p-md-6">
         <div class="grid grid-cols-7 gap-2 mb-4">
-            <div class="text-center text-xs font-medium text-gray-500 py-2">Sun</div>
-            <div class="text-center text-xs font-medium text-gray-500 py-2">Mon</div>
-            <div class="text-center text-xs font-medium text-gray-500 py-2">Tue</div>
-            <div class="text-center text-xs font-medium text-gray-500 py-2">Wed</div>
-            <div class="text-center text-xs font-medium text-gray-500 py-2">Thu</div>
-            <div class="text-center text-xs font-medium text-gray-500 py-2">Fri</div>
-            <div class="text-center text-xs font-medium text-gray-500 py-2">Sat</div>
+            <div class="text-center text-xs font-medium text-muted py-2">Sun</div>
+            <div class="text-center text-xs font-medium text-muted py-2">Mon</div>
+            <div class="text-center text-xs font-medium text-muted py-2">Tue</div>
+            <div class="text-center text-xs font-medium text-muted py-2">Wed</div>
+            <div class="text-center text-xs font-medium text-muted py-2">Thu</div>
+            <div class="text-center text-xs font-medium text-muted py-2">Fri</div>
+            <div class="text-center text-xs font-medium text-muted py-2">Sat</div>
         </div>
         <div class="grid grid-cols-7 gap-2">
             @for($i = 0; $i < 7; $i++)
-            <div class="min-h-[120px] border border-gray-200 rounded-lg p-2 bg-gray-50">
-                <p class="text-xs font-medium text-gray-500 mb-2">{{ $i + 1 }}</p>
+            <div class="rounded-lg p-2 bg-light border border-gray-200" style="min-height: 120px;">
+                <p class="text-xs font-medium text-muted mb-2">{{ $i + 1 }}</p>
                 @if($i == 2)
-                <div class="bg-blue-100 text-blue-700 text-xs p-2 rounded mb-1">
-                    <p class="font-medium">Juan - Harvester</p>
-                    <p class="text-xs">8AM-12PM</p>
+                <div class="bg-primary bg-opacity-10 text-primary text-xs p-2 rounded mb-1">
+                    <p class="fw-medium mb-0">Juan - Harvester</p>
+                    <p class="text-xs mb-0">8AM-12PM</p>
                 </div>
-                <div class="bg-green-100 text-green-700 text-xs p-2 rounded">
-                    <p class="font-medium">Maria - Tractor</p>
-                    <p class="text-xs">1PM-5PM</p>
+                <div class="bg-success bg-opacity-10 text-success text-xs p-2 rounded">
+                    <p class="fw-medium mb-0">Maria - Tractor</p>
+                    <p class="text-xs mb-0">1PM-5PM</p>
                 </div>
                 @endif
             </div>
             @endfor
             @for($i = 7; $i < 14; $i++)
-            <div class="min-h-[120px] border border-gray-200 rounded-lg p-2">
-                <p class="text-xs font-medium text-gray-500 mb-2">{{ $i + 1 }}</p>
+            <div class="rounded-lg p-2 border border-gray-200" style="min-height: 120px;">
+                <p class="text-xs font-medium text-muted mb-2">{{ $i + 1 }}</p>
             </div>
             @endfor
             @for($i = 14; $i < 21; $i++)
-            <div class="min-h-[120px] border border-gray-200 rounded-lg p-2">
-                <p class="text-xs font-medium text-gray-500 mb-2">{{ $i + 1 }}</p>
+            <div class="rounded-lg p-2 border border-gray-200" style="min-height: 120px;">
+                <p class="text-xs font-medium text-muted mb-2">{{ $i + 1 }}</p>
                 @if($i == 18)
-                <div class="bg-purple-100 text-purple-700 text-xs p-2 rounded">
-                    <p class="font-medium">Pedro - Pump</p>
-                    <p class="text-xs">6AM-9AM</p>
+                <div class="bg-purple text-white bg-opacity-75 text-xs p-2 rounded">
+                    <p class="fw-medium mb-0">Pedro - Pump</p>
+                    <p class="text-xs mb-0">6AM-9AM</p>
                 </div>
                 @endif
             </div>
             @endfor
             @for($i = 21; $i < 28; $i++)
-            <div class="min-h-[120px] border border-gray-200 rounded-lg p-2">
-                <p class="text-xs font-medium text-gray-500 mb-2">{{ $i + 1 }}</p>
+            <div class="rounded-lg p-2 border border-gray-200" style="min-height: 120px;">
+                <p class="text-xs font-medium text-muted mb-2">{{ $i + 1 }}</p>
             </div>
             @endfor
             @for($i = 28; $i < 31; $i++)
-            <div class="min-h-[120px] border border-gray-200 rounded-lg p-2">
-                <p class="text-xs font-medium text-gray-500 mb-2">{{ $i + 1 }}</p>
+            <div class="rounded-lg p-2 border border-gray-200" style="min-height: 120px;">
+                <p class="text-xs font-medium text-muted mb-2">{{ $i + 1 }}</p>
             </div>
             @endfor
         </div>
@@ -88,102 +88,68 @@
 </div>
 
 <!-- Schedule List -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200">
-    <div class="p-6 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">Upcoming Schedules</h3>
+<div class="section-card">
+    <div class="table-toolbar">
+        <h3 class="text-lg font-semibold text-gray-900 mb-0">Upcoming Schedules</h3>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-gray-50">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Schedule ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Farmer Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Member Type</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Schedule ID</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Type</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date & Time</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member Type</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">SCH-001</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">Juan Dela Cruz</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Harvester</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 10, 2026 - 8:00 AM</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Member</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Approved</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg" title="Reschedule">
-                                <i class="fas fa-calendar-alt"></i>
-                            </button>
-                            <button class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Archive">
-                                <i class="fas fa-archive"></i>
-                            </button>
+            <tbody>
+                <tr>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-001</td>
+                    <td class="px-4 px-md-6 py-4">Juan Dela Cruz</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Harvester</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 10, 2026 - 8:00 AM</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Member" /></td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Approved" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <div class="d-flex gap-1">
+                            <x-icon-button icon="fa-eye" color="primary" title="View" />
+                            <x-icon-button icon="fa-edit" color="warning" title="Edit" />
+                            <x-icon-button icon="fa-calendar-alt" color="secondary" title="Reschedule" />
+                            <x-icon-button icon="fa-archive" color="danger" title="Archive" />
                         </div>
                     </td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">SCH-002</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">Maria Santos</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Tractor</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 12, 2026 - 7:00 AM</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Member</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Approved</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg" title="Reschedule">
-                                <i class="fas fa-calendar-alt"></i>
-                            </button>
-                            <button class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Archive">
-                                <i class="fas fa-archive"></i>
-                            </button>
+                <tr>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-002</td>
+                    <td class="px-4 px-md-6 py-4">Maria Santos</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Tractor</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 12, 2026 - 7:00 AM</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Member" /></td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Approved" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <div class="d-flex gap-1">
+                            <x-icon-button icon="fa-eye" color="primary" title="View" />
+                            <x-icon-button icon="fa-edit" color="warning" title="Edit" />
+                            <x-icon-button icon="fa-calendar-alt" color="secondary" title="Reschedule" />
+                            <x-icon-button icon="fa-archive" color="danger" title="Archive" />
                         </div>
                     </td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">SCH-003</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">Roberto Tan</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Harvester</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 15, 2026 - 9:00 AM</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">Non-member</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Archive">
-                                <i class="fas fa-archive"></i>
-                            </button>
+                <tr>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-003</td>
+                    <td class="px-4 px-md-6 py-4">Roberto Tan</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Harvester</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 15, 2026 - 9:00 AM</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Non-member" /></td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Pending" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <div class="d-flex gap-1">
+                            <x-icon-button icon="fa-eye" color="primary" title="View" />
+                            <x-icon-button icon="fa-edit" color="warning" title="Edit" />
+                            <x-icon-button icon="fa-archive" color="danger" title="Archive" />
                         </div>
                     </td>
                 </tr>

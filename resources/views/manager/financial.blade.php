@@ -6,27 +6,11 @@
 @section('content')
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <p class="text-sm text-gray-500 mb-1">Operational Expenses</p>
-        <p class="text-2xl font-bold text-gray-900">₱245,000</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <p class="text-sm text-gray-500 mb-1">Machinery Expenditures</p>
-        <p class="text-2xl font-bold text-gray-900">₱180,000</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <p class="text-sm text-gray-500 mb-1">Harvest Income</p>
-        <p class="text-2xl font-bold text-green-600">₱890,000</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <p class="text-sm text-gray-500 mb-1">Cooperative Share</p>
-        <p class="text-2xl font-bold text-blue-600">₱89,000</p>
-        <p class="text-xs text-gray-400">9% - 12%</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <p class="text-sm text-gray-500 mb-1">Net Income</p>
-        <p class="text-2xl font-bold text-emerald-600">₱376,000</p>
-    </div>
+    <x-stat-card label="Operational Expenses" value="₱245,000" icon="fa-file-invoice" color="secondary" />
+    <x-stat-card label="Machinery Expenditures" value="₱180,000" icon="fa-tractor" color="warning" />
+    <x-stat-card label="Harvest Income" value="₱890,000" icon="fa-seedling" color="success" />
+    <x-stat-card label="Cooperative Share" value="₱89,000" icon="fa-hand-holding-usd" color="primary" trend="9% - 12%" />
+    <x-stat-card label="Net Income" value="₱376,000" icon="fa-chart-line" color="success" />
 </div>
 
 <!-- Charts and Tables -->
@@ -35,7 +19,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Financial Overview</h3>
         <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p class="text-gray-500"><i class="fas fa-chart-bar text-4xl mb-2"></i><br>Chart visualization</p>
+            <p class="text-gray-500 text-center"><i class="fas fa-chart-bar text-4xl mb-2 d-block"></i>Chart visualization</p>
         </div>
     </div>
 
@@ -48,8 +32,8 @@
                     <span class="text-sm text-gray-600">Machine Rental</span>
                     <span class="text-sm font-medium text-gray-900">₱450,000</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full" style="width: 50%"></div>
+                <div class="progress" style="height: 0.5rem;">
+                    <div class="progress-bar bg-primary" style="width: 50%"></div>
                 </div>
             </div>
             <div>
@@ -57,8 +41,8 @@
                     <span class="text-sm text-gray-600">Harvest Sales</span>
                     <span class="text-sm font-medium text-gray-900">₱320,000</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-green-600 h-2 rounded-full" style="width: 36%"></div>
+                <div class="progress" style="height: 0.5rem;">
+                    <div class="progress-bar bg-success" style="width: 36%"></div>
                 </div>
             </div>
             <div>
@@ -66,8 +50,8 @@
                     <span class="text-sm text-gray-600">CBU Interest</span>
                     <span class="text-sm font-medium text-gray-900">₱85,000</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-purple-600 h-2 rounded-full" style="width: 10%"></div>
+                <div class="progress" style="height: 0.5rem;">
+                    <div class="progress-bar bg-purple" style="width: 10%"></div>
                 </div>
             </div>
             <div>
@@ -75,8 +59,8 @@
                     <span class="text-sm text-gray-600">Loan Interest</span>
                     <span class="text-sm font-medium text-gray-900">₱35,000</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-yellow-600 h-2 rounded-full" style="width: 4%"></div>
+                <div class="progress" style="height: 0.5rem;">
+                    <div class="progress-bar bg-warning" style="width: 4%"></div>
                 </div>
             </div>
         </div>
@@ -84,66 +68,60 @@
 </div>
 
 <!-- Expense Reports Table -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200">
-    <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900">Expense Reports</h3>
-        <div class="flex items-center gap-3">
-            <input type="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <i class="fas fa-filter mr-2"></i>Filter
+<div class="section-card">
+    <x-table-toolbar>
+        <x-slot:filters>
+            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Expense Reports</h3>
+            <input type="date" class="form-control" style="width: auto;">
+        </x-slot:filters>
+        <x-slot:actions>
+            <button class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="fas fa-filter"></i><span>Filter</span>
             </button>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                <i class="fas fa-file-export mr-2"></i>Export
+            <button class="btn btn-primary d-flex align-items-center gap-2">
+                <i class="fas fa-file-export"></i><span>Export</span>
             </button>
-        </div>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-gray-50">
+        </x-slot:actions>
+    </x-table-toolbar>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Description</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Category</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 01, 2026</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">Fuel - Tractor #001</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Machinery</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">₱12,500</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Paid</span>
-                    </td>
+            <tbody>
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 01, 2026</td>
+                    <td class="px-4 px-md-6 py-4">Fuel - Tractor #001</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Machinery</td>
+                    <td class="px-4 px-md-6 py-4">₱12,500</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Paid" /></td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 02, 2026</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">Maintenance - Harvester</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Machinery</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">₱25,000</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Paid</span>
-                    </td>
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 02, 2026</td>
+                    <td class="px-4 px-md-6 py-4">Maintenance - Harvester</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Machinery</td>
+                    <td class="px-4 px-md-6 py-4">₱25,000</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Paid" /></td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 05, 2026</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">Office Supplies</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Operational</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">₱5,500</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Paid</span>
-                    </td>
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 05, 2026</td>
+                    <td class="px-4 px-md-6 py-4">Office Supplies</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Operational</td>
+                    <td class="px-4 px-md-6 py-4">₱5,500</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Paid" /></td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 text-sm text-gray-500">Jul 10, 2026</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">Operator Salary</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">Operational</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">₱15,000</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                    </td>
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">Jul 10, 2026</td>
+                    <td class="px-4 px-md-6 py-4">Operator Salary</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">Operational</td>
+                    <td class="px-4 px-md-6 py-4">₱15,000</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Pending" /></td>
                 </tr>
             </tbody>
         </table>

@@ -16,7 +16,6 @@
                 </div>
                 <select id="roleFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
                     <option value="">All Roles</option>
-                    <option value="2">Manager</option>
                     <option value="3">Farmer</option>
                 </select>
                 <select id="statusFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
@@ -72,15 +71,7 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->Phonenumber ?? 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        @if($user->status == 'active')
-                        <span class="badge bg-success">Active</span>
-                        @elseif($user->status == 'inactive')
-                        <span class="badge bg-secondary">Inactive</span>
-                        @elseif($user->status == 'archived')
-                        <span class="badge bg-warning text-dark">Archived</span>
-                        @else
-                        <span class="badge bg-danger">Locked</span>
-                        @endif
+                        <x-status-badge :status="ucfirst($user->status)" />
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
@@ -143,35 +134,9 @@
             <!-- Modal Body -->
             <div class="modal-body">
                 <form id="userForm" class="needs-validation" novalidate>
-                    <!-- Role Selection -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Account Type <span class="text-danger">*</span></label>
-                            <div class="row g-3">
-                                <div class="col-6">
-                                    <label class="w-100">
-                                        <input type="radio" name="role" value="farmer" class="btn-check" id="roleFarmer" autocomplete="off" checked>
-                                        <div class="card border-2 h-100 cursor-pointer hover-border-primary">
-                                            <div class="card-body text-center py-4">
-                                                <i class="fas fa-user text-3xl text-muted mb-2 d-block"></i>
-                                                <p class="fw-medium mb-0">Farmer</p>
-                                            </div>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div class="col-6">
-                                    <label class="w-100">
-                                        <input type="radio" name="role" value="manager" class="btn-check" id="roleManager" autocomplete="off">
-                                        <div class="card border-2 h-100 cursor-pointer">
-                                            <div class="card-body text-center py-4">
-                                                <i class="fas fa-user-tie text-3xl text-muted mb-2 d-block"></i>
-                                                <p class="fw-medium mb-0">Manager</p>
-                                            </div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="alert alert-light border d-flex align-items-center gap-2 mb-4">
+                        <i class="fas fa-user text-primary"></i>
+                        <span>This form creates a <strong>Farmer</strong> account.</span>
                     </div>
 
                     <!-- Row 1: Full Name -->
@@ -194,9 +159,9 @@
                             <div class="invalid-feedback">Please enter username.</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email <span class="text-danger" id="emailRequired" style="display:none;">*</span> <span class="text-muted">(optional for farmers)</span></label>
+                            <label class="form-label fw-semibold">Email <span class="text-muted">(optional)</span></label>
                             <input type="email" class="form-control form-control-lg" placeholder="email@example.com" name="email" id="emailInput">
-                            <div class="invalid-feedback" id="emailFeedback">Please enter email.</div>
+                            <div class="invalid-feedback">Please enter email.</div>
                         </div>
                     </div>
 
@@ -383,47 +348,22 @@
 <!-- Custom Styles -->
 <style>
     .btn-check:checked + .card {
-        border-color: #0d6efd !important;
-        background-color: rgba(13, 110, 253, 0.05);
+        border-color: #2563eb !important;
+        background-color: rgba(37, 99, 235, 0.05);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
     .btn-check:checked + .card i {
-        color: #0d6efd !important;
+        color: #2563eb !important;
     }
     .cursor-pointer {
         cursor: pointer;
     }
     .hover-border-primary:hover {
-        border-color: #6c757d !important;
-    }
-    .table-light {
-        --bs-table-bg: #f8f9fa;
-    }
-    .bg-purple {
-        background-color: #6f42c1 !important;
-    }
-    .text-purple {
-        color: #6f42c1 !important;
-    }
-    .btn {
-        transition: all 0.2s ease;
-    }
-    .btn:hover {
-        transform: translateY(-1px);
+        border-color: #2563eb !important;
     }
     .form-control-lg, .form-select-lg {
         padding: 0.75rem 1rem;
         font-size: 1rem;
-    }
-    .modal-content {
-        border: none;
-        border-radius: 1rem;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-    .modal-header {
-        border-radius: 1rem 1rem 0 0;
-    }
-    .modal-footer {
-        border-radius: 0 0 1rem 1rem;
     }
     @media (max-width: 767.98px) {
         .modal-dialog {
@@ -463,31 +403,6 @@
             this.innerHTML = '<i class="fas fa-eye"></i>';
         }
     });
-
-    // Handle role selection - make email optional for farmers
-    var roleFarmer = document.getElementById('roleFarmer');
-    var roleManager = document.getElementById('roleManager');
-    var emailInput = document.getElementById('emailInput');
-    var emailRequired = document.getElementById('emailRequired');
-    var emailFeedback = document.getElementById('emailFeedback');
-
-    function updateEmailRequired() {
-        if (roleFarmer.checked) {
-            // Make email optional for farmers
-            emailInput.removeAttribute('required');
-            emailRequired.style.display = 'none';
-        } else {
-            // Make email required for managers
-            emailInput.setAttribute('required', 'required');
-            emailRequired.style.display = 'inline';
-        }
-    }
-
-    roleFarmer.addEventListener('change', updateEmailRequired);
-    roleManager.addEventListener('change', updateEmailRequired);
-
-    // Initialize on page load
-    updateEmailRequired();
 
     // Form submission function
     function submitUserForm() {

@@ -3,13 +3,20 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>COOP - Cooperative Management System</title>
+    <title>CFMC - Cooperative Management System</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif; background-color: #ffffff; color: #111827; }
+        body {
+            font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+            background-color: #ffffff;
+            color: #111827;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
+        }
         a { color: inherit; text-decoration: none; }
+        h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.2; }
 
         /* Layout */
         .fixed { position: fixed; }
@@ -48,12 +55,14 @@
         .bg-gray-50 { background-color: #f9fafb; }
         .bg-gray-900 { background-color: #111827; }
         .bg-green-600 { background-color: #16a34a; }
+        .bg-red-600 { background-color: #dc2626; }
         .text-white { color: #ffffff; }
         .text-gray-700 { color: #374151; }
         .text-gray-600 { color: #4b5563; }
         .text-gray-900 { color: #111827; }
         .text-green-600 { color: #16a34a; }
         .text-green-400 { color: #4ade80; }
+        .text-red-600 { color: #dc2626; }
 
         /* Sizing */
         .min-h-screen { min-height: 100vh; }
@@ -81,11 +90,11 @@
         /* Borders */
         .border { border: 1px solid #e5e7eb; }
         .border-2 { border: 2px solid #16a34a; }
-        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-lg { border-radius: 0.85rem; }
 
         /* Shadows */
-        .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
-        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .shadow-sm { box-shadow: 0 1px 3px 0 rgba(15,23,42,0.06), 0 1px 2px -1px rgba(15,23,42,0.05); }
+        .shadow-lg { box-shadow: 0 20px 40px -14px rgba(15,23,42,0.18), 0 8px 16px -8px rgba(15,23,42,0.1); }
 
         /* Display */
         .hidden { display: none; }
@@ -93,7 +102,7 @@
         .text-center { text-align: center; }
 
         /* Transitions */
-        .transition { transition: all 0.15s cubic-bezier(0.4,0,0.2,1); }
+        .transition { transition: all 220ms cubic-bezier(0.4,0,0.2,1); }
 
         /* Opacity */
         .opacity-90 { opacity: 0.9; }
@@ -103,18 +112,44 @@
         .hover\:bg-green-700:hover { background-color: #15803d; }
         .hover\:bg-green-50:hover { background-color: #f0fdf4; }
         .hover\:bg-gray-100:hover { background-color: #f3f4f6; }
-        .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .hover\:bg-red-700:hover { background-color: #b91c1c; }
+        .hover\:shadow-lg:hover { box-shadow: 0 20px 40px -14px rgba(15,23,42,0.18), 0 8px 16px -8px rgba(15,23,42,0.1); }
         .hover\:text-green-400:hover { color: #4ade80; }
+        .hover\:text-red-600:hover { color: #dc2626; }
+
+        /* Micro-interactions: lift any rounded, transitioning surface (buttons + cards) */
+        .rounded-lg.transition:hover { transform: translateY(-3px); }
+        .rounded-lg.transition:active { transform: translateY(-1px) scale(0.98); }
+
+        /* Accessible focus states */
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #16a34a;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
 
         /* Header */
-        header { top: 0; z-index: 50; }
+        header { top: 0; z-index: 50; transition: box-shadow 220ms cubic-bezier(0.4,0,0.2,1); }
+
+        /* Entrance animation for the hero */
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body > section:first-of-type > div {
+            animation: fade-in-up 560ms cubic-bezier(0.4,0,0.2,1);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            body > section:first-of-type > div { animation: none; }
+            .rounded-lg.transition:hover { transform: none; }
+        }
 
         /* Gradients */
         .bg-gradient-to-br {
             background: linear-gradient(to bottom right, #f0fdf4, #eff6ff);
         }
         .bg-gradient-to-r {
-            background: linear-gradient(to right, #16a34a, #2563eb);
+            background: linear-gradient(120deg, #16a34a, #15803d 45%, #2563eb);
         }
 
         /* Spacing */
@@ -141,7 +176,7 @@
     <!-- Navigation Header -->
     <header class="fixed w-full top-0 z-50 bg-white shadow-sm">
         <nav class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="text-2xl font-bold text-green-600">🤝 COOP</div>
+            <div class="text-2xl font-bold text-green-600">🌾 CFMC</div>
 
             <div class="hidden md:flex gap-8">
                 <a href="#features" class="text-gray-700 hover:text-green-600 transition">Features</a>
@@ -172,7 +207,7 @@
     <section class="min-h-screen pt-20 flex items-center justify-center bg-gradient-to-br">
         <div class="max-w-6xl mx-auto px-4 py-20 text-center">
             <h1 class="text-5xl md:text-6xl font-bold mb-6 text-gray-900">
-                Welcome to <span class="text-green-600">COOP</span>
+                Welcome to <span class="text-green-600">CFMC</span>
             </h1>
             <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
                 Empower your cooperative with modern management solutions. Streamline operations, connect members, and grow together.
@@ -291,15 +326,15 @@
         <div class="max-w-6xl mx-auto px-4">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h2 class="text-4xl font-bold mb-6 text-gray-900">About COOP</h2>
+                    <h2 class="text-4xl font-bold mb-6 text-gray-900">About CFMC</h2>
                     <p class="text-gray-600 mb-4 text-lg">
-                        COOP is a comprehensive cooperative management system designed to help organizations like yours succeed in the digital age.
+                        CFMC is a comprehensive cooperative management system designed to help organizations like yours succeed in the digital age.
                     </p>
                     <p class="text-gray-600 mb-4 text-lg">
                         We provide tools for member management, financial tracking, event planning, and much more. Our mission is to empower cooperatives with technology that brings members together and drives growth.
                     </p>
                     <p class="text-gray-600 text-lg">
-                        Whether you're just starting out or scaling an established cooperative, COOP has the features you need to thrive.
+                        Whether you're just starting out or scaling an established cooperative, CFMC has the features you need to thrive.
                     </p>
                 </div>
                 <div class="bg-white p-8 rounded-lg shadow-lg">
@@ -343,7 +378,7 @@
         <div class="max-w-4xl mx-auto px-4 text-center text-white">
             <h2 class="text-4xl font-bold mb-6">Ready to Transform Your Cooperative?</h2>
             <p class="text-xl mb-8 opacity-90">
-                Join COOP and start managing your cooperative today.
+                Join CFMC and start managing your cooperative today.
             </p>
 
             @if (Route::has('login'))
@@ -366,7 +401,7 @@
     <!-- Footer -->
     <footer class="bg-gray-900 text-white py-8">
         <div class="max-w-6xl mx-auto px-4 text-center">
-            <p class="mb-2">&copy; 2026 COOP - Cooperative Management System. All rights reserved.</p>
+            <p class="mb-2">&copy; 2026 CFMC - Cooperative Management System. All rights reserved.</p>
             <div class="flex justify-center gap-6 text-sm">
                 <a href="#" class="hover:text-green-400 transition">Privacy</a>
                 <a href="#" class="hover:text-green-400 transition">Terms</a>
