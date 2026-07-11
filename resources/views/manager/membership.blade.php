@@ -236,7 +236,8 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
-                                        <input type="text" name="contact_number" class="form-control" value="{{ $farmer->contact_number }}" required>
+                                        <input type="tel" name="contact_number" class="form-control ph-contact-input" value="{{ $farmer->contact_number }}" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
+                                        <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
@@ -392,60 +393,75 @@
 
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-warning bg-opacity-75">
-                <h5 class="modal-title fw-bold text-dark" id="confirmModalLabel">
-                    <i class="fas fa-circle-check me-2"></i>
-                    Confirm Your Submission
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 pb-0 pt-3 px-3">
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="text-center mb-3">
-                    <i class="fas fa-user-plus text-primary" style="font-size: 3rem;"></i>
+            <div class="modal-body px-4 pb-4 pt-0">
+                <div class="text-center mb-4">
+                    <div class="confirm-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1" id="confirmModalLabel">Confirm Your Submission</h5>
+                    <p class="text-muted small mb-0">Please review the details before submitting</p>
                 </div>
-                <p class="text-center fw-semibold mb-3">Please review the details before submitting:</p>
-                <div class="card bg-light border-0">
-                    <div class="card-body">
-                        <div class="row mb-2">
-                            <div class="col-4 text-muted">Farmer Name:</div>
-                            <div class="col-8 fw-semibold" id="confirmFarmerName">-</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-4 text-muted">Crop Type:</div>
-                            <div class="col-8 fw-semibold" id="confirmCropType">-</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-4 text-muted">Land Area:</div>
-                            <div class="col-8 fw-semibold" id="confirmLandArea">-</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-4 text-muted">Contact:</div>
-                            <div class="col-8 fw-semibold" id="confirmContact">-</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 text-muted">Location:</div>
-                            <div class="col-8 fw-semibold" id="confirmLocation">-</div>
-                        </div>
+
+                <div class="confirm-summary-list border rounded-3 px-3">
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <span class="text-muted small"><i class="fas fa-user text-success me-2 fa-fw"></i>Farmer Name</span>
+                        <span class="fw-semibold text-end" id="confirmFarmerName">-</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <span class="text-muted small"><i class="fas fa-seedling text-success me-2 fa-fw"></i>Crop Type</span>
+                        <span class="fw-semibold text-end" id="confirmCropType">-</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <span class="text-muted small"><i class="fas fa-ruler-combined text-success me-2 fa-fw"></i>Land Area</span>
+                        <span class="fw-semibold text-end" id="confirmLandArea">-</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <span class="text-muted small"><i class="fas fa-phone text-success me-2 fa-fw"></i>Contact</span>
+                        <span class="fw-semibold text-end" id="confirmContact">-</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2">
+                        <span class="text-muted small"><i class="fas fa-map-marker-alt text-success me-2 fa-fw"></i>Location</span>
+                        <span class="fw-semibold text-end" id="confirmLocation">-</span>
                     </div>
                 </div>
-                <div class="alert alert-warning mt-3 mb-0">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Note:</strong> Once submitted, you cannot edit this request. The status will be set to "Pending" for admin review.
+
+                <div class="info-banner variant-warning mt-3 mb-4">
+                    <i class="fas fa-exclamation-triangle mt-1"></i>
+                    <p class="small mb-0">
+                        <strong>Note:</strong> Once submitted, you cannot edit this request. The status will be set to "Pending" for admin review.
+                    </p>
                 </div>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-outline-secondary btn-lg" data-bs-dismiss="modal">
-                    <i class="fas fa-arrow-left me-2"></i>Go Back
-                </button>
-                <button type="button" class="btn btn-success btn-lg" id="confirmSubmitBtn">
-                    <i class="fas fa-check-circle me-2"></i>Confirm & Submit
-                </button>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary flex-fill py-2" data-bs-dismiss="modal">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </button>
+                    <button type="button" class="btn btn-success flex-fill py-2" id="confirmSubmitBtn">
+                        <i class="fas fa-check-circle me-2"></i>Confirm &amp; Submit
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .confirm-icon-badge {
+        width: 64px;
+        height: 64px;
+        font-size: 1.75rem;
+        background-color: var(--brand-success-light);
+        color: var(--brand-success);
+    }
+    .confirm-summary-list > div:last-child {
+        border-bottom: none !important;
+    }
+</style>
 
 <!-- Bootstrap 5 Modal -->
 <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
@@ -498,8 +514,8 @@
                     <div class="row mb-3">
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="contact_number" class="form-control form-control-lg" placeholder="0912-345-6789" required>
-                            <div class="invalid-feedback">Please enter contact number.</div>
+                            <input type="tel" name="contact_number" class="form-control form-control-lg ph-contact-input" placeholder="09123456789" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
+                            <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
@@ -935,5 +951,16 @@
         });
         @endif
     })();
+
+    // Restrict Philippine contact number inputs to digits (with optional leading +)
+    document.querySelectorAll('.ph-contact-input').forEach(function(input) {
+        input.addEventListener('input', function() {
+            let value = input.value.replace(/[^\d+]/g, '');
+            if (value.indexOf('+') > 0) {
+                value = value.replace(/\+/g, '');
+            }
+            input.value = value;
+        });
+    });
 </script>
 @endsection

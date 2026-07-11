@@ -146,29 +146,39 @@
     <!-- Logout Confirmation Modal -->
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+            <div class="modal-content border-0">
+                <div class="modal-header border-0 pb-0 pt-3 px-3">
+                    <h5 class="modal-title fw-bold" id="logoutModalLabel">Confirm Logout</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="text-center">
-                        <div class="mb-3">
-                            <i class="fas fa-sign-out-alt text-danger" style="font-size: 48px;"></i>
+                <div class="modal-body px-4 pb-4 pt-2">
+                    <div class="text-center mb-4">
+                        <div class="logout-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
+                            <i class="fas fa-sign-out-alt"></i>
                         </div>
-                        <p class="mb-0">Are you sure you want to logout?</p>
+                        <p class="mb-0 text-dark">Are you sure you want to logout?</p>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="btn btn-danger">Logout</button>
-                    </form>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary flex-fill py-2" data-bs-dismiss="modal">Cancel</button>
+                        <form method="POST" action="{{ route('logout') }}" class="flex-fill">
+                            @csrf
+                            <button type="submit" class="btn btn-danger w-100 py-2">Logout</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <style>
+        .logout-icon-badge {
+            width: 64px;
+            height: 64px;
+            font-size: 1.75rem;
+            background-color: var(--brand-danger-light);
+            color: var(--brand-danger);
+        }
+    </style>
 
     <script>
         function confirmLogout() {

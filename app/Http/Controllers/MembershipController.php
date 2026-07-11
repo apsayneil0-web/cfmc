@@ -59,18 +59,24 @@ class MembershipController extends Controller
                 ->with('error', 'Please confirm your submission.');
         }
 
+        $request->merge([
+            'contact_number' => preg_replace('/[\s\-]+/', '', (string) $request->input('contact_number')),
+        ]);
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'middle_initial' => 'nullable|string|max:5',
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
-            'contact_number' => 'required|string|max:20',
+            'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'crop_id' => 'required|exists:crops,id',
             'land_area' => 'required|numeric|min:0',
             'documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
             'barangay' => 'nullable|string|max:255',
+        ], [
+            'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
         ]);
 
         // Handle document upload
@@ -107,17 +113,23 @@ class MembershipController extends Controller
      */
     public function update(Request $request, Farmer $farmer)
     {
+        $request->merge([
+            'contact_number' => preg_replace('/[\s\-]+/', '', (string) $request->input('contact_number')),
+        ]);
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'middle_initial' => 'nullable|string|max:5',
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
-            'contact_number' => 'required|string|max:20',
+            'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'crop_id' => 'required|exists:crops,id',
             'land_area' => 'required|numeric|min:0',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
             'documents' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ], [
+            'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
         ]);
 
         $updateData = [

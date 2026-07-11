@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Farmer extends Model
 {
@@ -26,6 +27,36 @@ class Farmer extends Model
         'documents_path',
         'user_id',
     ];
+
+    /**
+     * Capitalize the first letter of each word in the first name.
+     */
+    public function setFirstNameAttribute($value): void
+    {
+        $this->attributes['first_name'] = $value !== null ? Str::title(trim($value)) : $value;
+    }
+
+    /**
+     * Capitalize the middle initial and ensure it ends with a period (e.g. "D.").
+     */
+    public function setMiddleInitialAttribute($value): void
+    {
+        if ($value === null) {
+            $this->attributes['middle_initial'] = $value;
+            return;
+        }
+
+        $initial = strtoupper(rtrim(trim($value), '.'));
+        $this->attributes['middle_initial'] = $initial !== '' ? $initial . '.' : $initial;
+    }
+
+    /**
+     * Capitalize the first letter of each word in the last name.
+     */
+    public function setLastNameAttribute($value): void
+    {
+        $this->attributes['last_name'] = $value !== null ? Str::title(trim($value)) : $value;
+    }
 
     /**
      * Get the farmer's full name.
