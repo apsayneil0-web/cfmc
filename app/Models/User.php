@@ -30,6 +30,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the farmer membership record linked to this account.
+     */
+    public function farmer()
+    {
+        return $this->hasOne(Farmer::class, 'account_user_id');
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

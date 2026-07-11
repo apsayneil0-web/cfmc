@@ -1,4 +1,4 @@
-@extends('manager.layout')
+@extends('admin.layout')
 
 @section('title', 'User Management')
 @section('header', 'User Management')
@@ -16,6 +16,8 @@
                 </div>
                 <select id="roleFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
                     <option value="">All Roles</option>
+                    <option value="1">Admin</option>
+                    <option value="2">Manager</option>
                     <option value="3">Farmer</option>
                 </select>
                 <select id="statusFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
@@ -63,7 +65,9 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->email ?? 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        @if($user->roleID == 2)
+                        @if($user->roleID == 1)
+                        <span class="badge bg-dark text-white">Admin</span>
+                        @elseif($user->roleID == 2)
                         <span class="badge bg-purple text-white">Manager</span>
                         @else
                         <span class="badge bg-success">Farmer</span>
@@ -136,7 +140,37 @@
                 <form id="userForm" class="needs-validation" novalidate>
                     <div class="alert alert-light border d-flex align-items-center gap-2 mb-4">
                         <i class="fas fa-user text-primary"></i>
-                        <span>This form creates a <strong>Farmer</strong> account.</span>
+                        <span>This form creates a <strong id="accountTypeLabel">Farmer</strong> account.</span>
+                    </div>
+
+                    <!-- Row 0: Account Type -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Account Type <span class="text-danger">*</span></label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="roleID" id="roleFarmer" value="3" autocomplete="off" checked>
+                                    <label class="card border p-3 text-center cursor-pointer hover-border-primary mb-0 w-100" for="roleFarmer">
+                                        <i class="fas fa-seedling fs-4 d-block mb-1 text-muted"></i>
+                                        <span class="fw-semibold small">Farmer</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="roleID" id="roleManager" value="2" autocomplete="off">
+                                    <label class="card border p-3 text-center cursor-pointer hover-border-primary mb-0 w-100" for="roleManager">
+                                        <i class="fas fa-user-tie fs-4 d-block mb-1 text-muted"></i>
+                                        <span class="fw-semibold small">Manager</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="roleID" id="roleAdmin" value="1" autocomplete="off">
+                                    <label class="card border p-3 text-center cursor-pointer hover-border-primary mb-0 w-100" for="roleAdmin">
+                                        <i class="fas fa-user-shield fs-4 d-block mb-1 text-muted"></i>
+                                        <span class="fw-semibold small">Admin</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Row 1: Full Name -->
@@ -149,7 +183,7 @@
                                     <option value="{{ $availableFarmer->full_name }}">
                                 @endforeach
                             </datalist>
-                            <div class="form-text">Start typing to pick from approved membership requests, or enter a name manually.</div>
+                            <div class="form-text" id="nameHint">Start typing to pick from approved membership requests, or enter a name manually.</div>
                             <div class="invalid-feedback">Please enter full name.</div>
                             <input type="hidden" name="farmer_id" id="farmerIdInput">
                         </div>
@@ -166,9 +200,9 @@
                             <div class="invalid-feedback">Please enter username.</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email <span class="text-muted">(optional)</span></label>
+                            <label class="form-label fw-semibold">Email <span id="emailRequiredMark" class="text-muted">(optional)</span></label>
                             <input type="email" class="form-control form-control-lg" placeholder="email@example.com" name="email" id="emailInput">
-                            <div class="invalid-feedback">Please enter email.</div>
+                            <div class="invalid-feedback">Please enter a valid email.</div>
                         </div>
                     </div>
 
@@ -234,6 +268,10 @@
                 </div>
 
                 <div class="confirm-account-summary border rounded-3 px-3">
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <span class="text-muted small"><i class="fas fa-id-badge text-primary me-2 fa-fw"></i>Account Type</span>
+                        <span class="fw-semibold text-end" id="confirmAccRole">-</span>
+                    </div>
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
                         <span class="text-muted small"><i class="fas fa-user text-primary me-2 fa-fw"></i>Full Name</span>
                         <span class="fw-semibold text-end" id="confirmAccName">-</span>
@@ -353,6 +391,37 @@
             <div class="modal-body">
                 <form id="editUserForm" class="needs-validation" novalidate>
                     <input type="hidden" id="editUserId" name="userId">
+
+                    <!-- Row 0: Account Type -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Account Type <span class="text-danger">*</span></label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="roleID" id="editRoleFarmer" value="3" autocomplete="off">
+                                    <label class="card border p-3 text-center cursor-pointer hover-border-primary mb-0 w-100" for="editRoleFarmer">
+                                        <i class="fas fa-seedling fs-4 d-block mb-1 text-muted"></i>
+                                        <span class="fw-semibold small">Farmer</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="roleID" id="editRoleManager" value="2" autocomplete="off">
+                                    <label class="card border p-3 text-center cursor-pointer hover-border-primary mb-0 w-100" for="editRoleManager">
+                                        <i class="fas fa-user-tie fs-4 d-block mb-1 text-muted"></i>
+                                        <span class="fw-semibold small">Manager</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="roleID" id="editRoleAdmin" value="1" autocomplete="off">
+                                    <label class="card border p-3 text-center cursor-pointer hover-border-primary mb-0 w-100" for="editRoleAdmin">
+                                        <i class="fas fa-user-shield fs-4 d-block mb-1 text-muted"></i>
+                                        <span class="fw-semibold small">Admin</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Row 1: Full Name -->
                     <div class="row mb-3">
                         <div class="col-12">
@@ -373,9 +442,9 @@
                             <div class="invalid-feedback">Please enter username.</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Email <span id="editEmailRequiredMark" class="text-danger">*</span></label>
                             <input type="email" class="form-control form-control-lg" placeholder="email@example.com" name="email" id="editEmail" required>
-                            <div class="invalid-feedback">Please enter email.</div>
+                            <div class="invalid-feedback">Please enter a valid email.</div>
                         </div>
                     </div>
 
@@ -500,6 +569,8 @@
         (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
     }
 
+    var ROLE_LABELS = { '1': 'Admin', '2': 'Manager', '3': 'Farmer' };
+
     // Enable Bootstrap validation
     (function() {
         'use strict';
@@ -537,7 +608,49 @@
     var farmerIdInput = document.getElementById('farmerIdInput');
     var phoneInput = document.getElementById('phoneInput');
     var usernameInput = document.getElementById('usernameInput');
+    var emailInput = document.getElementById('emailInput');
+    var emailRequiredMark = document.getElementById('emailRequiredMark');
+    var accountTypeLabel = document.getElementById('accountTypeLabel');
+    var nameHint = document.getElementById('nameHint');
+
+    function getSelectedRole() {
+        var checked = document.querySelector('#userForm input[name="roleID"]:checked');
+        return checked ? checked.value : '3';
+    }
+
+    // The Full Name field only suggests/links approved farmer records when
+    // creating a Farmer account; email is only required for Admin/Manager.
+    function applyRoleRules() {
+        var role = getSelectedRole();
+        var isFarmer = role === '3';
+
+        accountTypeLabel.textContent = ROLE_LABELS[role];
+
+        emailInput.required = !isFarmer;
+        emailRequiredMark.textContent = isFarmer ? '(optional)' : '*';
+        emailRequiredMark.className = isFarmer ? 'text-muted' : 'text-danger';
+
+        if (isFarmer) {
+            nameInput.setAttribute('list', 'approvedFarmersList');
+            nameHint.style.display = '';
+        } else {
+            nameInput.removeAttribute('list');
+            nameHint.style.display = 'none';
+            farmerIdInput.value = '';
+        }
+    }
+
+    document.querySelectorAll('#userForm input[name="roleID"]').forEach(function(input) {
+        input.addEventListener('change', applyRoleRules);
+    });
+    applyRoleRules();
+
     nameInput.addEventListener('input', function() {
+        if (getSelectedRole() !== '3') {
+            farmerIdInput.value = '';
+            return;
+        }
+
         var match = approvedFarmersByName[nameInput.value.trim().toLowerCase()];
         if (match) {
             farmerIdInput.value = match.id;
@@ -553,6 +666,7 @@
         form.reset();
         form.classList.remove('was-validated');
         farmerIdInput.value = '';
+        applyRoleRules();
     });
 
     // Toggle password visibility
@@ -578,9 +692,10 @@
 
         var statusSelect = form.querySelector('[name="status"]');
 
+        document.getElementById('confirmAccRole').textContent = ROLE_LABELS[getSelectedRole()];
         document.getElementById('confirmAccName').textContent = nameInput.value.trim();
         document.getElementById('confirmAccUsername').textContent = '@' + usernameInput.value.trim();
-        document.getElementById('confirmAccEmail').textContent = document.getElementById('emailInput').value.trim() || 'Not provided';
+        document.getElementById('confirmAccEmail').textContent = emailInput.value.trim() || 'Not provided';
         document.getElementById('confirmAccPhone').textContent = phoneInput.value.trim() || 'Not provided';
         document.getElementById('confirmAccStatus').textContent = statusSelect.options[statusSelect.selectedIndex].text;
         document.getElementById('confirmAccLinkNote').style.display = farmerIdInput.value ? 'flex' : 'none';
@@ -595,17 +710,12 @@
 
     // Form submission function
     function submitUserForm() {
-        console.log('submitUserForm called');
         var form = document.getElementById('userForm');
-        console.log('Form found:', !!form);
 
         if (!form.checkValidity()) {
-            console.log('Form validation failed');
             form.classList.add('was-validated');
             return;
         }
-
-        console.log('Form validation passed');
 
         var formData = new FormData(form);
         var submitBtn = document.getElementById('submitUserBtn');
@@ -613,12 +723,7 @@
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
 
-        var url = '{{ route("user.store") }}';
-        console.log('Submitting to:', url);
-        console.log('CSRF Token:', '{{ csrf_token() }}');
-        console.log('Form data:', Object.fromEntries(formData));
-
-        fetch(url, {
+        fetch('{{ route("admin.user.store") }}', {
             method: 'POST',
             body: formData,
             headers: {
@@ -626,14 +731,11 @@
             }
         })
         .then(function(response) {
-            console.log('Response status:', response.status);
-            return response.json().catch(function(err) {
-                console.log('JSON parse error:', err);
+            return response.json().catch(function() {
                 return { success: false, message: 'Unknown error', errors: {} };
             });
         })
         .then(function(data) {
-            console.log('Full Response data:', JSON.stringify(data, null, 2));
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
 
@@ -686,6 +788,7 @@
                 phone.includes(searchTerm);
 
             var matchesRole = roleValue === '' ||
+                (roleValue === '1' && role === 'Admin') ||
                 (roleValue === '2' && role === 'Manager') ||
                 (roleValue === '3' && role === 'Farmer');
 
@@ -714,7 +817,7 @@
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
 
-            fetch('/manager/user-management/' + userId + '/archive', {
+            fetch('/admin/user-management/' + userId + '/archive', {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -742,7 +845,7 @@
 
     // View User Function
     function viewUser(userId) {
-        fetch('/manager/user-management/' + userId, {
+        fetch('/admin/user-management/' + userId, {
             method: 'GET',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -759,7 +862,7 @@
                 document.getElementById('viewUsername').textContent = '@' + user.username;
                 document.getElementById('viewEmail').textContent = user.email || 'N/A';
                 document.getElementById('viewPhone').textContent = user.Phonenumber || 'N/A';
-                document.getElementById('viewRole').textContent = user.roleID == 2 ? 'Manager' : 'Farmer';
+                document.getElementById('viewRole').textContent = ROLE_LABELS[String(user.roleID)] || 'Farmer';
                 document.getElementById('viewStatus').textContent = user.status.charAt(0).toUpperCase() + user.status.slice(1);
                 document.getElementById('viewUserId').textContent = 'USR-' + String(user.id).padStart(3, '0');
                 document.getElementById('viewCreatedAt').textContent = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -776,9 +879,26 @@
         });
     }
 
+    // Applies the email-required rule to the Edit form based on its selected role.
+    function applyEditRoleRules() {
+        var checked = document.querySelector('#editUserForm input[name="roleID"]:checked');
+        var role = checked ? checked.value : '3';
+        var isFarmer = role === '3';
+        var editEmail = document.getElementById('editEmail');
+        var mark = document.getElementById('editEmailRequiredMark');
+
+        editEmail.required = !isFarmer;
+        mark.textContent = isFarmer ? '(optional)' : '*';
+        mark.className = isFarmer ? 'text-muted' : 'text-danger';
+    }
+
+    document.querySelectorAll('#editUserForm input[name="roleID"]').forEach(function(input) {
+        input.addEventListener('change', applyEditRoleRules);
+    });
+
     // Edit User Function
     function editUser(userId) {
-        fetch('/manager/user-management/' + userId, {
+        fetch('/admin/user-management/' + userId, {
             method: 'GET',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -796,6 +916,12 @@
                 document.getElementById('editEmail').value = user.email || '';
                 document.getElementById('editPhone').value = user.Phonenumber || '';
                 document.getElementById('editStatus').value = user.status;
+
+                var roleRadio = document.getElementById(
+                    user.roleID == 1 ? 'editRoleAdmin' : (user.roleID == 2 ? 'editRoleManager' : 'editRoleFarmer')
+                );
+                roleRadio.checked = true;
+                applyEditRoleRules();
 
                 var editModal = new bootstrap.Modal(document.getElementById('editModal'));
                 editModal.show();
@@ -827,7 +953,7 @@
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
 
-        fetch('/manager/user-management/' + userId, {
+        fetch('/admin/user-management/' + userId, {
             method: 'POST',
             body: formData,
             headers: {

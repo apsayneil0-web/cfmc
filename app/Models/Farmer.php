@@ -26,6 +26,7 @@ class Farmer extends Model
         'rejection_reason',
         'documents_path',
         'user_id',
+        'account_user_id',
     ];
 
     /**
@@ -82,5 +83,13 @@ class Farmer extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the login account linked to this farmer's membership record.
+     */
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'account_user_id');
     }
 }

@@ -48,6 +48,11 @@
                     View Schedule
                 </a>
 
+                <a href="{{ route('admin.user-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.user-management') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-users-cog w-5"></i>
+                    User Management
+                </a>
+
                 <hr class="my-2 text-gray-200">
 
                 <button onclick="confirmLogout()" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger w-100 border-0 bg-transparent">

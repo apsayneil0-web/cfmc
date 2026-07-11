@@ -107,19 +107,19 @@
                                     <label class="form-label fw-semibold small">Reason for Rejection <span class="text-muted">(required if rejecting)</span></label>
                                     <textarea name="rejection_reason" class="form-control" rows="2" placeholder="Explain why this application does not meet the cooperative's requirements..."></textarea>
                                 </form>
+                                <form id="approveForm{{ $application->id }}" action="{{ route('admin.membership-approval.approve', $application->id) }}" method="POST" class="d-none">
+                                    @csrf
+                                    @method('PATCH')
+                                </form>
                             </div>
                             <div class="modal-footer bg-light">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                <button type="submit" form="rejectForm{{ $application->id }}" class="btn btn-danger">
+                                <button type="button" class="btn btn-danger" onclick="confirmMembershipAction('reject', {{ $application->id }}, {{ Js::from($application->full_name) }})">
                                     <i class="fas fa-times me-1"></i> Reject
                                 </button>
-                                <form action="{{ route('admin.membership-approval.approve', $application->id) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-check me-1"></i> Approve
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-success" onclick="confirmMembershipAction('approve', {{ $application->id }}, {{ Js::from($application->full_name) }})">
+                                    <i class="fas fa-check me-1"></i> Approve
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -133,4 +133,77 @@
         </table>
     </div>
 </div>
+
+<!-- Approve/Reject Confirmation Modal -->
+<div class="modal fade" id="actionConfirmModal" tabindex="-1" aria-labelledby="actionConfirmTitle" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 pb-0 pt-3 px-3">
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 pb-4 pt-0 text-center">
+                <div class="action-confirm-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3" id="actionConfirmBadge">
+                    <i class="fas" id="actionConfirmIcon"></i>
+                </div>
+                <h5 class="fw-bold mb-2" id="actionConfirmTitle">Confirm Action</h5>
+                <p class="text-muted mb-4" id="actionConfirmMessage">-</p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary flex-fill py-2" data-bs-dismiss="modal">
+                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn flex-fill py-2" id="actionConfirmBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .action-confirm-icon-badge {
+        width: 64px;
+        height: 64px;
+        font-size: 1.75rem;
+    }
+    .action-confirm-icon-badge.success {
+        background-color: var(--brand-success-light);
+        color: var(--brand-success);
+    }
+    .action-confirm-icon-badge.danger {
+        background-color: var(--brand-danger-light);
+        color: var(--brand-danger);
+    }
+</style>
+
+<script>
+    var pendingMembershipAction = null;
+
+    // Shows a review step before an approve/reject form is actually submitted.
+    function confirmMembershipAction(type, applicationId, applicantName) {
+        pendingMembershipAction = { type: type, id: applicationId };
+        var isApprove = type === 'approve';
+
+        document.getElementById('actionConfirmBadge').className =
+            'action-confirm-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3 ' + (isApprove ? 'success' : 'danger');
+        document.getElementById('actionConfirmIcon').className = 'fas ' + (isApprove ? 'fa-check-circle' : 'fa-times-circle');
+        document.getElementById('actionConfirmTitle').textContent = isApprove ? 'Confirm Approval' : 'Confirm Rejection';
+        document.getElementById('actionConfirmMessage').textContent = 'Are you sure you want to ' + (isApprove ? 'approve' : 'reject') +
+            ' ' + applicantName + '\'s membership application? This action cannot be undone.';
+
+        var confirmBtn = document.getElementById('actionConfirmBtn');
+        confirmBtn.className = 'btn flex-fill py-2 ' + (isApprove ? 'btn-success' : 'btn-danger');
+        confirmBtn.innerHTML = isApprove
+            ? '<i class="fas fa-check me-2"></i>Yes, Approve'
+            : '<i class="fas fa-times me-2"></i>Yes, Reject';
+
+        new bootstrap.Modal(document.getElementById('actionConfirmModal')).show();
+    }
+
+    document.getElementById('actionConfirmBtn').addEventListener('click', function() {
+        if (!pendingMembershipAction) {
+            return;
+        }
+        var formId = (pendingMembershipAction.type === 'approve' ? 'approveForm' : 'rejectForm') + pendingMembershipAction.id;
+        document.getElementById(formId).submit();
+    });
+</script>
 @endsection

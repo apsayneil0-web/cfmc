@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MembershipApprovalController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController;
 use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
 use App\Http\Controllers\Farmer\LoanAppointmentController;
@@ -33,6 +34,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/schedule', function () {
         return view('admin.schedule');
     })->name('admin.schedule');
+
+    Route::get('/admin/user-management', [AdminUserController::class, 'index'])->name('admin.user-management');
+    Route::post('/admin/user-management', [AdminUserController::class, 'store'])->name('admin.user.store');
+    Route::patch('/admin/user-management/{user}/archive', [AdminUserController::class, 'archive'])->name('admin.user.archive');
+    Route::get('/admin/user-management/{user}', [AdminUserController::class, 'show'])->name('admin.user.show');
+    Route::put('/admin/user-management/{user}', [AdminUserController::class, 'update'])->name('admin.user.update');
 
     // Manager Routes
     Route::get('/manager/dashboard', function () {
