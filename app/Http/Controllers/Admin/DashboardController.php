@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Farmer;
+use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -21,13 +22,21 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $month = now()->startOfMonth();
+        $calendarDays = ScheduleRequest::calendarForMonth($month);
+        $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
+        $daysInMonth = $month->daysInMonth;
+
         return view('admin.dashboard', compact(
             'totalFarmers',
             'pendingMembership',
             'approvedFarmers',
             'archivedFarmers',
             'rejectedFarmers',
-            'recentApplications'
+            'recentApplications',
+            'calendarDays',
+            'firstWeekday',
+            'daysInMonth'
         ));
     }
 }

@@ -582,6 +582,168 @@ body.bg-light {
 }
 
 /* -------------------------------------------------------------------------
+   Schedule calendar
+   Full-size grid scrolls horizontally below its minimum column width rather
+   than squishing day cells into unreadable slivers. The "compact" variant
+   (used inside narrow dashboard cards, and automatically on phone-width
+   viewports) drops the min-width entirely and swaps booking text for a
+   status dot, so the full 7-column month grid always fits without scrolling.
+   ------------------------------------------------------------------------- */
+.calendar-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -0.25rem;
+    padding: 0 0.25rem 0.25rem;
+}
+.calendar-grid {
+    min-width: 560px;
+}
+.calendar-grid.is-compact {
+    min-width: 0;
+}
+.calendar-grid-head,
+.calendar-grid-body {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+.calendar-grid-head {
+    margin-bottom: 0.5rem;
+}
+.calendar-day-label {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.4rem 0;
+}
+.calendar-cell {
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    min-width: 0;
+}
+.calendar-cell-empty {
+    background: transparent;
+    border-color: transparent;
+}
+.calendar-cell.has-bookings {
+    background-color: var(--brand-surface-muted);
+}
+.calendar-cell-date {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 0;
+}
+.calendar-booking {
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.4rem;
+    line-height: 1.25;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.calendar-booking-dot {
+    display: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+.calendar-booking-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.calendar-booking-time {
+    font-size: 0.7rem;
+    margin: 0;
+    opacity: 0.85;
+    white-space: nowrap;
+}
+.calendar-booking-approved {
+    background-color: var(--brand-success-light);
+    color: var(--brand-success-hover);
+}
+.calendar-booking-approved .calendar-booking-dot {
+    background-color: var(--brand-success-hover);
+}
+.calendar-booking-booked {
+    background-color: var(--brand-danger-light);
+    color: var(--brand-danger-hover);
+}
+.calendar-booking-booked .calendar-booking-dot {
+    background-color: var(--brand-danger-hover);
+}
+.calendar-open-badge {
+    font-size: 0.65rem;
+}
+
+/* Compact rendering: forced via .is-compact (dashboard widgets), and
+   automatically below the sm breakpoint for the full-size calendars too. */
+.is-compact .calendar-day-label {
+    font-size: 0.65rem;
+    padding: 0.3rem 0;
+}
+.is-compact .calendar-cell {
+    min-height: 46px !important;
+    padding: 0.3rem;
+}
+.is-compact .calendar-cell-date {
+    font-size: 0.65rem;
+}
+.is-compact .calendar-booking {
+    background: transparent !important;
+    padding: 0;
+    justify-content: center;
+}
+.is-compact .calendar-booking-dot {
+    display: block;
+}
+.is-compact .calendar-booking-text,
+.is-compact .calendar-open-badge {
+    display: none;
+}
+@media (max-width: 575.98px) {
+    .calendar-grid {
+        min-width: 0;
+    }
+    .calendar-day-label {
+        font-size: 0.65rem;
+        padding: 0.3rem 0;
+    }
+    .calendar-cell {
+        min-height: 46px !important;
+        padding: 0.3rem;
+    }
+    .calendar-cell-date {
+        font-size: 0.7rem;
+    }
+    .calendar-booking {
+        background: transparent !important;
+        padding: 0;
+        justify-content: center;
+    }
+    .calendar-booking-dot {
+        display: block;
+    }
+    .calendar-booking-text,
+    .calendar-open-badge {
+        display: none;
+    }
+}
+
+/* -------------------------------------------------------------------------
    Motion
    ------------------------------------------------------------------------- */
 @keyframes fade-in-up {

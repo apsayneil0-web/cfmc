@@ -103,4 +103,17 @@
         </div>
     </div>
 </div>
+
+<!-- Machine Schedule Calendar -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-0">Machine Schedule &mdash; {{ now()->format('F Y') }}</h3>
+            <p class="text-sm text-muted mb-0">Approved machinery bookings for the current month.</p>
+        </div>
+        <a href="{{ route('manager.machine-schedule') }}" class="text-sm text-brand text-decoration-none">Full calendar</a>
+    </div>
+    <x-schedule-calendar :calendar-days="$calendarDays" :first-weekday="$firstWeekday" :days-in-month="$daysInMonth"
+        :show-names="true" min-height="90px" />
+</div>
 @endsection

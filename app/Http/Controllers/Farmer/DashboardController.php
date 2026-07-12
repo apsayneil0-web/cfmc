@@ -27,12 +27,20 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $month = now()->startOfMonth();
+        $calendarDays = ScheduleRequest::calendarForMonth($month);
+        $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
+        $daysInMonth = $month->daysInMonth;
+
         return view('farmer.dashboard', compact(
             'pendingSchedules',
             'approvedSchedules',
             'deniedSchedules',
             'upcomingAppointments',
-            'recentSchedules'
+            'recentSchedules',
+            'calendarDays',
+            'firstWeekday',
+            'daysInMonth'
         ));
     }
 }

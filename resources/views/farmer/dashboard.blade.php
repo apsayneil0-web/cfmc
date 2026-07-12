@@ -17,26 +17,37 @@
     <x-stat-card label="Upcoming Loan Appointments" value="{{ $upcomingAppointments }}" icon="fa-hand-holding-usd" color="info" />
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-0">Recent Schedule Requests</h3>
-        <a href="{{ route('farmer.schedule') }}" class="text-sm text-primary text-decoration-none">Request a schedule</a>
-    </div>
-    <div class="space-y-3">
-        @forelse($recentSchedules as $schedule)
-        <div class="flex items-center gap-3 pb-3 border-b border-gray-100">
-            <div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center">
-                <i class="fas fa-tractor text-brand"></i>
-            </div>
-            <div class="flex-1">
-                <p class="text-sm font-medium text-gray-900 mb-0">{{ $schedule->machinery }} &middot; {{ $schedule->land_size }} ha</p>
-                <p class="text-xs text-gray-500 mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p>
-            </div>
-            <x-status-badge :status="ucfirst($schedule->status)" />
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-0">Recent Schedule Requests</h3>
+            <a href="{{ route('farmer.schedule') }}" class="text-sm text-primary text-decoration-none">Request a schedule</a>
         </div>
-        @empty
-        <p class="text-sm text-muted mb-0">You haven't requested any machinery schedules yet.</p>
-        @endforelse
+        <div class="space-y-3">
+            @forelse($recentSchedules as $schedule)
+            <div class="flex items-center gap-3 pb-3 border-b border-gray-100">
+                <div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center">
+                    <i class="fas fa-tractor text-brand"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900 mb-0">{{ $schedule->machinery }} &middot; {{ $schedule->land_size }} ha</p>
+                    <p class="text-xs text-gray-500 mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p>
+                </div>
+                <x-status-badge :status="ucfirst($schedule->status)" />
+            </div>
+            @empty
+            <p class="text-sm text-muted mb-0">You haven't requested any machinery schedules yet.</p>
+            @endforelse
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ now()->format('F Y') }}</h3>
+            <a href="{{ route('farmer.schedule') }}" class="text-sm text-primary text-decoration-none">Full calendar</a>
+        </div>
+        <x-schedule-calendar :calendar-days="$calendarDays" :first-weekday="$firstWeekday" :days-in-month="$daysInMonth"
+            :show-names="false" :compact="true" min-height="46px" />
     </div>
 </div>
 @endsection

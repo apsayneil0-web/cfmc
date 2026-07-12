@@ -11,6 +11,9 @@ use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController
 use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
 use App\Http\Controllers\Farmer\LoanAppointmentController;
 use App\Http\Controllers\Farmer\ComplaintController;
+use App\Http\Controllers\Manager\ScheduleApprovalController;
+use App\Http\Controllers\Manager\MachineScheduleController;
+use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -42,9 +45,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/user-management/{user}', [AdminUserController::class, 'update'])->name('admin.user.update');
 
     // Manager Routes
-    Route::get('/manager/dashboard', function () {
-        return view('manager.dashboard');
-    })->name('manager.dashboard');
+    Route::get('/manager/dashboard', [ManagerDashboardController::class, 'index'])->name('manager.dashboard');
 
     Route::get('/manager/membership', [MembershipController::class, 'index'])->name('manager.membership');
     Route::post('/manager/membership', [MembershipController::class, 'store'])->name('manager.membership.store');
@@ -56,13 +57,15 @@ Route::middleware(['auth'])->group(function () {
         return view('manager.farmer-profile');
     })->name('manager.farmer-profile');
 
-    Route::get('/manager/schedule-approval', function () {
-        return view('manager.schedule-approval');
-    })->name('manager.schedule-approval');
+    Route::get('/manager/schedule-approval', [ScheduleApprovalController::class, 'index'])->name('manager.schedule-approval');
+    Route::patch('/manager/schedule-approval/{schedule}/approve', [ScheduleApprovalController::class, 'approve'])->name('manager.schedule-approval.approve');
+    Route::patch('/manager/schedule-approval/{schedule}/deny', [ScheduleApprovalController::class, 'deny'])->name('manager.schedule-approval.deny');
 
-    Route::get('/manager/machine-schedule', function () {
-        return view('manager.machine-schedule');
-    })->name('manager.machine-schedule');
+    Route::get('/manager/machine-schedule', [MachineScheduleController::class, 'index'])->name('manager.machine-schedule');
+    Route::post('/manager/machine-schedule', [MachineScheduleController::class, 'store'])->name('manager.machine-schedule.store');
+    Route::put('/manager/machine-schedule/{schedule}', [MachineScheduleController::class, 'update'])->name('manager.machine-schedule.update');
+    Route::patch('/manager/machine-schedule/{schedule}/archive', [MachineScheduleController::class, 'archive'])->name('manager.machine-schedule.archive');
+    Route::patch('/manager/machine-schedule/{schedule}/complete', [MachineScheduleController::class, 'complete'])->name('manager.machine-schedule.complete');
 
     Route::get('/manager/financial', function () {
         return view('manager.financial');
@@ -112,6 +115,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/farmer/schedule', [FarmerScheduleController::class, 'index'])->name('farmer.schedule');
     Route::post('/farmer/schedule', [FarmerScheduleController::class, 'store'])->name('farmer.schedule.store');
+    Route::post('/farmer/schedule/{schedule}/reschedule', [FarmerScheduleController::class, 'reschedule'])->name('farmer.schedule.reschedule');
 
     Route::get('/farmer/loan-appointment', [LoanAppointmentController::class, 'index'])->name('farmer.loan-appointment');
     Route::post('/farmer/loan-appointment', [LoanAppointmentController::class, 'store'])->name('farmer.loan-appointment.store');
