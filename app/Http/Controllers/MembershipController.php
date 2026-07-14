@@ -72,20 +72,15 @@ class MembershipController extends Controller
             'crop_id' => 'required|exists:crops,id',
             'land_area' => 'required|numeric|min:0',
             'documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'certificate_of_title' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'barangay_certification' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'rsbsa' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
             'barangay' => 'nullable|string|max:255',
         ], [
             'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
         ]);
-
-        // Handle document upload
-        $documentsPath = null;
-        if ($request->hasFile('documents')) {
-            $document = $request->file('documents');
-            $documentName = time() . '_' . $document->getClientOriginalName();
-            $documentsPath = $document->storeAs('farmer_documents', $documentName, 'public');
-        }
 
         // Create the farmer record
         $farmer = Farmer::create([
@@ -96,7 +91,10 @@ class MembershipController extends Controller
             'contact_number' => $validated['contact_number'],
             'crop_id' => $validated['crop_id'],
             'land_area' => $validated['land_area'],
-            'documents_path' => $documentsPath,
+            'documents_path' => $this->storeFarmerDocument($request, 'documents'),
+            'certificate_of_title_path' => $this->storeFarmerDocument($request, 'certificate_of_title'),
+            'barangay_certification_path' => $this->storeFarmerDocument($request, 'barangay_certification'),
+            'rsbsa_path' => $this->storeFarmerDocument($request, 'rsbsa'),
             'province' => $validated['province'],
             'municipality' => $validated['municipality'],
             'barangay' => $validated['barangay'] ?? null,
@@ -127,7 +125,11 @@ class MembershipController extends Controller
             'land_area' => 'required|numeric|min:0',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
+            'barangay' => 'nullable|string|max:255',
             'documents' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'certificate_of_title' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'barangay_certification' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'rsbsa' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ], [
             'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
         ]);
@@ -142,32 +144,17 @@ class MembershipController extends Controller
             'land_area' => $validated['land_area'],
             'province' => $validated['province'],
             'municipality' => $validated['municipality'],
+            'barangay' => $validated['barangay'] ?? null,
         ];
 
-        // Handle document removal
-        if ($request->has('remove_document') && $request->input('remove_document') == '1') {
-            if ($farmer->documents_path) {
-                Storage::disk('public')->delete($farmer->documents_path);
-                $updateData['documents_path'] = null;
-            }
-        }
-
-        // Handle new document upload
-        if ($request->hasFile('documents')) {
-            // Delete old document if exists
-            if ($farmer->documents_path) {
-                Storage::disk('public')->delete($farmer->documents_path);
-            }
-
-            // Upload new document
-            $document = $request->file('documents');
-            $documentName = time() . '_' . $document->getClientOriginalName();
-            $updateData['documents_path'] = $document->storeAs('farmer_documents', $documentName, 'public');
-        }
+        $this->applyDocumentUpdate($request, $farmer, $updateData, 'documents', 'documents_path');
+        $this->applyDocumentUpdate($request, $farmer, $updateData, 'certificate_of_title', 'certificate_of_title_path');
+        $this->applyDocumentUpdate($request, $farmer, $updateData, 'barangay_certification', 'barangay_certification_path');
+        $this->applyDocumentUpdate($request, $farmer, $updateData, 'rsbsa', 'rsbsa_path');
 
         $farmer->update($updateData);
 
-        return redirect()->route('manager.membership')
+        return redirect()->back()
             ->with('success', 'Farmer updated successfully!');
     }
 
@@ -178,7 +165,7 @@ class MembershipController extends Controller
     {
         $farmer->update(['status' => 'archived']);
 
-        return redirect()->route('manager.membership')
+        return redirect()->back()
             ->with('success', 'Farmer archived successfully!');
     }
 
@@ -191,5 +178,39 @@ class MembershipController extends Controller
 
         return redirect()->route('manager.membership', ['status' => 'archived'])
             ->with('success', 'Farmer unarchived successfully!');
+    }
+
+    /**
+     * Store an uploaded farmer document under the given form field, if present.
+     */
+    private function storeFarmerDocument(Request $request, string $field): ?string
+    {
+        if (! $request->hasFile($field)) {
+            return null;
+        }
+
+        $document = $request->file($field);
+        $documentName = time().'_'.$document->getClientOriginalName();
+
+        return $document->storeAs('farmer_documents', $documentName, 'public');
+    }
+
+    /**
+     * Apply a removal and/or replacement for one of a farmer's document fields.
+     */
+    private function applyDocumentUpdate(Request $request, Farmer $farmer, array &$updateData, string $field, string $pathColumn): void
+    {
+        if ($request->boolean('remove_'.$field) && $farmer->{$pathColumn}) {
+            Storage::disk('public')->delete($farmer->{$pathColumn});
+            $updateData[$pathColumn] = null;
+        }
+
+        if ($request->hasFile($field)) {
+            if ($farmer->{$pathColumn}) {
+                Storage::disk('public')->delete($farmer->{$pathColumn});
+            }
+
+            $updateData[$pathColumn] = $this->storeFarmerDocument($request, $field);
+        }
     }
 }

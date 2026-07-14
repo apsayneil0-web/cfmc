@@ -206,19 +206,11 @@
                         </div>
                     </div>
 
-                    <!-- Row 3: Phone & Status -->
+                    <!-- Row 3: Phone -->
                     <div class="row mb-3">
-                        <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="col-12">
                             <label class="form-label fw-semibold">Phone Number</label>
                             <input type="tel" class="form-control form-control-lg" placeholder="0912-345-6789" name="Phonenumber" id="phoneInput">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-lg" name="status" required>
-                                <option value="active" selected>Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                            <div class="invalid-feedback">Please select status.</div>
                         </div>
                     </div>
 
@@ -290,7 +282,7 @@
                     </div>
                     <div class="d-flex align-items-center justify-content-between py-2">
                         <span class="text-muted small"><i class="fas fa-toggle-on text-primary me-2 fa-fw"></i>Status</span>
-                        <span class="fw-semibold text-end" id="confirmAccStatus">-</span>
+                        <span class="fw-semibold text-end">Inactive until first login</span>
                     </div>
                 </div>
 
@@ -690,14 +682,11 @@
             return;
         }
 
-        var statusSelect = form.querySelector('[name="status"]');
-
         document.getElementById('confirmAccRole').textContent = ROLE_LABELS[getSelectedRole()];
         document.getElementById('confirmAccName').textContent = nameInput.value.trim();
         document.getElementById('confirmAccUsername').textContent = '@' + usernameInput.value.trim();
         document.getElementById('confirmAccEmail').textContent = emailInput.value.trim() || 'Not provided';
         document.getElementById('confirmAccPhone').textContent = phoneInput.value.trim() || 'Not provided';
-        document.getElementById('confirmAccStatus').textContent = statusSelect.options[statusSelect.selectedIndex].text;
         document.getElementById('confirmAccLinkNote').style.display = farmerIdInput.value ? 'flex' : 'none';
 
         new bootstrap.Modal(document.getElementById('confirmCreateModal')).show();

@@ -32,8 +32,21 @@ class AuthenticatedSessionController extends Controller
         if (Auth::attempt([$loginField => $credentials['username'], 'password' => $credentials['password']], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // Redirect based on user role
+            // The system marks an account active the moment it's actually used to
+            // log in, rather than having that chosen manually at creation. Accounts
+            // an admin/manager has locked or archived stay that way even after a
+            // successful login.
             $user = Auth::user();
+            if (! in_array($user->status, ['locked', 'archived'], true)) {
+                $user->update([
+                    'status' => 'active',
+                    'isloggedin' => true,
+                    'firstTimelogin' => false,
+                    'FailedLoginAttemps' => 0,
+                ]);
+            }
+
+            // Redirect based on user role
             switch ($user->roleID) {
                 case 1:
                     return redirect('/admin/dashboard');

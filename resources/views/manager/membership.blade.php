@@ -151,33 +151,42 @@
                                         <label class="text-muted small">Date Registered</label>
                                         <p class="fw-semibold mb-0">{{ $farmer->created_at->format('M d, Y') }}</p>
                                     </div>
+                                    @php
+                                        $viewDocumentFields = [
+                                            ['path' => 'documents_path', 'label' => 'Valid ID'],
+                                            ['path' => 'certificate_of_title_path', 'label' => 'Certificate of Title'],
+                                            ['path' => 'barangay_certification_path', 'label' => 'Barangay Certification of Land Possession'],
+                                            ['path' => 'rsbsa_path', 'label' => 'RSBSA Number/ID'],
+                                        ];
+                                    @endphp
+                                    @foreach($viewDocumentFields as $doc)
                                     <div class="col-12 mb-3">
-                                        <label class="text-muted small">Uploaded Document</label>
+                                        <label class="text-muted small">{{ $doc['label'] }}</label>
                                         <div class="mt-2">
-                                            @if($farmer->documents_path)
+                                            @if($farmer->{$doc['path']})
                                                 @php
-                                                    $extension = pathinfo($farmer->documents_path, PATHINFO_EXTENSION);
-                                                    $filename = basename($farmer->documents_path);
+                                                    $extension = pathinfo($farmer->{$doc['path']}, PATHINFO_EXTENSION);
+                                                    $filename = basename($farmer->{$doc['path']});
                                                 @endphp
                                                 @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                                    <a href="{{ asset('storage/' . $farmer->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                                         <i class="fas fa-image me-1"></i> View Image
                                                     </a>
-                                                    <a href="{{ asset('storage/' . $farmer->documents_path) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
                                                         <i class="fas fa-download me-1"></i> Download
                                                     </a>
                                                 @elseif($extension == 'pdf')
-                                                    <a href="{{ asset('storage/' . $farmer->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-danger">
                                                         <i class="fas fa-file-pdf me-1"></i> View PDF
                                                     </a>
-                                                    <a href="{{ asset('storage/' . $farmer->documents_path) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
                                                         <i class="fas fa-download me-1"></i> Download
                                                     </a>
                                                 @else
-                                                    <a href="{{ asset('storage/' . $farmer->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                                                         <i class="fas fa-file me-1"></i> View Document
                                                     </a>
-                                                    <a href="{{ asset('storage/' . $farmer->documents_path) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
                                                         <i class="fas fa-download me-1"></i> Download
                                                     </a>
                                                 @endif
@@ -186,6 +195,7 @@
                                             @endif
                                         </div>
                                     </div>
+                                    @endforeach
                                 </div>
                             </div>
                             <div class="modal-footer bg-light">
@@ -271,33 +281,39 @@
                                         </div>
                                     </div>
                                     <!-- Document Upload -->
+                                    @php
+                                        $editDocumentFields = [
+                                            ['field' => 'documents', 'path' => 'documents_path', 'label' => 'Upload Valid ID', 'prefix' => 'editDocument'],
+                                            ['field' => 'certificate_of_title', 'path' => 'certificate_of_title_path', 'label' => 'Upload Certificate of Title', 'prefix' => 'editCertificate'],
+                                            ['field' => 'barangay_certification', 'path' => 'barangay_certification_path', 'label' => 'Upload Barangay Certification of Land Possession', 'prefix' => 'editBarangay'],
+                                            ['field' => 'rsbsa', 'path' => 'rsbsa_path', 'label' => 'Upload RSBSA Number/ID', 'prefix' => 'editRsbsa'],
+                                        ];
+                                    @endphp
+                                    @foreach($editDocumentFields as $doc)
                                     <div class="mb-3">
-                                        <label class="form-label fw-semibold">Upload Required Documents</label>
-                                        <div class="border border-2 borderdashed rounded-3 p-3 text-center bg-light" id="editDocumentDropZone{{ $farmer->id }}">
-                                            <div id="editDocumentPreview{{ $farmer->id }}">
-                                                @if($farmer->documents_path)
+                                        <label class="form-label fw-semibold">{{ $doc['label'] }}</label>
+                                        <div class="border border-2 borderdashed rounded-3 p-3 text-center bg-light" id="{{ $doc['prefix'] }}DropZone{{ $farmer->id }}">
+                                            <div id="{{ $doc['prefix'] }}Preview{{ $farmer->id }}">
+                                                @if($farmer->{$doc['path']})
                                                     <div class="mb-2">
-                                                        @php
-                                                            $filename = basename($farmer->documents_path);
-                                                            $extension = pathinfo($farmer->documents_path, PATHINFO_EXTENSION);
-                                                        @endphp
-                                                        <span class="text-success"><i class="fas fa-check-circle"></i> Current: {{ $filename }}</span>
+                                                        <span class="text-success"><i class="fas fa-check-circle"></i> Current: {{ basename($farmer->{$doc['path']}) }}</span>
                                                     </div>
                                                 @endif
                                             </div>
                                             <i class="fas fa-cloud-upload-alt text-muted mb-2 d-block" style="font-size: 1.5rem;"></i>
                                             <p class="fw-medium text-dark mb-1 small">Click to upload or drag and drop</p>
                                             <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
-                                            <input type="file" name="documents" id="editDocumentsInput{{ $farmer->id }}" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
-                                            <div id="editDocumentFileName{{ $farmer->id }}" class="mt-2 text-success fw-medium"></div>
+                                            <input type="file" name="{{ $doc['field'] }}" id="{{ $doc['prefix'] }}Input{{ $farmer->id }}" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                            <div id="{{ $doc['prefix'] }}FileName{{ $farmer->id }}" class="mt-2 text-success fw-medium"></div>
                                         </div>
-                                        @if($farmer->documents_path)
+                                        @if($farmer->{$doc['path']})
                                         <div class="mt-2 form-check">
-                                            <input type="checkbox" class="form-check-input" id="removeDocument{{ $farmer->id }}" name="remove_document" value="1">
-                                            <label class="form-check-label text-danger" for="removeDocument{{ $farmer->id }}">Remove current document</label>
+                                            <input type="checkbox" class="form-check-input" id="remove_{{ $doc['field'] }}{{ $farmer->id }}" name="remove_{{ $doc['field'] }}" value="1">
+                                            <label class="form-check-label text-danger" for="remove_{{ $doc['field'] }}{{ $farmer->id }}">Remove current file</label>
                                         </div>
                                         @endif
                                     </div>
+                                    @endforeach
                                 </div>
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -587,8 +603,8 @@
 
                     <!-- Row 4: Upload Documents -->
                     <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Upload Required Documents <span class="text-danger">*</span></label>
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Upload Valid ID <span class="text-danger">*</span></label>
                             <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="documentDropZone">
                                 <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
                                 <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
@@ -597,6 +613,42 @@
                                 <div id="documentFileName" class="mt-2 text-success fw-medium"></div>
                             </div>
                             <div class="invalid-feedback">Please upload required documents.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Upload Certificate of Title <span class="text-danger">*</span></label>
+                            <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="certificateDropZone">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                <input type="file" name="certificate_of_title" id="certificateInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                <div id="certificateFileName" class="mt-2 text-success fw-medium"></div>
+                            </div>
+                            <div class="invalid-feedback">Please upload the certificate of title.</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Upload Barangay Certification of Land Possession <span class="text-danger">*</span></label>
+                            <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="barangayDropZone">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                <input type="file" name="barangay_certification" id="barangayInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                <div id="barangayFileName" class="mt-2 text-success fw-medium"></div>
+                            </div>
+                            <div class="invalid-feedback">Please upload the barangay certification of land possession.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Upload RSBSA Number/ID <span class="text-danger">*</span></label>
+                            <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="rsbsaDropZone">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                <input type="file" name="rsbsa" id="rsbsaInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                <div id="rsbsaFileName" class="mt-2 text-success fw-medium"></div>
+                            </div>
+                            <div class="invalid-feedback">Please upload the RSBSA number/ID.</div>
                         </div>
                     </div>
                 </form>
@@ -765,43 +817,46 @@
     });
 
     // Document Upload Preview
-    const documentDropZone = document.getElementById('documentDropZone');
-    const documentsInput = document.getElementById('documentsInput');
-    const documentFileName = document.getElementById('documentFileName');
+    function wireDocumentDropZone(dropZoneId, inputId, fileNameId) {
+        const dropZone = document.getElementById(dropZoneId);
+        const input = document.getElementById(inputId);
+        const fileNameDisplay = document.getElementById(fileNameId);
 
-    documentDropZone.addEventListener('click', function() {
-        documentsInput.click();
-    });
+        dropZone.addEventListener('click', function() {
+            input.click();
+        });
 
-    documentsInput.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            documentFileName.textContent = '<i class="fas fa-file"></i> ' + file.name;
-        } else {
-            documentFileName.textContent = '';
-        }
-    });
+        input.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            fileNameDisplay.innerHTML = file ? '<i class="fas fa-file"></i> ' + file.name : '';
+        });
 
-    // Drag and drop functionality
-    documentDropZone.addEventListener('dragover', function(event) {
-        event.preventDefault();
-        documentDropZone.classList.add('bg-white', 'border-success');
-    });
+        // Drag and drop functionality
+        dropZone.addEventListener('dragover', function(event) {
+            event.preventDefault();
+            dropZone.classList.add('bg-white', 'border-success');
+        });
 
-    documentDropZone.addEventListener('dragleave', function(event) {
-        event.preventDefault();
-        documentDropZone.classList.remove('bg-white', 'border-success');
-    });
+        dropZone.addEventListener('dragleave', function(event) {
+            event.preventDefault();
+            dropZone.classList.remove('bg-white', 'border-success');
+        });
 
-    documentDropZone.addEventListener('drop', function(event) {
-        event.preventDefault();
-        documentDropZone.classList.remove('bg-white', 'border-success');
-        const files = event.dataTransfer.files;
-        if (files.length > 0) {
-            documentsInput.files = files;
-            documentFileName.textContent = '<i class="fas fa-file"></i> ' + files[0].name;
-        }
-    });
+        dropZone.addEventListener('drop', function(event) {
+            event.preventDefault();
+            dropZone.classList.remove('bg-white', 'border-success');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                input.files = files;
+                fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + files[0].name;
+            }
+        });
+    }
+
+    wireDocumentDropZone('documentDropZone', 'documentsInput', 'documentFileName');
+    wireDocumentDropZone('certificateDropZone', 'certificateInput', 'certificateFileName');
+    wireDocumentDropZone('barangayDropZone', 'barangayInput', 'barangayFileName');
+    wireDocumentDropZone('rsbsaDropZone', 'rsbsaInput', 'rsbsaFileName');
 
     // Province Select Change Handler
     document.getElementById('provinceSelect').addEventListener('change', function() {
@@ -822,43 +877,41 @@
         }
     });
 
-    // Handle edit modal document uploads
-    document.querySelectorAll('[id^="editDocumentDropZone"]').forEach(function(dropZone) {
-        const farmerId = dropZone.id.replace('editDocumentDropZone', '');
-        const input = document.getElementById('editDocumentsInput' + farmerId);
-        const fileNameDisplay = document.getElementById('editDocumentFileName' + farmerId);
+    // Handle edit modal document uploads (one dropzone per document type, per farmer row)
+    ['editDocument', 'editCertificate', 'editBarangay', 'editRsbsa'].forEach(function(prefix) {
+        document.querySelectorAll('[id^="' + prefix + 'DropZone"]').forEach(function(dropZone) {
+            const farmerId = dropZone.id.replace(prefix + 'DropZone', '');
+            const input = document.getElementById(prefix + 'Input' + farmerId);
+            const fileNameDisplay = document.getElementById(prefix + 'FileName' + farmerId);
 
-        dropZone.addEventListener('click', function() {
-            input.click();
-        });
+            dropZone.addEventListener('click', function() {
+                input.click();
+            });
 
-        input.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + file.name;
-            } else {
-                fileNameDisplay.innerHTML = '';
-            }
-        });
+            input.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                fileNameDisplay.innerHTML = file ? '<i class="fas fa-file"></i> ' + file.name : '';
+            });
 
-        dropZone.addEventListener('dragover', function(event) {
-            event.preventDefault();
-            dropZone.classList.add('bg-white', 'border-success');
-        });
+            dropZone.addEventListener('dragover', function(event) {
+                event.preventDefault();
+                dropZone.classList.add('bg-white', 'border-success');
+            });
 
-        dropZone.addEventListener('dragleave', function(event) {
-            event.preventDefault();
-            dropZone.classList.remove('bg-white', 'border-success');
-        });
+            dropZone.addEventListener('dragleave', function(event) {
+                event.preventDefault();
+                dropZone.classList.remove('bg-white', 'border-success');
+            });
 
-        dropZone.addEventListener('drop', function(event) {
-            event.preventDefault();
-            dropZone.classList.remove('bg-white', 'border-success');
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                input.files = files;
-                fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + files[0].name;
-            }
+            dropZone.addEventListener('drop', function(event) {
+                event.preventDefault();
+                dropZone.classList.remove('bg-white', 'border-success');
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + files[0].name;
+                }
+            });
         });
     });
 
@@ -939,7 +992,9 @@
             const form = document.getElementById('membershipForm');
             form.reset();
             form.classList.remove('was-validated');
-            document.getElementById('documentFileName').textContent = '';
+            ['documentFileName', 'certificateFileName', 'barangayFileName', 'rsbsaFileName'].forEach(function(id) {
+                document.getElementById(id).textContent = '';
+            });
             document.getElementById('municipalitySelect').innerHTML = '<option value="" selected disabled>Select Municipality</option>';
         });
 

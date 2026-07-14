@@ -73,6 +73,11 @@
                     Loan Management
                 </a>
 
+                <a href="{{ route('manager.loan-appointment') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.loan-appointment') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-calendar-alt w-5"></i>
+                    Loan Appointments
+                </a>
+
                 <a href="{{ route('manager.payment') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.payment') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-money-bill-wave w-5"></i>
                     Payments

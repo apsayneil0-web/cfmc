@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Farmer extends Model
@@ -25,6 +26,9 @@ class Farmer extends Model
         'status',
         'rejection_reason',
         'documents_path',
+        'certificate_of_title_path',
+        'barangay_certification_path',
+        'rsbsa_path',
         'user_id',
         'account_user_id',
     ];
@@ -91,5 +95,13 @@ class Farmer extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(User::class, 'account_user_id');
+    }
+
+    /**
+     * Get the loan requests submitted on behalf of this farmer.
+     */
+    public function loanRequests(): HasMany
+    {
+        return $this->hasMany(LoanRequest::class);
     }
 }

@@ -85,18 +85,41 @@
                                         <label class="text-muted small">Date Applied</label>
                                         <p class="fw-semibold mb-0">{{ $application->created_at->format('M d, Y') }}</p>
                                     </div>
+                                    @php
+                                        $reviewDocumentFields = [
+                                            ['path' => 'documents_path', 'label' => 'Valid ID'],
+                                            ['path' => 'certificate_of_title_path', 'label' => 'Certificate of Title'],
+                                            ['path' => 'barangay_certification_path', 'label' => 'Barangay Certification of Land Possession'],
+                                            ['path' => 'rsbsa_path', 'label' => 'RSBSA Number/ID'],
+                                        ];
+                                    @endphp
+                                    @foreach($reviewDocumentFields as $doc)
                                     <div class="col-12 mb-3">
-                                        <label class="text-muted small">Uploaded Document</label>
+                                        <label class="text-muted small">{{ $doc['label'] }}</label>
                                         <div class="mt-2">
-                                            @if($application->documents_path)
-                                                <a href="{{ asset('storage/' . $application->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-file me-1"></i> View Document
-                                                </a>
+                                            @if($application->{$doc['path']})
+                                                @php
+                                                    $extension = pathinfo($application->{$doc['path']}, PATHINFO_EXTENSION);
+                                                @endphp
+                                                @if(in_array($extension, ['jpg', 'jpeg', 'png']))
+                                                    <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-image me-1"></i> View Image
+                                                    </a>
+                                                @elseif($extension == 'pdf')
+                                                    <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-file-pdf me-1"></i> View PDF
+                                                    </a>
+                                                @else
+                                                    <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="fas fa-file me-1"></i> View Document
+                                                    </a>
+                                                @endif
                                             @else
                                                 <span class="text-muted">No document uploaded</span>
                                             @endif
                                         </div>
                                     </div>
+                                    @endforeach
                                 </div>
 
                                 <hr>

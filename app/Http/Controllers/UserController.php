@@ -22,7 +22,6 @@ class UserController extends Controller
             'email' => 'nullable|email',
             'password' => 'required|string|min:6',
             'Phonenumber' => 'nullable|string|max:20',
-            'status' => 'required|in:active,inactive',
             'farmer_id' => 'nullable|integer|exists:farmers,id',
         ]);
 
@@ -48,7 +47,8 @@ class UserController extends Controller
                 'username' => $request->username,
                 'email' => $email,
                 'password' => Hash::make($request->password),
-                'status' => $request->status,
+                // The system marks accounts active automatically once they actually log in.
+                'status' => 'inactive',
                 'roleID' => $roleID,
                 'Phonenumber' => $request->Phonenumber ?? null,
                 'firstTimelogin' => true,

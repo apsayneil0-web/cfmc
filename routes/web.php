@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MembershipApprovalController;
+use App\Http\Controllers\Admin\LoanApprovalController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController;
 use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
@@ -14,6 +15,11 @@ use App\Http\Controllers\Farmer\ComplaintController;
 use App\Http\Controllers\Manager\ScheduleApprovalController;
 use App\Http\Controllers\Manager\MachineScheduleController;
 use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
+use App\Http\Controllers\Manager\LoanRequestController;
+use App\Http\Controllers\Manager\LoanManagementController;
+use App\Http\Controllers\Manager\PaymentController;
+use App\Http\Controllers\Manager\LoanAppointmentController as ManagerLoanAppointmentController;
+use App\Http\Controllers\Manager\FarmerProfileController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,9 +36,11 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/admin/membership-approval/{farmer}/approve', [MembershipApprovalController::class, 'approve'])->name('admin.membership-approval.approve');
     Route::patch('/admin/membership-approval/{farmer}/reject', [MembershipApprovalController::class, 'reject'])->name('admin.membership-approval.reject');
 
-    Route::get('/admin/loan-approval', function () {
-        return view('admin.loan-approval');
-    })->name('admin.loan-approval');
+    Route::get('/admin/loan-approval', [LoanApprovalController::class, 'index'])->name('admin.loan-approval');
+    Route::patch('/admin/loan-approval/{loan_request}/approve', [LoanApprovalController::class, 'approve'])->name('admin.loan-approval.approve');
+    Route::patch('/admin/loan-approval/{loan_request}/deny', [LoanApprovalController::class, 'deny'])->name('admin.loan-approval.deny');
+    Route::patch('/admin/loan-approval/batch/{batch}/approve', [LoanApprovalController::class, 'approveBatch'])->name('admin.loan-approval.batch-approve');
+    Route::patch('/admin/loan-approval/batch/{batch}/deny', [LoanApprovalController::class, 'denyBatch'])->name('admin.loan-approval.batch-deny');
 
     Route::get('/admin/schedule', function () {
         return view('admin.schedule');
@@ -53,9 +61,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/manager/membership/{farmer}/archive', [MembershipController::class, 'archive'])->name('manager.membership.archive');
     Route::patch('/manager/membership/{farmer}/unarchive', [MembershipController::class, 'unarchive'])->name('manager.membership.unarchive');
 
-    Route::get('/manager/farmer-profile', function () {
-        return view('manager.farmer-profile');
-    })->name('manager.farmer-profile');
+    Route::get('/manager/farmer-profile', [FarmerProfileController::class, 'index'])->name('manager.farmer-profile');
 
     Route::get('/manager/schedule-approval', [ScheduleApprovalController::class, 'index'])->name('manager.schedule-approval');
     Route::patch('/manager/schedule-approval/{schedule}/approve', [ScheduleApprovalController::class, 'approve'])->name('manager.schedule-approval.approve');
@@ -75,17 +81,22 @@ Route::middleware(['auth'])->group(function () {
         return view('manager.cbu');
     })->name('manager.cbu');
 
-    Route::get('/manager/loan-request', function () {
-        return view('manager.loan-request');
-    })->name('manager.loan-request');
+    Route::get('/manager/loan-request', [LoanRequestController::class, 'index'])->name('manager.loan-request');
+    Route::post('/manager/loan-request', [LoanRequestController::class, 'store'])->name('manager.loan-request.store');
+    Route::put('/manager/loan-request/{loan_request}', [LoanRequestController::class, 'update'])->name('manager.loan-request.update');
+    Route::post('/manager/loan-request/{loan_request}/finalize', [LoanRequestController::class, 'finalize'])->name('manager.loan-request.finalize');
+    Route::patch('/manager/loan-request/{loan_request}/archive', [LoanRequestController::class, 'archive'])->name('manager.loan-request.archive');
 
-    Route::get('/manager/loan-management', function () {
-        return view('manager.loan-management');
-    })->name('manager.loan-management');
+    Route::get('/manager/loan-management', [LoanManagementController::class, 'index'])->name('manager.loan-management');
+    Route::put('/manager/loan-management/{loan}', [LoanManagementController::class, 'update'])->name('manager.loan-management.update');
+    Route::patch('/manager/loan-management/{loan}/archive', [LoanManagementController::class, 'archive'])->name('manager.loan-management.archive');
 
-    Route::get('/manager/payment', function () {
-        return view('manager.payment');
-    })->name('manager.payment');
+    Route::get('/manager/loan-appointment', [ManagerLoanAppointmentController::class, 'index'])->name('manager.loan-appointment');
+    Route::patch('/manager/loan-appointment/{loan_appointment}/approve', [ManagerLoanAppointmentController::class, 'approve'])->name('manager.loan-appointment.approve');
+    Route::patch('/manager/loan-appointment/{loan_appointment}/cancel', [ManagerLoanAppointmentController::class, 'cancel'])->name('manager.loan-appointment.cancel');
+
+    Route::get('/manager/payment', [PaymentController::class, 'index'])->name('manager.payment');
+    Route::post('/manager/payment', [PaymentController::class, 'recordLoanPayment'])->name('manager.payment.record');
 
     Route::get('/manager/machinery', function () {
         return view('manager.machinery');
