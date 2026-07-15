@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -103,5 +104,13 @@ class Farmer extends Model
     public function loanRequests(): HasMany
     {
         return $this->hasMany(LoanRequest::class);
+    }
+
+    /**
+     * Get the announcements specifically targeted at this farmer.
+     */
+    public function announcements(): BelongsToMany
+    {
+        return $this->belongsToMany(Announcement::class, 'announcement_recipients');
     }
 }

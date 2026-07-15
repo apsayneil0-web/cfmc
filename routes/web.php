@@ -20,6 +20,8 @@ use App\Http\Controllers\Manager\LoanManagementController;
 use App\Http\Controllers\Manager\PaymentController;
 use App\Http\Controllers\Manager\LoanAppointmentController as ManagerLoanAppointmentController;
 use App\Http\Controllers\Manager\FarmerProfileController;
+use App\Http\Controllers\Manager\AnnouncementController;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -106,9 +108,10 @@ Route::middleware(['auth'])->group(function () {
         return view('manager.complaints');
     })->name('manager.complaints');
 
-    Route::get('/manager/announcement', function () {
-        return view('manager.announcement');
-    })->name('manager.announcement');
+    Route::get('/manager/announcement', [AnnouncementController::class, 'index'])->name('manager.announcement');
+    Route::post('/manager/announcement', [AnnouncementController::class, 'store'])->name('manager.announcement.store');
+    Route::put('/manager/announcement/{announcement}', [AnnouncementController::class, 'update'])->name('manager.announcement.update');
+    Route::patch('/manager/announcement/{announcement}/archive', [AnnouncementController::class, 'archive'])->name('manager.announcement.archive');
 
     Route::get('/manager/reporting', function () {
         return view('manager.reporting');
@@ -141,6 +144,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/farmer/complaints', [ComplaintController::class, 'store'])->name('farmer.complaints.store');
     Route::put('/farmer/complaints/{complaint}', [ComplaintController::class, 'update'])->name('farmer.complaints.update');
     Route::delete('/farmer/complaints/{complaint}', [ComplaintController::class, 'destroy'])->name('farmer.complaints.destroy');
+
+    // Shared Routes
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
 });
 
 require __DIR__.'/auth.php';

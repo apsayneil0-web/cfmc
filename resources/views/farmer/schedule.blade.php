@@ -100,7 +100,8 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Preferred Date <span class="text-danger">*</span></label>
-                <input type="date" name="scheduled_date" class="form-control" min="{{ date('Y-m-d') }}" value="{{ old('scheduled_date') }}" required>
+                <input type="date" name="scheduled_date" class="form-control" min="{{ \App\Models\ScheduleRequest::earliestAllowedDate()->format('Y-m-d') }}" value="{{ old('scheduled_date') }}" required>
+                <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
@@ -181,7 +182,8 @@
                                     <p class="text-muted small">Current schedule: {{ $req->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</p>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">New Date <span class="text-danger">*</span></label>
-                                        <input type="date" name="scheduled_date" class="form-control" min="{{ date('Y-m-d') }}" required>
+                                        <input type="date" name="scheduled_date" class="form-control" min="{{ \App\Models\ScheduleRequest::earliestAllowedDate()->format('Y-m-d') }}" required>
+                                        <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-6">

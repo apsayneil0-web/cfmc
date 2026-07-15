@@ -552,6 +552,67 @@ body.bg-light {
 .icon-btn.text-info:hover:not(:disabled) { background-color: var(--brand-info-light); }
 .icon-btn.text-secondary:hover:not(:disabled) { background-color: var(--brand-surface-muted); }
 
+/* -------------------------------------------------------------------------
+   Notification bell
+   ------------------------------------------------------------------------- */
+.notification-badge {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.15rem;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    padding: 0 0.25rem;
+    border-radius: 999px;
+    background-color: var(--brand-danger);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.05rem;
+    text-align: center;
+}
+.notification-dropdown {
+    width: 340px;
+    max-width: 90vw;
+    padding: 0;
+    border: 1px solid var(--brand-border);
+    box-shadow: var(--shadow-lg);
+}
+.notification-list {
+    max-height: 340px;
+    overflow-y: auto;
+}
+.notification-item {
+    display: block;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 120ms var(--ease);
+}
+.notification-item:hover {
+    background-color: var(--brand-surface-muted);
+}
+.notification-item:last-child {
+    border-bottom: none !important;
+}
+.notification-item.is-unread {
+    background-color: var(--brand-primary-light);
+}
+.notification-item.is-unread:hover {
+    background-color: var(--brand-primary-light);
+    filter: brightness(0.97);
+}
+.notification-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background-color: var(--brand-primary);
+    margin-top: 0.3rem;
+}
+.notification-time {
+    font-size: 0.7rem;
+}
+
 .info-banner {
     border: 1px solid transparent;
     border-radius: var(--radius-md);

@@ -46,7 +46,8 @@
         </div>
         <div class="col-md-4">
             <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
-            <input type="date" name="scheduled_date" class="form-control" value="{{ old('scheduled_date', $schedule?->scheduled_date?->format('Y-m-d')) }}" required>
+            <input type="date" name="scheduled_date" class="form-control" min="{{ \App\Models\ScheduleRequest::earliestAllowedDate()->format('Y-m-d') }}" value="{{ old('scheduled_date', $schedule?->scheduled_date?->format('Y-m-d')) }}" required>
+            <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
         </div>
         <div class="col-md-4">
             <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>

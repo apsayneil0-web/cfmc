@@ -19,6 +19,21 @@ class ScheduleRequest extends Model
         ['name' => 'Pump Boat', 'status' => 'Unavailable'],
     ];
 
+    /**
+     * Minimum number of days of advance notice required before a schedule's
+     * date, for both farmer requests and manager-created/assigned schedules.
+     */
+    public const MIN_LEAD_DAYS = 3;
+
+    /**
+     * The earliest date a new or rescheduled/reassigned booking may fall on,
+     * given the minimum lead-time requirement.
+     */
+    public static function earliestAllowedDate(): Carbon
+    {
+        return now()->addDays(self::MIN_LEAD_DAYS)->startOfDay();
+    }
+
     protected $fillable = [
         'user_id',
         'farmer_name',

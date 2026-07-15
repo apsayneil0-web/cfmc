@@ -143,10 +143,12 @@ class MachineScheduleController extends Controller
             'farmer_name' => 'nullable|required_if:member_type,non-member|string|max:255',
             'machinery' => ['required', Rule::in(self::MACHINERY_NAMES)],
             'land_size' => 'required|numeric|min:0.1',
-            'scheduled_date' => 'required|date',
+            'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'location' => 'required|string|max:255',
+        ], [
+            'scheduled_date.after_or_equal' => 'The schedule date must be at least '.ScheduleRequest::MIN_LEAD_DAYS.' days from today.',
         ]);
 
         if ($validated['member_type'] === 'member' && empty($validated['farmer_name'])) {

@@ -74,10 +74,12 @@ class ScheduleController extends Controller
         abort_if($schedule->status !== 'approved', 422, 'Only approved schedules can be rescheduled.');
 
         $validated = $request->validate([
-            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'location' => 'required|string|max:255',
+        ], [
+            'scheduled_date.after_or_equal' => 'The schedule date must be at least '.ScheduleRequest::MIN_LEAD_DAYS.' days from today.',
         ]);
 
         if (ScheduleRequest::hasConflict($schedule->machinery, $validated['scheduled_date'], $validated['start_time'], $validated['end_time'], $schedule->id)) {
@@ -108,10 +110,12 @@ class ScheduleController extends Controller
         return $request->validate([
             'machinery' => ['required', 'string', 'in:'.implode(',', array_column(ScheduleRequest::MACHINERY, 'name'))],
             'land_size' => 'required|numeric|min:0.1',
-            'scheduled_date' => 'required|date|after_or_equal:today',
+            'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'location' => 'required|string|max:255',
+        ], [
+            'scheduled_date.after_or_equal' => 'The schedule date must be at least '.ScheduleRequest::MIN_LEAD_DAYS.' days from today.',
         ]);
     }
 }
