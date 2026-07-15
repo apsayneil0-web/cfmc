@@ -118,7 +118,7 @@
                                 <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Edit Announcement</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <form action="{{ route('manager.announcement.update', $announcement) }}" method="POST">
+                            <form action="{{ route('manager.announcement.update', $announcement) }}" method="POST" class="modal-form-flex">
                                 @csrf
                                 @method('PUT')
                                 <div class="modal-body">
@@ -174,7 +174,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-bullhorn me-2"></i>Create Announcement</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('manager.announcement.store') }}" method="POST">
+            <form action="{{ route('manager.announcement.store') }}" method="POST" class="modal-form-flex">
                 @csrf
                 <div class="modal-body">
                     @include('manager.partials.announcement-form-fields', ['prefix' => 'create', 'announcement' => null, 'farmers' => $farmers, 'purposes' => $purposes])

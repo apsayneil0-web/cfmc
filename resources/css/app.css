@@ -376,6 +376,14 @@ body.bg-light {
 .modal.show .modal-dialog {
     transform: translateY(0) scale(1);
 }
+/* When a <form> wraps both .modal-body and .modal-footer, it becomes the
+   sole flex child of .modal-content instead of them, breaking the header /
+   scrollable-body / fixed-footer layout on tall modals. display:contents
+   removes the form's own box so its children rejoin that flex layout
+   directly, while the form itself keeps working normally for submission. */
+.modal-form-flex {
+    display: contents;
+}
 
 /* -------------------------------------------------------------------------
    Pagination & dropdowns

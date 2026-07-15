@@ -100,7 +100,7 @@
                                 <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Edit Complaint</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <form action="{{ route('farmer.complaints.update', $complaint->id) }}" method="POST">
+                            <form action="{{ route('farmer.complaints.update', $complaint->id) }}" method="POST" class="modal-form-flex">
                                 @csrf
                                 @method('PUT')
                                 <div class="modal-body">
@@ -164,7 +164,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-plus me-2"></i>New Complaint</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('farmer.complaints.store') }}" method="POST">
+            <form action="{{ route('farmer.complaints.store') }}" method="POST" class="modal-form-flex">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
