@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController;
 use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
 use App\Http\Controllers\Farmer\LoanAppointmentController;
+use App\Http\Controllers\Farmer\LoanController as FarmerLoanController;
 use App\Http\Controllers\Farmer\ComplaintController;
 use App\Http\Controllers\Manager\ScheduleApprovalController;
 use App\Http\Controllers\Manager\MachineScheduleController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Manager\LoanAppointmentController as ManagerLoanAppoint
 use App\Http\Controllers\Manager\FarmerProfileController;
 use App\Http\Controllers\Manager\AnnouncementController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -88,6 +90,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/manager/loan-request/{loan_request}', [LoanRequestController::class, 'update'])->name('manager.loan-request.update');
     Route::post('/manager/loan-request/{loan_request}/finalize', [LoanRequestController::class, 'finalize'])->name('manager.loan-request.finalize');
     Route::patch('/manager/loan-request/{loan_request}/archive', [LoanRequestController::class, 'archive'])->name('manager.loan-request.archive');
+    Route::patch('/manager/loan-request/{loan_request}/remove-from-batch', [LoanRequestController::class, 'removeBatchMember'])->name('manager.loan-request.remove-batch-member');
 
     Route::get('/manager/loan-management', [LoanManagementController::class, 'index'])->name('manager.loan-management');
     Route::put('/manager/loan-management/{loan}', [LoanManagementController::class, 'update'])->name('manager.loan-management.update');
@@ -127,6 +130,8 @@ Route::middleware(['auth'])->group(function () {
     // Farmer Routes
     Route::get('/farmer/dashboard', [FarmerDashboardController::class, 'index'])->name('farmer.dashboard');
 
+    Route::get('/farmer/loans', [FarmerLoanController::class, 'index'])->name('farmer.loans');
+
     Route::get('/farmer/schedule', [FarmerScheduleController::class, 'index'])->name('farmer.schedule');
     Route::post('/farmer/schedule', [FarmerScheduleController::class, 'store'])->name('farmer.schedule.store');
     Route::post('/farmer/schedule/{schedule}/reschedule', [FarmerScheduleController::class, 'reschedule'])->name('farmer.schedule.reschedule');
@@ -148,6 +153,8 @@ Route::middleware(['auth'])->group(function () {
     // Shared Routes
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
+
+    Route::post('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture.update');
 });
 
 require __DIR__.'/auth.php';

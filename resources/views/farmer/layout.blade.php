@@ -33,6 +33,11 @@
                     Request Schedule
                 </a>
 
+                <a href="{{ route('farmer.loans') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('farmer.loans') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-file-invoice-dollar w-5"></i>
+                    My Loans
+                </a>
+
                 <a href="{{ route('farmer.loan-appointment') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('farmer.loan-appointment') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-hand-holding-usd w-5"></i>
                     Loan Appointment
@@ -69,15 +74,7 @@
                 </div>
                 <div class="d-flex align-items-center gap-4">
                     <x-notification-bell :notifications="$announcementNotifications ?? collect()" :unread-count="$unreadAnnouncementCount ?? 0" />
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="avatar-initials text-success" style="width: 2.5rem; height: 2.5rem;">
-                            F
-                        </div>
-                        <div class="d-none d-sm-block">
-                            <p class="text-sm font-medium text-gray-900 mb-0">Farmer</p>
-                            <p class="text-xs text-gray-500 mb-0">Member</p>
-                        </div>
-                    </div>
+                    <x-profile-menu />
                 </div>
             </header>
 
@@ -92,6 +89,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <x-notification-modals :notifications="$announcementNotifications ?? collect()" />
+    <x-profile-picture-modal />
 
     <!-- Logout Confirmation Modal -->
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">

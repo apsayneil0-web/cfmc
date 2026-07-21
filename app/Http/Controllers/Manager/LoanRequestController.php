@@ -43,12 +43,32 @@ class LoanRequestController extends Controller
         $farmers = Farmer::where('status', 'approved')->orderBy('first_name')->get();
         $batches = LoanBatch::orderBy('batch_number')->get();
 
+        // Batches still collecting members: not yet full, so not yet forwarded
+        // to the Administrator. These are the only ones a manager can edit.
+        $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
+        $batchesInProgress = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
+            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at')])
+            ->orderBy('batch_number')
+            ->get()
+            ->reject(fn (LoanBatch $batch) => $batch->is_full)
+            ->values();
+
+        $farmersIneligibleForNewRequest = [];
+        foreach (LoanRequest::where('status', 'pending')->pluck('farmer_id') as $farmerId) {
+            $farmersIneligibleForNewRequest[$farmerId] = 'Has a pending loan request';
+        }
+        foreach (Loan::whereIn('status', ['active', 'overdue'])->with('loanRequest')->get() as $loan) {
+            $farmersIneligibleForNewRequest[$loan->loanRequest->farmer_id] ??= 'Has an unpaid loan';
+        }
+
         return view('manager.loan-request', [
             'requests' => $requests,
             'farmers' => $farmers,
             'batches' => $batches,
+            'batchesInProgress' => $batchesInProgress,
             'purposes' => self::PURPOSES,
             'termOptions' => self::TERMS,
+            'farmersIneligibleForNewRequest' => $farmersIneligibleForNewRequest,
         ]);
     }
 
@@ -146,10 +166,54 @@ class LoanRequestController extends Controller
             ->with('success', 'Loan request archived.');
     }
 
+    /**
+     * Remove a single farmer from a batch that hasn't filled up (and so hasn't
+     * been forwarded to the Administrator yet), freeing their slot for someone
+     * else. Once a batch is full it's locked for admin review instead.
+     */
+    public function removeBatchMember(LoanRequest $loan_request)
+    {
+        abort_if($loan_request->type !== 'batch', 422, 'Only batch loan members can be removed this way.');
+        abort_if($loan_request->status !== 'pending', 422, 'Only pending batch members can be removed.');
+        abort_if($loan_request->archived_at, 422, 'This member has already been removed from the batch.');
+        abort_if($loan_request->batch?->is_full, 422, 'This batch is already full and has been forwarded for approval.');
+
+        $farmerName = $loan_request->farmer->full_name;
+        $batchLabel = $loan_request->batch->label;
+
+        $loan_request->update(['archived_at' => now()]);
+
+        return redirect()->route('manager.loan-request')
+            ->with('success', "{$farmerName} has been removed from {$batchLabel}.");
+    }
+
     private function validateRequest(Request $request, ?int $excludeRequestId = null): array
     {
         return $request->validate([
-            'farmer_id' => 'required|exists:farmers,id',
+            'farmer_id' => [
+                'required',
+                'exists:farmers,id',
+                function ($attribute, $value, $fail) use ($excludeRequestId) {
+                    $hasPending = LoanRequest::where('farmer_id', $value)
+                        ->where('status', 'pending')
+                        ->when($excludeRequestId, fn ($q) => $q->where('id', '!=', $excludeRequestId))
+                        ->exists();
+
+                    if ($hasPending) {
+                        $fail('This farmer already has a pending loan request and cannot submit another until it is decided.');
+
+                        return;
+                    }
+
+                    $hasUnpaidLoan = Loan::whereIn('status', ['active', 'overdue'])
+                        ->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $value))
+                        ->exists();
+
+                    if ($hasUnpaidLoan) {
+                        $fail('This farmer already has an unpaid loan and cannot request a new one until it is fully paid.');
+                    }
+                },
+            ],
             'type' => ['required', 'string', 'in:'.implode(',', self::TYPES)],
             'batch_id' => [
                 'required_if:type,batch',
@@ -163,7 +227,8 @@ class LoanRequestController extends Controller
                     $batch = LoanBatch::find($value);
 
                     $memberCount = $batch->loanRequests()
-                        ->whereNotIn('status', ['denied', 'archived'])
+                        ->whereNull('archived_at')
+                        ->where('status', '!=', 'denied')
                         ->when($excludeRequestId, fn ($q) => $q->where('id', '!=', $excludeRequestId))
                         ->count();
 

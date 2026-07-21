@@ -79,7 +79,7 @@
                     <td class="px-4 px-md-6 py-4">{{ $payment->loan->farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->type === 'payment' ? 'Loan Payment' : 'Interest Charge'" /></td>
                     <td class="px-4 px-md-6 py-4 text-muted">LN-{{ str_pad($payment->loan_id, 3, '0', STR_PAD_LEFT) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">&#8369;{{ number_format($payment->amount, 2) }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($payment->amount) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge status="Completed" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
@@ -94,8 +94,8 @@
                         <div class="col-6"><label class="text-muted small d-block">Loan</label><p class="fw-medium mb-0">LN-{{ str_pad($payment->loan_id, 3, '0', STR_PAD_LEFT) }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Farmer</label><p class="fw-medium mb-0">{{ $payment->loan->farmer->full_name }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $payment->transaction_date->format('M d, Y') }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Amount</label><p class="fw-medium mb-0">&#8369;{{ number_format($payment->amount, 2) }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Balance After</label><p class="fw-medium mb-0">&#8369;{{ number_format($payment->balance_after, 2) }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Amount</label><p class="fw-medium mb-0">{{ peso($payment->amount) }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Balance After</label><p class="fw-medium mb-0">{{ peso($payment->balance_after) }}</p></div>
                         @if($payment->notes)
                         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $payment->notes }}</p></div>
                         @endif
@@ -189,7 +189,7 @@
                             <option value="" disabled selected>Select a loan</option>
                             @forelse($payableLoans as $loan)
                             <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}">
-                                LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — {{ $loan->farmer->full_name }} (Balance: &#8369;{{ number_format($loan->remaining_balance, 2) }})
+                                LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — {{ $loan->farmer->full_name }} (Balance: {{ peso($loan->remaining_balance) }})
                             </option>
                             @empty
                             <option value="" disabled>No active loans</option>

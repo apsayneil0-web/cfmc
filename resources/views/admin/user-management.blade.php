@@ -173,11 +173,11 @@
                         </div>
                     </div>
 
-                    <!-- Row 1: Full Name -->
-                    <div class="row mb-3">
+                    <!-- Row 1: Full Name (Farmer only) -->
+                    <div class="row mb-3" id="farmerNameGroup">
                         <div class="col-12">
                             <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="nameInput" list="approvedFarmersList" autocomplete="off" required>
+                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="nameInput" list="approvedFarmersList" autocomplete="off">
                             <datalist id="approvedFarmersList">
                                 @foreach($availableFarmers as $availableFarmer)
                                     <option value="{{ $availableFarmer->full_name }}">
@@ -186,6 +186,40 @@
                             <div class="form-text" id="nameHint">Start typing to pick from approved membership requests, or enter a name manually.</div>
                             <div class="invalid-feedback">Please enter full name.</div>
                             <input type="hidden" name="farmer_id" id="farmerIdInput">
+                        </div>
+                    </div>
+
+                    <!-- Row 1b: Staff profile (Admin/Manager only) -->
+                    <div class="row mb-3 d-none" id="staffFieldsGroup">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="firstNameInput" autocomplete="off">
+                            <div class="invalid-feedback">Please enter first name.</div>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Middle Name</label>
+                            <input type="text" class="form-control form-control-lg" placeholder="Middle name" name="middle_name" id="middleNameInput" autocomplete="off">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="lastNameInput" autocomplete="off">
+                            <div class="invalid-feedback">Please enter last name.</div>
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label fw-semibold">Date of Birth</label>
+                            <input type="date" class="form-control form-control-lg" name="date_of_birth" id="dobInput">
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label fw-semibold">Gender</label>
+                            <select class="form-select form-select-lg" name="gender" id="genderInput">
+                                <option value="">Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label fw-semibold">Profile Picture</label>
+                            <input type="file" class="form-control form-control-lg" name="profile_picture" id="profilePictureInput" accept="image/*">
                         </div>
                     </div>
 
@@ -358,6 +392,18 @@
                             <strong id="viewCreatedAt">Jul 01, 2026</strong>
                         </div>
                     </div>
+                    <div class="col-md-6 d-none" id="viewDobGroup">
+                        <div class="p-3 bg-light rounded">
+                            <small class="text-muted d-block">Date of Birth / Age</small>
+                            <strong id="viewDob">-</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-none" id="viewGenderGroup">
+                        <div class="p-3 bg-light rounded">
+                            <small class="text-muted d-block">Gender</small>
+                            <strong id="viewGender">-</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer bg-light">
@@ -414,12 +460,46 @@
                         </div>
                     </div>
 
-                    <!-- Row 1: Full Name -->
-                    <div class="row mb-3">
+                    <!-- Row 1: Full Name (Farmer only) -->
+                    <div class="row mb-3" id="editFarmerNameGroup">
                         <div class="col-12">
                             <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="editName" required>
+                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="editName">
                             <div class="invalid-feedback">Please enter full name.</div>
+                        </div>
+                    </div>
+
+                    <!-- Row 1b: Staff profile (Admin/Manager only) -->
+                    <div class="row mb-3 d-none" id="editStaffFieldsGroup">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="editFirstName">
+                            <div class="invalid-feedback">Please enter first name.</div>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Middle Name</label>
+                            <input type="text" class="form-control form-control-lg" placeholder="Middle name" name="middle_name" id="editMiddleName">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="editLastName">
+                            <div class="invalid-feedback">Please enter last name.</div>
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label fw-semibold">Date of Birth</label>
+                            <input type="date" class="form-control form-control-lg" name="date_of_birth" id="editDob">
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label fw-semibold">Gender</label>
+                            <select class="form-select form-select-lg" name="gender" id="editGender">
+                                <option value="">Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label fw-semibold">Profile Picture</label>
+                            <input type="file" class="form-control form-control-lg" name="profile_picture" id="editProfilePicture" accept="image/*">
                         </div>
                     </div>
 
@@ -604,6 +684,10 @@
     var emailRequiredMark = document.getElementById('emailRequiredMark');
     var accountTypeLabel = document.getElementById('accountTypeLabel');
     var nameHint = document.getElementById('nameHint');
+    var farmerNameGroup = document.getElementById('farmerNameGroup');
+    var staffFieldsGroup = document.getElementById('staffFieldsGroup');
+    var firstNameInput = document.getElementById('firstNameInput');
+    var lastNameInput = document.getElementById('lastNameInput');
 
     function getSelectedRole() {
         var checked = document.querySelector('#userForm input[name="roleID"]:checked');
@@ -611,7 +695,8 @@
     }
 
     // The Full Name field only suggests/links approved farmer records when
-    // creating a Farmer account; email is only required for Admin/Manager.
+    // creating a Farmer account; Admin/Manager fill in a Staff profile instead,
+    // and email is only required for those two roles.
     function applyRoleRules() {
         var role = getSelectedRole();
         var isFarmer = role === '3';
@@ -622,9 +707,16 @@
         emailRequiredMark.textContent = isFarmer ? '(optional)' : '*';
         emailRequiredMark.className = isFarmer ? 'text-muted' : 'text-danger';
 
+        farmerNameGroup.classList.toggle('d-none', !isFarmer);
+        staffFieldsGroup.classList.toggle('d-none', isFarmer);
+        nameInput.required = isFarmer;
+        firstNameInput.required = !isFarmer;
+        lastNameInput.required = !isFarmer;
+
         if (isFarmer) {
             nameInput.setAttribute('list', 'approvedFarmersList');
             nameHint.style.display = '';
+            farmerIdInput.value = '';
         } else {
             nameInput.removeAttribute('list');
             nameHint.style.display = 'none';
@@ -682,8 +774,13 @@
             return;
         }
 
+        var isFarmer = getSelectedRole() === '3';
+        var displayName = isFarmer
+            ? nameInput.value.trim()
+            : [firstNameInput.value, document.getElementById('middleNameInput').value, lastNameInput.value].filter(Boolean).join(' ').trim();
+
         document.getElementById('confirmAccRole').textContent = ROLE_LABELS[getSelectedRole()];
-        document.getElementById('confirmAccName').textContent = nameInput.value.trim();
+        document.getElementById('confirmAccName').textContent = displayName;
         document.getElementById('confirmAccUsername').textContent = '@' + usernameInput.value.trim();
         document.getElementById('confirmAccEmail').textContent = emailInput.value.trim() || 'Not provided';
         document.getElementById('confirmAccPhone').textContent = phoneInput.value.trim() || 'Not provided';
@@ -846,6 +943,8 @@
         .then(function(data) {
             if (data.success) {
                 var user = data.user;
+                var staff = user.staff || null;
+
                 document.getElementById('viewAvatar').textContent = user.name.substring(0, 2).toUpperCase();
                 document.getElementById('viewName').textContent = user.name;
                 document.getElementById('viewUsername').textContent = '@' + user.username;
@@ -855,6 +954,24 @@
                 document.getElementById('viewStatus').textContent = user.status.charAt(0).toUpperCase() + user.status.slice(1);
                 document.getElementById('viewUserId').textContent = 'USR-' + String(user.id).padStart(3, '0');
                 document.getElementById('viewCreatedAt').textContent = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+                var dobGroup = document.getElementById('viewDobGroup');
+                var genderGroup = document.getElementById('viewGenderGroup');
+
+                if (staff && staff.date_of_birth) {
+                    var dobLabel = new Date(staff.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                    document.getElementById('viewDob').textContent = dobLabel + (staff.age !== null && staff.age !== undefined ? ' (' + staff.age + ' yrs)' : '');
+                    dobGroup.classList.remove('d-none');
+                } else {
+                    dobGroup.classList.add('d-none');
+                }
+
+                if (staff && staff.gender) {
+                    document.getElementById('viewGender').textContent = staff.gender;
+                    genderGroup.classList.remove('d-none');
+                } else {
+                    genderGroup.classList.add('d-none');
+                }
 
                 var viewModal = new bootstrap.Modal(document.getElementById('viewModal'));
                 viewModal.show();
@@ -868,7 +985,7 @@
         });
     }
 
-    // Applies the email-required rule to the Edit form based on its selected role.
+    // Applies the email-required rule and Staff/Farmer field toggle to the Edit form.
     function applyEditRoleRules() {
         var checked = document.querySelector('#editUserForm input[name="roleID"]:checked');
         var role = checked ? checked.value : '3';
@@ -879,6 +996,12 @@
         editEmail.required = !isFarmer;
         mark.textContent = isFarmer ? '(optional)' : '*';
         mark.className = isFarmer ? 'text-muted' : 'text-danger';
+
+        document.getElementById('editFarmerNameGroup').classList.toggle('d-none', !isFarmer);
+        document.getElementById('editStaffFieldsGroup').classList.toggle('d-none', isFarmer);
+        document.getElementById('editName').required = isFarmer;
+        document.getElementById('editFirstName').required = !isFarmer;
+        document.getElementById('editLastName').required = !isFarmer;
     }
 
     document.querySelectorAll('#editUserForm input[name="roleID"]').forEach(function(input) {
@@ -905,6 +1028,14 @@
                 document.getElementById('editEmail').value = user.email || '';
                 document.getElementById('editPhone').value = user.Phonenumber || '';
                 document.getElementById('editStatus').value = user.status;
+
+                var staff = user.staff || {};
+                document.getElementById('editFirstName').value = staff.first_name || '';
+                document.getElementById('editMiddleName').value = staff.middle_name || '';
+                document.getElementById('editLastName').value = staff.last_name || '';
+                document.getElementById('editDob').value = staff.date_of_birth ? staff.date_of_birth.substring(0, 10) : '';
+                document.getElementById('editGender').value = staff.gender || '';
+                document.getElementById('editProfilePicture').value = '';
 
                 var roleRadio = document.getElementById(
                     user.roleID == 1 ? 'editRoleAdmin' : (user.roleID == 2 ? 'editRoleManager' : 'editRoleFarmer')

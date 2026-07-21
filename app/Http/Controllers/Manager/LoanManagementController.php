@@ -23,11 +23,19 @@ class LoanManagementController extends Controller
             $loan->applyOverdueInterest();
         }
 
-        $query = Loan::with(['loanRequest.farmer', 'loanRequest.batch', 'payments'])
-            ->whereNull('archived_at');
+        $query = Loan::with(['loanRequest.farmer', 'loanRequest.batch', 'payments']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
+        // By default (and for any specific business status), only show
+        // approved/active loans still in play. Archived ones are hidden
+        // unless the manager explicitly filters for "Archived".
+        if ($request->input('status') === 'archived') {
+            $query->whereNotNull('archived_at');
+        } else {
+            $query->whereNull('archived_at');
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->string('status'));
+            }
         }
 
         if ($request->filled('search')) {

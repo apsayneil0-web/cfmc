@@ -31,12 +31,16 @@ class Loan extends Model
     }
 
     /**
-     * The flat installment plus this loan's interest rate applied on top,
-     * i.e. the amount actually due each period.
+     * Monthly Installment = Minimum Due + Principal Monthly Payment, where:
+     *   Minimum Due = Loan Amount x interest rate (e.g. 30,000 x 2% = 600)
+     *   Principal Monthly Payment = Loan Amount / Loan Term (installment_amount)
+     * e.g. principal 30,000, term 12, rate 2%: 600 + 2,500 = 3,100.
      */
     public function getMonthlyDueAttribute(): float
     {
-        return round((float) $this->installment_amount * (1 + (float) $this->interest_rate / 100), 2);
+        $minimumDue = round((float) $this->principal_amount * ((float) $this->interest_rate / 100), 2);
+
+        return round($minimumDue + (float) $this->installment_amount, 2);
     }
 
     public function loanRequest(): BelongsTo

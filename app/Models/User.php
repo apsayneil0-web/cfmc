@@ -38,6 +38,27 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the staff profile linked to this account.
+     */
+    public function staff()
+    {
+        return $this->hasOne(Staff::class);
+    }
+
+    /**
+     * Get the profile picture URL, sourced from Staff (Admin/Manager) or
+     * Farmer (Farmer), whichever this account is linked to.
+     */
+    public function getProfilePictureUrlAttribute(): ?string
+    {
+        $path = in_array((int) $this->roleID, [1, 2], true)
+            ? $this->staff?->profile_picture
+            : $this->farmer?->profile_picture;
+
+        return $path ? asset('storage/'.$path) : null;
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

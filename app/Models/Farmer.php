@@ -27,6 +27,7 @@ class Farmer extends Model
         'status',
         'rejection_reason',
         'documents_path',
+        'profile_picture',
         'certificate_of_title_path',
         'barangay_certification_path',
         'rsbsa_path',

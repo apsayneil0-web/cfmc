@@ -226,6 +226,13 @@
                 <p class="subtitle">Sign in to your CFMC cooperative account</p>
             </div>
 
+            @if (session('status'))
+                <div class="alert" style="background-color: var(--brand-success-light); color: var(--brand-success-dark); border-color: #bfe3d9;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--brand-success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m22 4-10 10-3-3"/></svg>
+                    <div>{{ session('status') }}</div>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="alert">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
@@ -301,7 +308,7 @@
 
                 <!-- Forgot Password Link -->
                 <div class="forgot-password">
-                    <a href="#">Forgot your password?</a>
+                    <a href="{{ route('password.request') }}">Forgot your password?</a>
                     <div class="description">Admin and Manager only</div>
                 </div>
             </form>

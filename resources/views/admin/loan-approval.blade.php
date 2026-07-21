@@ -45,7 +45,7 @@
                 <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $batch->label }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $batch->loanRequests->count() }} farmer(s)</td>
-                    <td class="px-4 px-md-6 py-4">&#8369;{{ number_format($batch->loanRequests->sum('requested_amount'), 2) }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ peso($batch->loanRequests->sum('requested_amount')) }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $batch->loanRequests->min('created_at')?->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
@@ -81,7 +81,7 @@
                                             @foreach($batch->loanRequests as $member)
                                             <tr>
                                                 <td class="small fw-medium text-dark">{{ $member->farmer->full_name }}</td>
-                                                <td class="small">&#8369;{{ number_format($member->requested_amount, 2) }}</td>
+                                                <td class="small">{{ peso($member->requested_amount) }}</td>
                                                 <td class="small text-muted">{{ $member->purpose }}</td>
                                                 <td class="small text-muted">{{ $member->repayment_terms_months }} months</td>
                                                 <td class="small text-muted">{{ $member->created_at->format('M d, Y') }}</td>
@@ -149,7 +149,7 @@
                 @forelse($requests as $req)
                 <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $req->farmer->full_name }}</td>
-                    <td class="px-4 px-md-6 py-4">&#8369;{{ number_format($req->requested_amount, 2) }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ peso($req->requested_amount) }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->purpose }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->repayment_terms_months }} months</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->created_at->format('M d, Y') }}</td>
@@ -183,7 +183,7 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Requested Amount</label>
-                                        <p class="fw-semibold mb-0">&#8369;{{ number_format($req->requested_amount, 2) }}</p>
+                                        <p class="fw-semibold mb-0">{{ peso($req->requested_amount) }}</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Purpose</label>

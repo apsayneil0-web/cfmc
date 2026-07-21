@@ -28,9 +28,9 @@
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <x-stat-card label="Active Loans" value="{{ $stats['active_count'] }}" icon="fa-file-invoice-dollar" color="primary" />
-    <x-stat-card label="Total Outstanding" value="&#8369;{{ number_format($stats['total_outstanding'], 2) }}" icon="fa-hand-holding-usd" color="danger" />
-    <x-stat-card label="Due This Month" value="&#8369;{{ number_format($stats['due_this_month'], 2) }}" icon="fa-calendar-day" color="warning" />
-    <x-stat-card label="Interest Earned" value="&#8369;{{ number_format($stats['interest_earned'], 2) }}" icon="fa-chart-line" color="success" />
+    <x-stat-card label="Total Outstanding" value="{{ peso($stats['total_outstanding']) }}" icon="fa-hand-holding-usd" color="danger" />
+    <x-stat-card label="Due This Month" value="{{ peso($stats['due_this_month']) }}" icon="fa-calendar-day" color="warning" />
+    <x-stat-card label="Interest Earned" value="{{ peso($stats['interest_earned']) }}" icon="fa-chart-line" color="success" />
 </div>
 
 <!-- Loans Table -->
@@ -48,6 +48,7 @@
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
                     <option value="fully_paid" {{ request('status') == 'fully_paid' ? 'selected' : '' }}>Fully Paid</option>
+                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'status']))
@@ -81,129 +82,29 @@
                         <span class="badge bg-info-subtle text-info border border-info-subtle ms-1">{{ $loan->loanRequest->batch?->label ?? 'Batch' }}</span>
                         @endif
                     </td>
-                    <td class="px-4 px-md-6 py-4">&#8369;{{ number_format($loan->principal_amount, 2) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">&#8369;{{ number_format($loan->remaining_balance, 2) }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">&#8369;{{ number_format($loan->monthly_due, 2) }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ peso($loan->principal_amount) }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($loan->remaining_balance) }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ peso($loan->monthly_due) }}</td>
                     <td class="px-4 px-md-6 py-4 {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date->format('M d, Y') }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$loan->status === 'fully_paid' ? 'Fully Paid' : ucfirst($loan->status)" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        @if($loan->archived_at)
+                        <x-status-badge status="Archived" />
+                        @else
+                        <x-status-badge :status="$loan->status === 'fully_paid' ? 'Fully Paid' : ucfirst($loan->status)" />
+                        @endif
+                    </td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
                             <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $loan->id }}" />
-                            @if(!in_array($loan->status, ['fully_paid', 'archived']))
-                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $loan->id }}" />
+                            @if(!$loan->archived_at)
+                                @if($loan->status !== 'fully_paid')
+                                <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $loan->id }}" />
+                                @endif
+                                <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}" />
                             @endif
-                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}" />
                         </div>
                     </td>
                 </tr>
-
-                <!-- View Modal (details + payment history) -->
-                <x-modal id="viewModal{{ $loan->id }}" title="Loan Details">
-                    <div class="row g-3 mb-3">
-                        <div class="col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $loan->farmer->full_name }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $loan->loanRequest->type === 'batch' ? ($loan->loanRequest->batch?->label ?? 'Batch') : 'Regular Loan' }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">&#8369;{{ number_format($loan->principal_amount, 2) }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">&#8369;{{ number_format($loan->remaining_balance, 2) }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="$loan->status === 'fully_paid' ? 'Fully Paid' : ucfirst($loan->status)" /></div>
-                        @if($loan->notes)
-                        <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $loan->notes }}</p></div>
-                        @endif
-                    </div>
-                    <h4 class="text-sm fw-semibold text-dark mb-2">Payment &amp; Interest History</h4>
-                    <div class="table-responsive" style="max-height: 240px;">
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="small">Date</th>
-                                    <th class="small">Type</th>
-                                    <th class="small">Amount</th>
-                                    <th class="small">Balance After</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($loan->payments->sortByDesc('transaction_date') as $payment)
-                                <tr>
-                                    <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
-                                    <td class="small">
-                                        @if($payment->type === 'payment')
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
-                                        @else
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
-                                        @endif
-                                    </td>
-                                    <td class="small">{{ $payment->type === 'payment' ? '-' : '+' }}&#8369;{{ number_format($payment->amount, 2) }}</td>
-                                    <td class="small">&#8369;{{ number_format($payment->balance_after, 2) }}</td>
-                                </tr>
-                                @empty
-                                <tr><td colspan="4" class="text-center text-muted small py-3">No transactions yet.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </x-modal>
-
-                @if(!in_array($loan->status, ['fully_paid', 'archived']))
-                <!-- Edit Modal -->
-                <div class="modal fade" id="editModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-warning">
-                                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Edit Loan</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <form action="{{ route('manager.loan-management.update', $loan) }}" method="POST">
-                                @csrf
-                                @method('PUT')
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">Next Due Date <span class="text-danger">*</span></label>
-                                        <input type="date" name="next_due_date" class="form-control" value="{{ $loan->next_due_date->format('Y-m-d') }}" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">Collateral</label>
-                                        <input type="text" name="collateral" class="form-control" value="{{ $loan->collateral }}">
-                                    </div>
-                                    <div>
-                                        <label class="form-label fw-semibold">Notes</label>
-                                        <textarea name="notes" rows="2" class="form-control">{{ $loan->notes }}</textarea>
-                                    </div>
-                                </div>
-                                <div class="modal-footer bg-light">
-                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-warning">Save Changes</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                <!-- Archive Modal -->
-                <div class="modal fade" id="archiveModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-secondary text-white">
-                                <h5 class="modal-title fw-bold"><i class="fas fa-archive me-2"></i>Archive Loan</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p class="mb-0">Archive LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} for {{ $loan->farmer->full_name }}? It will be removed from the active list but kept for auditing.</p>
-                            </div>
-                            <div class="modal-footer bg-light">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <form action="{{ route('manager.loan-management.archive', $loan) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-secondary">Archive</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 @empty
                 <tr>
                     <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No loans found.</td>
@@ -213,6 +114,121 @@
         </table>
     </div>
 </div>
+
+{{-- Modals rendered outside <tbody>: a <div> is not valid directly inside a
+     table body, and browsers "correct" that by ejecting everything after the
+     first row's modals out of the table, breaking every row after the first. --}}
+@foreach($loans as $loan)
+<!-- View Modal (details + payment history) -->
+<x-modal id="viewModal{{ $loan->id }}" title="Loan Details">
+    <div class="row g-3 mb-3">
+        <div class="col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $loan->farmer->full_name }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $loan->loanRequest->type === 'batch' ? ($loan->loanRequest->batch?->label ?? 'Batch') : 'Regular Loan' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">{{ peso($loan->remaining_balance) }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="$loan->status === 'fully_paid' ? 'Fully Paid' : ucfirst($loan->status)" /></div>
+        @if($loan->notes)
+        <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $loan->notes }}</p></div>
+        @endif
+    </div>
+    <h4 class="text-sm fw-semibold text-dark mb-2">Payment &amp; Interest History</h4>
+    <div class="table-responsive" style="max-height: 240px;">
+        <table class="table table-sm mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="small">Date</th>
+                    <th class="small">Type</th>
+                    <th class="small">Amount</th>
+                    <th class="small">Balance After</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($loan->payments->sortByDesc('transaction_date') as $payment)
+                <tr>
+                    <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
+                    <td class="small">
+                        @if($payment->type === 'payment')
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
+                        @else
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
+                        @endif
+                    </td>
+                    <td class="small">{{ $payment->type === 'payment' ? '-' : '+' }}{{ peso($payment->amount) }}</td>
+                    <td class="small">{{ peso($payment->balance_after) }}</td>
+                </tr>
+                @empty
+                <tr><td colspan="4" class="text-center text-muted small py-3">No transactions yet.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</x-modal>
+
+@if(!$loan->archived_at && $loan->status !== 'fully_paid')
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Edit Loan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.loan-management.update', $loan) }}" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Next Due Date <span class="text-danger">*</span></label>
+                        <input type="date" name="next_due_date" class="form-control" value="{{ $loan->next_due_date->format('Y-m-d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Collateral</label>
+                        <input type="text" name="collateral" class="form-control" value="{{ $loan->collateral }}">
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold">Notes</label>
+                        <textarea name="notes" rows="2" class="form-control">{{ $loan->notes }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
+@if(!$loan->archived_at)
+<!-- Archive Modal -->
+<div class="modal fade" id="archiveModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-archive me-2"></i>Archive Loan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Archive LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} for {{ $loan->farmer->full_name }}? It will be removed from the active list but kept for auditing.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ route('manager.loan-management.archive', $loan) }}" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-secondary">Archive</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+@endforeach
 
 <!-- Interest Computation Info -->
 <x-info-banner variant="info" title="Interest Computation: 2% every due date" class="mt-6">

@@ -23,8 +23,9 @@ class LoanApprovalController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        $batchGroups = LoanBatch::whereHas('loanRequests', fn ($q) => $q->where('status', 'pending'))
-            ->with(['loanRequests' => fn ($q) => $q->where('status', 'pending')->with('farmer')->orderBy('created_at')])
+        $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
+        $batchGroups = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
+            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at')])
             ->orderBy('batch_number')
             ->get()
             ->filter(fn (LoanBatch $batch) => $batch->is_full)
@@ -78,7 +79,7 @@ class LoanApprovalController extends Controller
     {
         abort_unless($batch->is_full, 422, "{$batch->label} is not full yet and cannot be sent for approval.");
 
-        $pendingIds = $batch->loanRequests()->where('status', 'pending')->pluck('id');
+        $pendingIds = $batch->loanRequests()->where('status', 'pending')->whereNull('archived_at')->pluck('id');
 
         abort_if($pendingIds->isEmpty(), 422, 'This batch has no pending requests to approve.');
 
@@ -95,7 +96,7 @@ class LoanApprovalController extends Controller
     {
         abort_unless($batch->is_full, 422, "{$batch->label} is not full yet and cannot be sent for approval.");
 
-        $pendingIds = $batch->loanRequests()->where('status', 'pending')->pluck('id');
+        $pendingIds = $batch->loanRequests()->where('status', 'pending')->whereNull('archived_at')->pluck('id');
 
         abort_if($pendingIds->isEmpty(), 422, 'This batch has no pending requests to deny.');
 

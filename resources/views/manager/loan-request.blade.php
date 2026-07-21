@@ -25,6 +25,121 @@
 </div>
 @endif
 
+@if($batchesInProgress->isNotEmpty())
+<div class="section-card mb-6">
+    <x-table-toolbar>
+        <x-slot:filters>
+            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Batch Loans in Progress</h3>
+            <span class="text-sm text-muted">Not yet full &mdash; not yet sent to the Administrator</span>
+        </x-slot:filters>
+    </x-table-toolbar>
+
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Members</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($batchesInProgress as $batch)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $batch->label }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $batch->member_count }}/{{ $batch->capacity }} members</td>
+                    <td class="px-4 px-md-6 py-4">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#manageBatchModal{{ $batch->id }}">
+                            <i class="fas fa-users-cog me-1"></i> Manage Batch
+                        </button>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@foreach($batchesInProgress as $batch)
+<!-- Manage Batch Modal -->
+<div class="modal fade" id="manageBatchModal{{ $batch->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fas fa-users-cog me-2"></i>Manage {{ $batch->label }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">{{ $batch->member_count }}/{{ $batch->capacity }} members. This batch will be sent to the Administrator automatically once it's full.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="small">Farmer</th>
+                                <th class="small">Amount</th>
+                                <th class="small">Purpose</th>
+                                <th class="small">Terms</th>
+                                <th class="small">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($batch->loanRequests as $member)
+                            <tr>
+                                <td class="small fw-medium text-dark">{{ $member->farmer->full_name }}</td>
+                                <td class="small">{{ peso($member->requested_amount) }}</td>
+                                <td class="small text-muted">{{ $member->purpose }}</td>
+                                <td class="small text-muted">{{ $member->repayment_terms_months }} months</td>
+                                <td class="small">
+                                    <div class="d-flex gap-1">
+                                        <button type="button" class="btn btn-sm btn-outline-warning" title="Edit" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'editModal{{ $member->id }}')"><i class="fas fa-edit"></i></button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Remove from batch" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'removeMemberModal{{ $member->id }}')"><i class="fas fa-user-minus"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="text-center text-muted small py-3">No members yet.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="openAddFarmerToBatch({{ $batch->id }}, 'manageBatchModal{{ $batch->id }}')">
+                    <i class="fas fa-user-plus me-1"></i> Add Farmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach($batch->loanRequests as $member)
+<!-- Remove Member Confirmation Modal -->
+<div class="modal fade" id="removeMemberModal{{ $member->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-user-minus me-2"></i>Remove from Batch</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Remove <strong>{{ $member->farmer->full_name }}</strong> from {{ $batch->label }}? This frees their slot for another farmer; they can be re-added later with a new request.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ route('manager.loan-request.remove-batch-member', $member) }}" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-danger">Remove</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endforeach
+@endforeach
+@endif
+
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
@@ -86,7 +201,7 @@
                         </div>
                         @endif
                     </td>
-                    <td class="px-4 px-md-6 py-4">&#8369;{{ number_format($req->requested_amount, 2) }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ peso($req->requested_amount) }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->purpose }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->repayment_terms_months }} months</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->collateral ?? '—' }}</td>
@@ -111,7 +226,7 @@
                         <div class="col-6"><label class="text-muted small d-block">Request ID</label><p class="fw-medium mb-0">LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $req->farmer->full_name }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $req->type === 'batch' ? ($req->batch?->label ?? 'Batch') : 'Regular Loan' }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Requested Amount</label><p class="fw-medium mb-0">&#8369;{{ number_format($req->requested_amount, 2) }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Requested Amount</label><p class="fw-medium mb-0">{{ peso($req->requested_amount) }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Purpose</label><p class="fw-medium mb-0">{{ $req->purpose }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $req->repayment_terms_months }} months</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $req->collateral ?? '—' }}</p></div>
@@ -146,7 +261,10 @@
                                         <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
                                         <select name="farmer_id" class="form-select" required>
                                             @foreach($farmers as $farmer)
-                                            <option value="{{ $farmer->id }}" {{ $farmer->id == $req->farmer_id ? 'selected' : '' }}>{{ $farmer->full_name }}</option>
+                                            @php $blockReason = $farmer->id != $req->farmer_id ? ($farmersIneligibleForNewRequest[$farmer->id] ?? null) : null; @endphp
+                                            <option value="{{ $farmer->id }}" {{ $farmer->id == $req->farmer_id ? 'selected' : '' }} {{ $blockReason ? 'disabled' : '' }}>
+                                                {{ $farmer->full_name }}{{ $blockReason ? " - {$blockReason}" : '' }}
+                                            </option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -298,21 +416,24 @@
                         <select name="farmer_id" class="form-select" required>
                             <option value="">Select Farmer</option>
                             @foreach($farmers as $farmer)
-                            <option value="{{ $farmer->id }}">{{ $farmer->full_name }}</option>
+                            @php $blockReason = $farmersIneligibleForNewRequest[$farmer->id] ?? null; @endphp
+                            <option value="{{ $farmer->id }}" {{ $blockReason ? 'disabled' : '' }}>
+                                {{ $farmer->full_name }}{{ $blockReason ? " - {$blockReason}" : '' }}
+                            </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Loan Type <span class="text-danger">*</span></label>
-                            <select name="type" class="form-select" required onchange="toggleBatchField(this)" data-batch-wrapper="batchField-create">
+                            <select name="type" id="createTypeSelect" class="form-select" required onchange="toggleBatchField(this)" data-batch-wrapper="batchField-create">
                                 <option value="regular" selected>Regular Loan</option>
                                 <option value="batch">Batch Loan</option>
                             </select>
                         </div>
                         <div class="col-md-6" id="batchField-create" style="display:none">
                             <label class="form-label fw-semibold">Batch <span class="text-danger">*</span></label>
-                            <select name="batch_id" class="form-select">
+                            <select name="batch_id" id="createBatchSelect" class="form-select">
                                 <option value="">Select Batch</option>
                                 @foreach($batches as $batch)
                                 <option value="{{ $batch->id }}" {{ $batch->is_full ? 'disabled' : '' }}>
@@ -382,6 +503,36 @@
         if (!isBatch) {
             batchSelect.value = '';
         }
+    }
+
+    // Hides one modal and, once it's fully closed, opens another. Bootstrap
+    // doesn't support two open modals cleanly, so the batch-management modal
+    // must finish closing before the edit/remove/add-farmer modal opens.
+    function switchModal(fromModalId, toModalId) {
+        var fromEl = document.getElementById(fromModalId);
+        var fromModal = bootstrap.Modal.getInstance(fromEl);
+        var openTarget = function() {
+            new bootstrap.Modal(document.getElementById(toModalId)).show();
+        };
+
+        if (fromModal) {
+            fromEl.addEventListener('hidden.bs.modal', openTarget, { once: true });
+            fromModal.hide();
+        } else {
+            openTarget();
+        }
+    }
+
+    // "Add Farmer" from within a batch's management modal: pre-selects Batch
+    // Loan and this batch in the New Request form before showing it.
+    function openAddFarmerToBatch(batchId, manageModalId) {
+        switchModal(manageModalId, 'createRequestModal');
+
+        var typeSelect = document.getElementById('createTypeSelect');
+        var batchSelect = document.getElementById('createBatchSelect');
+        typeSelect.value = 'batch';
+        toggleBatchField(typeSelect);
+        batchSelect.value = batchId;
     }
 </script>
 @endsection
