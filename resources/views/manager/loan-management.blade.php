@@ -26,7 +26,8 @@
 @endif
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+    <x-stat-card label="Pending Disbursement" value="{{ $stats['pending_disbursement_count'] }}" icon="fa-money-check-alt" color="warning" />
     <x-stat-card label="Active Loans" value="{{ $stats['active_count'] }}" icon="fa-file-invoice-dollar" color="primary" />
     <x-stat-card label="Total Outstanding" value="{{ peso($stats['total_outstanding']) }}" icon="fa-hand-holding-usd" color="danger" />
     <x-stat-card label="Due This Month" value="{{ peso($stats['due_this_month']) }}" icon="fa-calendar-day" color="warning" />
@@ -45,6 +46,7 @@
                 </div>
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
                     <option value="">All Status</option>
+                    <option value="pending_disbursement" {{ request('status') == 'pending_disbursement' ? 'selected' : '' }}>Pending Disbursement</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
                     <option value="fully_paid" {{ request('status') == 'fully_paid' ? 'selected' : '' }}>Fully Paid</option>
@@ -83,21 +85,36 @@
                         @endif
                     </td>
                     <td class="px-4 px-md-6 py-4">{{ peso($loan->principal_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($loan->remaining_balance) }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ peso($loan->monthly_due) }}</td>
-                    <td class="px-4 px-md-6 py-4 {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4 {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">
                         @if($loan->archived_at)
                         <x-status-badge status="Archived" />
                         @else
-                        <x-status-badge :status="$loan->status === 'fully_paid' ? 'Fully Paid' : ucfirst($loan->status)" />
+                        <x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" />
+                        @endif
+                        @if($loan->delinquency_stage)
+                        <div class="mt-1">
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                @switch($loan->delinquency_stage)
+                                    @case('grace') 2% Grace Interest @break
+                                    @case('penalized') 10% Penalty &mdash; Restricted @break
+                                    @case('barangay_summon') Barangay Summons @break
+                                    @case('legal_action') Legal Action @break
+                                @endswitch
+                            </span>
+                        </div>
                         @endif
                     </td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
                             <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $loan->id }}" />
                             @if(!$loan->archived_at)
-                                @if($loan->status !== 'fully_paid')
+                                @if($loan->status === 'pending_disbursement')
+                                <x-icon-button icon="fa-money-check-alt" color="success" title="Mark Disbursed" data-bs-toggle="modal" data-bs-target="#disburseModal{{ $loan->id }}" />
+                                @endif
+                                @if(!in_array($loan->status, ['fully_paid', 'pending_disbursement']))
                                 <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $loan->id }}" />
                                 @endif
                                 <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}" />
@@ -126,15 +143,35 @@
         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $loan->farmer->full_name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $loan->loanRequest->type === 'batch' ? ($loan->loanRequest->batch?->label ?? 'Batch') : 'Regular Loan' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">{{ peso($loan->remaining_balance) }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months</p></div>
         <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
         <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="$loan->status === 'fully_paid' ? 'Fully Paid' : ucfirst($loan->status)" /></div>
+        <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" /></div>
+        @if($loan->disbursed_at)
+        <div class="col-6"><label class="text-muted small d-block">Disbursed</label><p class="fw-medium mb-0">{{ $loan->disbursed_at->format('M d, Y') }} &mdash; {{ ucwords(str_replace('_', ' ', $loan->disbursement_method)) }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Released By</label><p class="fw-medium mb-0">{{ $loan->disbursedBy->name ?? '—' }}</p></div>
+        @endif
         @if($loan->notes)
         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $loan->notes }}</p></div>
         @endif
     </div>
+
+    @if($loan->original_due_date)
+    <h4 class="text-sm fw-semibold text-dark mb-2">Delinquency &amp; Penalties</h4>
+    <div class="row g-3 mb-3">
+        <div class="col-6"><label class="text-muted small d-block">Original Due Date</label><p class="fw-medium mb-0">{{ $loan->original_due_date->format('M d, Y') }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Grace Period Ends</label><p class="fw-medium mb-0">{{ $loan->original_due_date->copy()->addDays(30)->format('M d, Y') }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">2% Grace Interest</label><p class="fw-medium mb-0">{{ $loan->partial_penalty_applied_at?->format('M d, Y') ?? 'Not applied' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">10% Grace Penalty</label><p class="fw-medium mb-0">{{ $loan->grace_penalty_applied_at?->format('M d, Y') ?? 'Not applied' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Barangay Summons</label><p class="fw-medium mb-0">{{ $loan->barangay_summon_at?->format('M d, Y') ?? 'Not flagged' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Legal Action</label><p class="fw-medium mb-0">{{ $loan->legal_action_at?->format('M d, Y') ?? 'Not flagged' }}</p></div>
+        @if($loan->is_restricted)
+        <div class="col-12"><p class="fw-medium mb-0 text-danger"><i class="fas fa-ban me-1"></i> This farmer is restricted from new loan requests until this balance is fully paid.</p></div>
+        @endif
+    </div>
+    @endif
+
     <h4 class="text-sm fw-semibold text-dark mb-2">Payment &amp; Interest History</h4>
     <div class="table-responsive" style="max-height: 240px;">
         <table class="table table-sm mb-0">
@@ -147,7 +184,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($loan->payments->sortByDesc('transaction_date') as $payment)
+                @forelse($loan->payments->sortByDesc('created_at') as $payment)
                 <tr>
                     <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small">
@@ -168,7 +205,48 @@
     </div>
 </x-modal>
 
-@if(!$loan->archived_at && $loan->status !== 'fully_paid')
+@if($loan->status === 'pending_disbursement')
+<!-- Disburse Modal -->
+<div class="modal fade" id="disburseModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-money-check-alt me-2"></i>Mark as Disbursed</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.loan-management.disburse', $loan) }}" method="POST">
+                @csrf
+                @method('PATCH')
+                <div class="modal-body">
+                    <p class="text-muted small">Confirm that {{ $loan->principal_amount ? peso($loan->principal_amount) : '' }} has been released to {{ $loan->farmer->full_name }}. This starts the repayment schedule from the date below.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Date Released <span class="text-danger">*</span></label>
+                        <input type="date" name="disbursed_at" class="form-control" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Disbursement Method <span class="text-danger">*</span></label>
+                        <select name="disbursement_method" class="form-select" required>
+                            <option value="cash">Cash</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="check">Check</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold">Reference No.</label>
+                        <input type="text" name="reference_no" class="form-control" placeholder="Check no. / transfer reference (optional)">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Disbursement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
+@if(!$loan->archived_at && !in_array($loan->status, ['fully_paid', 'pending_disbursement']))
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -233,5 +311,10 @@
 <!-- Interest Computation Info -->
 <x-info-banner variant="info" title="Interest Computation: 2% every due date" class="mt-6">
     Interest is automatically calculated and added to the loan balance whenever a due date passes without payment.
+</x-info-banner>
+
+<!-- Delinquency Policy Info -->
+<x-info-banner variant="warning" title="Grace Period &amp; Penalty Policy" class="mt-4">
+    If a due date passes with a balance still unpaid, a one-time 2% grace-period interest applies. If it's still unpaid after the 30-day grace period, a one-time 10% penalty applies and the farmer is restricted from new loan requests until fully paid. Accounts unpaid for 5 months are flagged for Barangay summons, and for 6 months for legal action &mdash; both notify the Administrator.
 </x-info-banner>
 @endsection

@@ -25,6 +25,94 @@
 </div>
 @endif
 
+@if($batchesReadyToFinalize->isNotEmpty())
+<div class="section-card mb-6">
+    <x-table-toolbar>
+        <x-slot:filters>
+            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Batches Ready to Finalize</h3>
+            <span class="text-sm text-muted">Approved by the Administrator &mdash; finalize the whole batch into loans at once</span>
+        </x-slot:filters>
+    </x-table-toolbar>
+
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Members</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Total Amount</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($batchesReadyToFinalize as $batch)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $batch->label }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $batch->loanRequests->count() }} farmer(s)</td>
+                    <td class="px-4 px-md-6 py-4">{{ peso($batch->loanRequests->sum('requested_amount')) }}</td>
+                    <td class="px-4 px-md-6 py-4">
+                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#batchFinalizeModal{{ $batch->id }}">
+                            <i class="fas fa-file-invoice-dollar me-1"></i> Finalize Batch
+                        </button>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@foreach($batchesReadyToFinalize as $batch)
+<!-- Batch Finalize Modal -->
+<div class="modal fade" id="batchFinalizeModal{{ $batch->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i>Finalize {{ $batch->label }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.loan-request.batch-finalize', $batch) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Finalizing applies to all {{ $batch->loanRequests->count() }} approved members below at once, each using their own requested amount and repayment term. Set one interest rate to apply across the batch.</p>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="small">Farmer</th>
+                                    <th class="small">Amount</th>
+                                    <th class="small">Terms</th>
+                                    <th class="small">Collateral</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($batch->loanRequests as $member)
+                                <tr>
+                                    <td class="small fw-medium text-dark">{{ $member->farmer->full_name }}</td>
+                                    <td class="small">{{ peso($member->requested_amount) }}</td>
+                                    <td class="small">{{ $member->repayment_terms_months }} months</td>
+                                    <td class="small text-muted">{{ $member->collateral ?? '—' }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold">Interest Rate (%) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0" max="100" name="interest_rate" class="form-control" value="2.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save &amp; Send to Disbursement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
+@endif
+
 @if($batchesInProgress->isNotEmpty())
 <div class="section-card mb-6">
     <x-table-toolbar>
@@ -212,7 +300,7 @@
                             @if($req->status === 'pending')
                             <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}" />
                             @endif
-                            @if($req->status === 'approved' && !$req->loan)
+                            @if($req->type !== 'batch' && $req->status === 'approved' && !$req->loan)
                             <x-icon-button icon="fa-file-invoice-dollar" color="success" title="Finalize into Loan" data-bs-toggle="modal" data-bs-target="#finalizeModal{{ $req->id }}" />
                             @endif
                             <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}" />
@@ -239,7 +327,7 @@
                         <div class="col-12"><label class="text-muted small d-block">Denial Reason</label><p class="fw-medium mb-0 text-danger">{{ $req->denial_reason }}</p></div>
                         @endif
                         @if($req->loan)
-                        <div class="col-12"><label class="text-muted small d-block">Finalized Loan</label><p class="fw-medium mb-0">Active loan created &mdash; see Loan Management.</p></div>
+                        <div class="col-12"><label class="text-muted small d-block">Finalized Loan</label><p class="fw-medium mb-0">{{ $req->loan->status === 'pending_disbursement' ? 'Terms finalized, awaiting disbursement' : 'Active loan created' }} &mdash; see Loan Management.</p></div>
                         @endif
                     </div>
                 </x-modal>
@@ -327,7 +415,7 @@
                 </div>
                 @endif
 
-                @if($req->status === 'approved' && !$req->loan)
+                @if($req->type !== 'batch' && $req->status === 'approved' && !$req->loan)
                 <!-- Finalize Modal -->
                 <div class="modal fade" id="finalizeModal{{ $req->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -360,7 +448,7 @@
                                 </div>
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-success">Save &amp; Activate Loan</button>
+                                    <button type="submit" class="btn btn-success">Save &amp; Send to Disbursement</button>
                                 </div>
                             </form>
                         </div>
@@ -474,7 +562,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="form-label fw-semibold">Upload Documents</label>
+                        <label class="form-label fw-semibold">Collateral Proof</label>
                         <input type="file" name="documents" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                     </div>
                 </div>
@@ -488,7 +576,7 @@
 </div>
 
 <x-info-banner variant="info" title="Loan Approval Workflow" class="mt-6">
-    New requests are forwarded to the Administrator for final authorization. Once approved, use "Finalize into Loan" here to activate it and start tracking repayments in Loan Management. Batch Loans group up to 10 farmers under one batch, but each member's repayment, balance, due date, and status are tracked individually. A batch is only sent to the Administrator for approval once it has reached its full 10 members.
+    New requests are forwarded to the Administrator for final authorization. Once approved, use "Finalize into Loan" here to lock in the terms; the loan then waits in Loan Management for funds to actually be released via "Mark Disbursed" before repayment tracking begins. Batch Loans group up to 10 farmers under one batch, but each member's repayment, balance, due date, and status are tracked individually. A batch is only sent to the Administrator for approval once it has reached its full 10 members, and once approved, use "Finalize Batch" above to send every member to disbursement in one step.
 </x-info-banner>
 
 <script>

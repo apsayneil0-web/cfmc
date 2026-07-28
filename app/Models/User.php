@@ -46,6 +46,21 @@ class User extends Authenticatable
     }
 
     /**
+     * The dashboard path for this account's role. Single source of truth for
+     * both the post-login redirect and the redirect an already-authenticated
+     * user gets when visiting a guest-only page like /login.
+     */
+    public function dashboardUrl(): string
+    {
+        return match ((int) $this->roleID) {
+            1 => '/admin/dashboard',
+            2 => '/manager/dashboard',
+            3 => '/farmer/dashboard',
+            default => '/',
+        };
+    }
+
+    /**
      * Get the profile picture URL, sourced from Staff (Admin/Manager) or
      * Farmer (Farmer), whichever this account is linked to.
      */
@@ -68,6 +83,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'temp_password',
         'status',
         'isloggedin',
         'roleID',
@@ -86,6 +102,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'temp_password',
         'remember_token',
     ];
 

@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin Dashboard') - CFMC</title>
+    <script>
+        (function () {
+            var saved = localStorage.getItem('cfmc-theme');
+            var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -28,25 +35,43 @@
                     Dashboard
                 </a>
 
-                <a href="{{ route('admin.members') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.members') ? 'active text-gray-900' : 'text-gray-600' }}">
+                <div class="sidebar-section-label">Members</div>
+
+                <a href="{{ route('admin.members') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.members') && request('status') !== 'approved' ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-users w-5"></i>
                     Member Information
                 </a>
 
-                <a href="{{ route('admin.membership-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('admin.members', ['status' => 'approved']) }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.members') && request('status') === 'approved' ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-user-check w-5"></i>
+                    Approved Membership
+                </a>
+
+                <a href="{{ route('admin.membership-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-user-clock w-5"></i>
                     Membership Approval
                 </a>
+
+                <div class="sidebar-section-label">Loans</div>
 
                 <a href="{{ route('admin.loan-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.loan-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-hand-holding-usd w-5"></i>
                     Loan Approval
                 </a>
 
+                <a href="{{ route('admin.approved-loans') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.approved-loans') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-check-double w-5"></i>
+                    Approved Loans
+                </a>
+
+                <div class="sidebar-section-label">Operations</div>
+
                 <a href="{{ route('admin.schedule') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.schedule') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-tractor w-5"></i>
                     View Schedule
                 </a>
+
+                <div class="sidebar-section-label">Administration</div>
 
                 <a href="{{ route('admin.user-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.user-management') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-users-cog w-5"></i>
@@ -73,6 +98,7 @@
                     <h1 class="text-xl font-semibold text-gray-900 mb-0">@yield('header', 'Dashboard')</h1>
                 </div>
                 <div class="d-flex align-items-center gap-4">
+                    <x-theme-toggle />
                     <x-notification-bell :notifications="$announcementNotifications ?? collect()" :unread-count="$unreadAnnouncementCount ?? 0" />
                     <x-profile-menu />
                 </div>

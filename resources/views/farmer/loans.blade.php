@@ -13,16 +13,22 @@
 
 <!-- Active Loan Summary -->
 @if($activeLoan)
+@if($activeLoan->status === 'pending_disbursement')
+<x-info-banner variant="info" title="Loan Approved" class="mb-6">
+    Your loan terms have been finalized and are awaiting release of funds. Repayment tracking will begin once the amount is disbursed to you.
+</x-info-banner>
+@else
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <x-stat-card label="Remaining Balance" value="{{ peso($activeLoan->remaining_balance) }}" icon="fa-hand-holding-usd" color="danger" />
     <x-stat-card label="Monthly Due" value="{{ peso($activeLoan->monthly_due) }}" icon="fa-calendar-day" color="warning" />
     <x-stat-card label="Next Due Date" value="{{ $activeLoan->next_due_date->format('M d, Y') }}" icon="fa-clock" color="primary" />
 </div>
+@endif
 
 <div class="section-card mb-6">
     <div class="p-4 p-md-6 border-b border-gray-200 d-flex align-items-center justify-content-between">
         <h3 class="text-lg font-semibold text-gray-900 mb-0">Active Loan</h3>
-        <x-status-badge :status="$activeLoan->status === 'fully_paid' ? 'Fully Paid' : ucfirst($activeLoan->status)" />
+        <x-status-badge :status="ucwords(str_replace('_', ' ', $activeLoan->status))" />
     </div>
     <div class="p-4 p-md-6 row g-3">
         <div class="col-6 col-md-3"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($activeLoan->principal_amount) }}</p></div>
@@ -43,7 +49,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($activeLoan->payments->sortByDesc('transaction_date') as $payment)
+                @forelse($activeLoan->payments->sortByDesc('created_at') as $payment)
                 <tr>
                     <td class="px-4 px-md-6 small">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small">

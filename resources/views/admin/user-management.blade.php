@@ -11,21 +11,21 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             <div class="d-flex align-items-center gap-3 flex-grow-1 flex-wrap">
                 <div class="position-relative">
-                    <input type="text" id="searchInput" placeholder="Search users..." class="form-control ps-5 py-2" style="min-width: 200px;">
+                    <input type="text" id="searchInput" placeholder="Search users..." class="form-control ps-5 py-2" style="min-width: 200px;" value="{{ request('search') }}">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 <select id="roleFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
                     <option value="">All Roles</option>
-                    <option value="1">Admin</option>
-                    <option value="2">Manager</option>
-                    <option value="3">Farmer</option>
+                    <option value="1" {{ request('role') == '1' ? 'selected' : '' }}>Admin</option>
+                    <option value="2" {{ request('role') == '2' ? 'selected' : '' }}>Manager</option>
+                    <option value="3" {{ request('role') == '3' ? 'selected' : '' }}>Farmer</option>
                 </select>
                 <select id="statusFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
                     <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="locked">Locked</option>
-                    <option value="archived">Archived</option>
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    <option value="locked" {{ request('status') == 'locked' ? 'selected' : '' }}>Locked</option>
+                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
             </div>
             <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
@@ -45,6 +45,7 @@
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Email</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Phone</th>
+                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Temp Password</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Created At</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Actions</th>
@@ -74,6 +75,16 @@
                         @endif
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->Phonenumber ?? 'N/A' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">
+                        @if($user->temp_password)
+                        <span class="d-flex align-items-center gap-2">
+                            <span class="temp-password-mask" data-password="{{ $user->temp_password }}">••••••••••</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Show/hide password" onclick="toggleTempPassword(this)"><i class="fas fa-eye"></i></button>
+                        </span>
+                        @else
+                        &mdash;
+                        @endif
+                    </td>
                     <td class="px-4 px-md-6 py-4">
                         <x-status-badge :status="ucfirst($user->status)" />
                     </td>
@@ -82,13 +93,24 @@
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-primary" title="View" onclick="viewUser({{ $user->id }})"><i class="fas fa-eye"></i></button>
                             <button class="btn btn-sm btn-outline-warning" title="Edit" onclick="editUser({{ $user->id }})"><i class="fas fa-edit"></i></button>
+                            @if($user->roleID != 1 && in_array($user->status, ['active', 'inactive']))
+                                @if($user->status === 'active')
+                                <button class="btn btn-sm btn-outline-secondary" title="Deactivate" onclick="toggleUserStatus({{ $user->id }}, 'active')"><i class="fas fa-user-slash"></i></button>
+                                @else
+                                <button class="btn btn-sm btn-outline-success" title="Activate" onclick="toggleUserStatus({{ $user->id }}, 'inactive')"><i class="fas fa-user-check"></i></button>
+                                @endif
+                            @endif
+                            @if($user->status === 'archived')
+                            <button class="btn btn-sm btn-outline-success" title="Unarchive" onclick="unarchiveUser({{ $user->id }})"><i class="fas fa-box-open"></i></button>
+                            @else
                             <button class="btn btn-sm btn-outline-warning" title="Archive" onclick="archiveUser({{ $user->id }})"><i class="fas fa-archive"></i></button>
+                            @endif
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-4 text-center text-muted">No users found</td>
+                    <td colspan="9" class="px-4 px-md-6 py-4 text-center text-muted">No users found</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -753,6 +775,19 @@
         applyRoleRules();
     });
 
+    // Reveal/hide a farmer's system-generated temporary password in the table.
+    function toggleTempPassword(button) {
+        var mask = button.previousElementSibling;
+        var icon = button.querySelector('i');
+        if (mask.textContent === mask.dataset.password) {
+            mask.textContent = '••••••••••';
+            icon.className = 'fas fa-eye';
+        } else {
+            mask.textContent = mask.dataset.password;
+            icon.className = 'fas fa-eye-slash';
+        }
+    }
+
     // Toggle password visibility
     document.getElementById('togglePassword').addEventListener('click', function() {
         var input = this.previousElementSibling;
@@ -850,51 +885,122 @@
         });
     }
 
-    // Search and Filter Functionality
+    // Search and Filter Functionality — filters the full user list on the
+    // server (not just the rows on the current page).
     var searchInput = document.getElementById('searchInput');
     var roleFilter = document.getElementById('roleFilter');
     var statusFilter = document.getElementById('statusFilter');
 
-    function filterUsers() {
-        var searchTerm = searchInput.value.toLowerCase();
-        var roleValue = roleFilter.value;
-        var statusValue = statusFilter.value;
-        var rows = document.querySelectorAll('tbody tr');
+    function applyUserFilters() {
+        var currentUrl = new URL(window.location.href);
 
-        rows.forEach(function(row) {
-            var name = row.querySelector('td:nth-child(2)') ? row.querySelector('td:nth-child(2)').textContent.toLowerCase() : '';
-            var email = row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').textContent.toLowerCase() : '';
-            var role = row.querySelector('td:nth-child(4)') ? row.querySelector('td:nth-child(4)').textContent.trim() : '';
-            var status = row.querySelector('td:nth-child(6)') ? row.querySelector('td:nth-child(6)').textContent.trim() : '';
-            var phone = row.querySelector('td:nth-child(5)') ? row.querySelector('td:nth-child(5)').textContent.toLowerCase() : '';
+        if (searchInput.value) {
+            currentUrl.searchParams.set('search', searchInput.value);
+        } else {
+            currentUrl.searchParams.delete('search');
+        }
 
-            var matchesSearch = searchTerm === '' ||
-                name.includes(searchTerm) ||
-                email.includes(searchTerm) ||
-                phone.includes(searchTerm);
+        if (roleFilter.value) {
+            currentUrl.searchParams.set('role', roleFilter.value);
+        } else {
+            currentUrl.searchParams.delete('role');
+        }
 
-            var matchesRole = roleValue === '' ||
-                (roleValue === '1' && role === 'Admin') ||
-                (roleValue === '2' && role === 'Manager') ||
-                (roleValue === '3' && role === 'Farmer');
+        if (statusFilter.value) {
+            currentUrl.searchParams.set('status', statusFilter.value);
+        } else {
+            currentUrl.searchParams.delete('status');
+        }
 
-            var matchesStatus = statusValue === '' ||
-                (statusValue === 'active' && status === 'Active') ||
-                (statusValue === 'inactive' && status === 'Inactive') ||
-                (statusValue === 'locked' && status === 'Locked') ||
-                (statusValue === 'archived' && status === 'Archived');
-
-            if (matchesSearch && matchesRole && matchesStatus) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
+        currentUrl.searchParams.delete('page');
+        window.location.href = currentUrl.toString();
     }
 
-    searchInput.addEventListener('input', filterUsers);
-    roleFilter.addEventListener('change', filterUsers);
-    statusFilter.addEventListener('change', filterUsers);
+    searchInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            applyUserFilters();
+        }
+    });
+
+    var userSearchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(userSearchTimeout);
+        userSearchTimeout = setTimeout(applyUserFilters, 500);
+    });
+
+    roleFilter.addEventListener('change', applyUserFilters);
+    statusFilter.addEventListener('change', applyUserFilters);
+
+    // Activate / Deactivate Account Function (Manager and Farmer accounts only)
+    function toggleUserStatus(userId, currentStatus) {
+        var confirmMessage = currentStatus === 'active'
+            ? 'Deactivate this account? The user will no longer be able to log in.'
+            : 'Activate this account? The user will be able to log in again.';
+
+        if (confirm(confirmMessage)) {
+            var formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('_method', 'PATCH');
+
+            fetch('/admin/user-management/' + userId + '/toggle-status', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    showAlert(data.message, 'success', function() {
+                        window.location.reload();
+                    });
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(function(error) {
+                console.error('Error:', error);
+                showAlert(error.message, 'danger');
+            });
+        }
+    }
+
+    // Unarchive User Function
+    function unarchiveUser(userId) {
+        if (confirm('Restore this account from the archive?')) {
+            var formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('_method', 'PATCH');
+
+            fetch('/admin/user-management/' + userId + '/unarchive', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    showAlert(data.message, 'success', function() {
+                        window.location.reload();
+                    });
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(function(error) {
+                console.error('Error:', error);
+                showAlert(error.message, 'danger');
+            });
+        }
+    }
 
     // Archive User Function
     function archiveUser(userId) {

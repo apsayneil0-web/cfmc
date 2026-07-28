@@ -16,7 +16,7 @@ class ScheduleApprovalController extends Controller
         $query = ScheduleRequest::with(['user.farmer', 'originalSchedule'])
             ->whereNull('archived_at')
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'denied', 'completed')")
-            ->orderBy('scheduled_date');
+            ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
@@ -48,7 +48,7 @@ class ScheduleApprovalController extends Controller
     {
         abort_if($schedule->status !== 'pending', 422, 'Only pending requests can be approved.');
 
-        if (ScheduleRequest::hasConflict($schedule->machinery, $schedule->scheduled_date->format('Y-m-d'), $schedule->start_time, $schedule->end_time, $schedule->id)) {
+        if (ScheduleRequest::hasConflict($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), $schedule->start_time, $schedule->end_time, $schedule->id)) {
             return redirect()->route('manager.schedule-approval')
                 ->with('error', 'Cannot approve: this machinery is already booked for an overlapping date/time.');
         }

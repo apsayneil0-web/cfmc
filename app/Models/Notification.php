@@ -12,6 +12,7 @@ class Notification extends Model
     protected $fillable = [
         'user_id',
         'announcement_id',
+        'loan_id',
         'title',
         'message',
         'type',
@@ -37,6 +38,11 @@ class Notification extends Model
         return $this->belongsTo(Announcement::class);
     }
 
+    public function loan(): BelongsTo
+    {
+        return $this->belongsTo(Loan::class);
+    }
+
     /**
      * Icon + short eyebrow label shown in the notification bell, keyed by type.
      */
@@ -46,6 +52,10 @@ class Notification extends Model
             'meeting' => ['icon' => '📅', 'label' => 'New Meeting Announcement'],
             'reminder' => ['icon' => '⏰', 'label' => 'Reminder'],
             'resolution' => ['icon' => '✅', 'label' => 'Resolution Posted'],
+            'loan_grace_interest' => ['icon' => '⚠️', 'label' => 'Grace Period Interest Applied'],
+            'loan_penalty' => ['icon' => '🚫', 'label' => 'Loan Penalty & Restriction'],
+            'loan_barangay_summon' => ['icon' => '🏛️', 'label' => 'Barangay Summons Flagged'],
+            'loan_legal_action' => ['icon' => '⚖️', 'label' => 'Legal Action Flagged'],
             default => ['icon' => '📢', 'label' => 'New Announcement'],
         };
     }

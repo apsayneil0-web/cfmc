@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Manager Dashboard') - CFMC</title>
+    <script>
+        (function () {
+            var saved = localStorage.getItem('cfmc-theme');
+            var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -28,6 +35,8 @@
                     Dashboard
                 </a>
 
+                <div class="sidebar-section-label">Members</div>
+
                 <a href="{{ route('manager.user-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.user-management') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-user-cog w-5"></i>
                     User Management
@@ -43,15 +52,7 @@
                     Farmer Profile
                 </a>
 
-                <a href="{{ route('manager.schedule-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.schedule-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-calendar-check w-5"></i>
-                    Schedule Approval
-                </a>
-
-                <a href="{{ route('manager.machine-schedule') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.machine-schedule') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-tractor w-5"></i>
-                    Machine Scheduling
-                </a>
+                <div class="sidebar-section-label">Loans &amp; Finance</div>
 
                 <a href="{{ route('manager.financial') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.financial') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-chart-pie w-5"></i>
@@ -83,10 +84,24 @@
                     Payments
                 </a>
 
+                <div class="sidebar-section-label">Operations</div>
+
+                <a href="{{ route('manager.schedule-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.schedule-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-calendar-check w-5"></i>
+                    Schedule Approval
+                </a>
+
+                <a href="{{ route('manager.machine-schedule') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.machine-schedule') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-tractor w-5"></i>
+                    Machine Scheduling
+                </a>
+
                 <a href="{{ route('manager.machinery') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.machinery') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-cogs w-5"></i>
                     Machinery
                 </a>
+
+                <div class="sidebar-section-label">Engagement</div>
 
                 <a href="{{ route('manager.complaints') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.complaints') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-exclamation-circle w-5"></i>
@@ -97,6 +112,8 @@
                     <i class="fas fa-bullhorn w-5"></i>
                     Announcements
                 </a>
+
+                <div class="sidebar-section-label">Reports</div>
 
                 <a href="{{ route('manager.reporting') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.reporting') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-file-alt w-5"></i>
@@ -123,6 +140,7 @@
                     <h1 class="text-xl font-semibold text-gray-900 mb-0">@yield('header', 'Dashboard')</h1>
                 </div>
                 <div class="d-flex align-items-center gap-4">
+                    <x-theme-toggle />
                     <x-notification-bell :notifications="$announcementNotifications ?? collect()" :unread-count="$unreadAnnouncementCount ?? 0" />
                     <x-profile-menu />
                 </div>

@@ -9,8 +9,35 @@
 @foreach($notifications as $notification)
 @php
     $announcement = $notification->announcement;
+    $loan = $notification->loan;
     $display = \App\Models\Notification::typeDisplay($notification->type);
 @endphp
+@if($loan)
+<div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">{{ $display['icon'] }} {{ $notification->title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-6"><label class="text-muted small d-block">Loan</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                    <div class="col-6"><label class="text-muted small d-block">Farmer</label><p class="fw-medium mb-0">{{ $loan->loanRequest?->farmer?->full_name ?? '—' }}</p></div>
+                    <div class="col-6"><label class="text-muted small d-block">Outstanding Balance</label><p class="fw-medium mb-0">&#8369;{{ number_format($loan->remaining_balance, 2) }}</p></div>
+                    <div class="col-6"><label class="text-muted small d-block">Original Due Date</label><p class="fw-medium mb-0">{{ $loan->original_due_date?->format('M d, Y') ?? '—' }}</p></div>
+                    <div class="col-12"><label class="text-muted small d-block">Details</label><p class="fw-medium mb-0">{{ $notification->message }}</p></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <span class="text-muted small me-auto">{{ $notification->created_at->format('M d, Y \a\t g:i A') }}</span>
+                <a href="{{ route('manager.loan-management') }}" class="btn btn-outline-primary btn-sm">View Loan Management</a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @if($announcement)
 <div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">

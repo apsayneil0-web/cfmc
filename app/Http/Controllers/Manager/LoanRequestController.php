@@ -40,15 +40,15 @@ class LoanRequestController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $farmers = Farmer::where('status', 'approved')->orderBy('first_name')->get();
-        $batches = LoanBatch::orderBy('batch_number')->get();
+        $farmers = Farmer::where('status', 'approved')->orderBy('created_at', 'desc')->get();
+        $batches = LoanBatch::orderBy('created_at', 'desc')->get();
 
         // Batches still collecting members: not yet full, so not yet forwarded
         // to the Administrator. These are the only ones a manager can edit.
         $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
         $batchesInProgress = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
-            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at')])
-            ->orderBy('batch_number')
+            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at', 'desc')])
+            ->orderBy('created_at', 'desc')
             ->get()
             ->reject(fn (LoanBatch $batch) => $batch->is_full)
             ->values();
@@ -57,15 +57,26 @@ class LoanRequestController extends Controller
         foreach (LoanRequest::where('status', 'pending')->pluck('farmer_id') as $farmerId) {
             $farmersIneligibleForNewRequest[$farmerId] = 'Has a pending loan request';
         }
-        foreach (Loan::whereIn('status', ['active', 'overdue'])->with('loanRequest')->get() as $loan) {
-            $farmersIneligibleForNewRequest[$loan->loanRequest->farmer_id] ??= 'Has an unpaid loan';
+        foreach (Loan::whereIn('status', ['pending_disbursement', 'active', 'overdue'])->with('loanRequest')->get() as $loan) {
+            $reason = $loan->is_restricted ? 'Restricted: penalized loan must be fully paid first' : 'Has an unpaid loan';
+            $farmersIneligibleForNewRequest[$loan->loanRequest->farmer_id] ??= $reason;
         }
+
+        // Batches the Administrator has approved but that haven't been
+        // finalized into loans yet — finalized one decision at a time per
+        // batch, same as approval, rather than clicking "Finalize" 10 times.
+        $approvedUnfinalizedMember = fn ($q) => $q->where('status', 'approved')->whereNull('archived_at')->whereDoesntHave('loan');
+        $batchesReadyToFinalize = LoanBatch::whereHas('loanRequests', $approvedUnfinalizedMember)
+            ->with(['loanRequests' => fn ($q) => $approvedUnfinalizedMember($q)->with('farmer')->orderBy('created_at', 'desc')])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('manager.loan-request', [
             'requests' => $requests,
             'farmers' => $farmers,
             'batches' => $batches,
             'batchesInProgress' => $batchesInProgress,
+            'batchesReadyToFinalize' => $batchesReadyToFinalize,
             'purposes' => self::PURPOSES,
             'termOptions' => self::TERMS,
             'farmersIneligibleForNewRequest' => $farmersIneligibleForNewRequest,
@@ -149,13 +160,46 @@ class LoanRequestController extends Controller
             'repayment_terms_months' => $validated['repayment_terms_months'],
             'installment_amount' => $installmentAmount,
             'collateral' => $validated['collateral'] ?? $loan_request->collateral,
-            'remaining_balance' => $validated['principal_amount'],
-            'next_due_date' => now()->addMonthNoOverflow()->toDateString(),
-            'status' => 'active',
+            'status' => 'pending_disbursement',
         ]);
 
         return redirect()->route('manager.loan-management')
-            ->with('success', "Loan for {$loan_request->farmer->full_name} is now active.");
+            ->with('success', "Loan terms for {$loan_request->farmer->full_name} are finalized. Awaiting disbursement.");
+    }
+
+    /**
+     * Finalize every approved, not-yet-finalized member of a batch at once,
+     * using each member's own requested amount and term with one shared
+     * interest rate — mirrors the Administrator's batch approve/deny decision.
+     */
+    public function finalizeBatch(Request $request, LoanBatch $batch)
+    {
+        $members = $batch->loanRequests()
+            ->where('status', 'approved')
+            ->whereNull('archived_at')
+            ->whereDoesntHave('loan')
+            ->get();
+
+        abort_if($members->isEmpty(), 422, 'This batch has no approved requests left to finalize.');
+
+        $validated = $request->validate([
+            'interest_rate' => 'required|numeric|min:0|max:100',
+        ]);
+
+        foreach ($members as $member) {
+            Loan::create([
+                'loan_request_id' => $member->id,
+                'principal_amount' => $member->requested_amount,
+                'interest_rate' => $validated['interest_rate'],
+                'repayment_terms_months' => $member->repayment_terms_months,
+                'installment_amount' => round($member->requested_amount / $member->repayment_terms_months, 2),
+                'collateral' => $member->collateral,
+                'status' => 'pending_disbursement',
+            ]);
+        }
+
+        return redirect()->route('manager.loan-management')
+            ->with('success', "{$batch->label}'s {$members->count()} loan(s) are finalized. Awaiting disbursement.");
     }
 
     public function archive(LoanRequest $loan_request)
@@ -205,11 +249,13 @@ class LoanRequestController extends Controller
                         return;
                     }
 
-                    $hasUnpaidLoan = Loan::whereIn('status', ['active', 'overdue'])
+                    $unpaidLoan = Loan::whereIn('status', ['pending_disbursement', 'active', 'overdue'])
                         ->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $value))
-                        ->exists();
+                        ->first();
 
-                    if ($hasUnpaidLoan) {
+                    if ($unpaidLoan?->is_restricted) {
+                        $fail('This farmer\'s loan was penalized for missing its grace period and is restricted from new loans until the outstanding balance is fully paid.');
+                    } elseif ($unpaidLoan) {
                         $fail('This farmer already has an unpaid loan and cannot request a new one until it is fully paid.');
                     }
                 },

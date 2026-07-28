@@ -582,6 +582,18 @@
                         </div>
                     </div>
 
+                    <!-- Row 2b: Barangay -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Barangay</label>
+                            <select class="form-select form-select-lg d-none" id="barangayNameSelect" name="barangay" disabled>
+                                <option value="" selected>Select Barangay</option>
+                            </select>
+                            <input type="text" class="form-control form-control-lg" id="barangayNameInput" name="barangay" placeholder="Enter barangay">
+                            <div class="form-text">A barangay list is only available for Surallah and Banga; other municipalities can be typed in.</div>
+                        </div>
+                    </div>
+
                     <!-- Row 3: Crop Type & Land Area -->
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
@@ -734,7 +746,7 @@
             'Bagumbayan', 'Bangsamoro', 'Columbio', 'Esperanza', 'Isulan', 'Kalamarang', 'Lebak', 'Llambayan', 'Lutayan', 'Palimbang', 'President Quirino', 'Province of Sultan Kudarat', 'Rama', 'Senator Ninoy Aquino', 'Tacurong City', 'Tantangan', 'Tupol'
         ],
         'South Cotabato': [
-            'Bangian', 'Bagumpasig', 'Banon', 'Buayan', 'Buli', 'Caloocan', 'Datu Saliao', 'General Santos City', 'Koronadal City', 'Lake Sebu', 'Lambayong', 'Mabini', 'Magsaysay', 'Maiha', 'Malapatan', 'Malungon', 'Norala', 'Polomolok', 'Santo Nino', 'Surallah', 'T\'Boli', 'Tampakan', 'Tantangan', 'Tupi'
+            'Banga', 'Bangian', 'Bagumpasig', 'Banon', 'Buayan', 'Buli', 'Caloocan', 'Datu Saliao', 'General Santos City', 'Koronadal City', 'Lake Sebu', 'Lambayong', 'Mabini', 'Magsaysay', 'Maiha', 'Malapatan', 'Malungon', 'Norala', 'Polomolok', 'Santo Nino', 'Surallah', 'T\'Boli', 'Tampakan', 'Tantangan', 'Tupi'
         ],
         'Sarangani': [
             'Alabel', 'Camarigan', 'Don Marcelino', 'Glan', 'Guba', 'Jose Abad Santos', 'Kiamba', 'Maitum', 'Malapatan', 'Malungon', 'San Isidro', 'Santo Domingo', 'Sarangani'
@@ -768,6 +780,17 @@
         ],
         'Tawi-Tawi': [
             'Bongao', 'Languyan', 'Mapun', 'Sapa-Sapa', 'Sibutu', 'Simunul', 'Sitangkai', 'South Ubian', 'Tandubas', 'Turtle Islands'
+        ]
+    };
+
+    // Barangay lists — only populated for Surallah and Banga (South Cotabato) for now.
+    // Every other municipality falls back to a free-text barangay field.
+    const barangaysData = {
+        'Surallah': [
+            'Buenavista', 'Canahay', 'Centrala', 'Colongulo', 'Dajay', 'Duengas', 'Lambontong', 'Lamian', 'Lamsugod', 'Libertad (Poblacion)', 'Little Baguio', 'Moloy', 'Naci', 'Talahik', 'Tubiala', 'Upper Sepaka', 'Veterans'
+        ],
+        'Banga': [
+            'Benitez (Poblacion)', 'Cabudian', 'Cabuling', 'Cinco', 'Derilon', 'El Nonok', 'Improgo Village (Poblacion)', 'Kusan', 'Lam-apos', 'Lamba', 'Lambingi', 'Lampari', 'Liwanay', 'Malaya', 'Punong Grande', 'Rang-ay', 'Reyes (Poblacion)', 'Rizal', 'Rizal Poblacion', 'San Jose', 'San Vicente', 'Yangco Poblacion'
         ]
     };
 
@@ -874,6 +897,40 @@
                 option.textContent = municipality;
                 municipalitySelect.appendChild(option);
             });
+        }
+
+        // Municipality reset, so the barangay field resets too
+        municipalitySelect.dispatchEvent(new Event('change'));
+    });
+
+    // Municipality Select Change Handler — swaps in a barangay dropdown for
+    // municipalities we have a barangay list for, otherwise falls back to
+    // a free-text barangay field.
+    document.getElementById('municipalitySelect').addEventListener('change', function() {
+        const selectedMunicipality = this.value;
+        const barangaySelect = document.getElementById('barangayNameSelect');
+        const barangayInput = document.getElementById('barangayNameInput');
+
+        barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
+        barangayInput.value = '';
+
+        if (selectedMunicipality && barangaysData[selectedMunicipality]) {
+            barangaysData[selectedMunicipality].forEach(function(barangay) {
+                const option = document.createElement('option');
+                option.value = barangay;
+                option.textContent = barangay;
+                barangaySelect.appendChild(option);
+            });
+
+            barangaySelect.classList.remove('d-none');
+            barangaySelect.disabled = false;
+            barangayInput.classList.add('d-none');
+            barangayInput.disabled = true;
+        } else {
+            barangaySelect.classList.add('d-none');
+            barangaySelect.disabled = true;
+            barangayInput.classList.remove('d-none');
+            barangayInput.disabled = false;
         }
     });
 
@@ -996,6 +1053,14 @@
                 document.getElementById(id).textContent = '';
             });
             document.getElementById('municipalitySelect').innerHTML = '<option value="" selected disabled>Select Municipality</option>';
+
+            const barangaySelect = document.getElementById('barangayNameSelect');
+            const barangayInput = document.getElementById('barangayNameInput');
+            barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
+            barangaySelect.classList.add('d-none');
+            barangaySelect.disabled = true;
+            barangayInput.classList.remove('d-none');
+            barangayInput.disabled = false;
         });
 
         // Auto-open modal if there are old input values (validation error)

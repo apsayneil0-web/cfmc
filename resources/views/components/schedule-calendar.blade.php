@@ -6,11 +6,15 @@
     'showOpenBadge' => false,
     'minHeight' => '110px',
     'compact' => false,
+    'month' => null,
+    'minDate' => null,
+    'clickable' => false,
 ])
 
 @php
     $dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     $statusClass = $showNames ? 'calendar-booking-approved' : 'calendar-booking-booked';
+    $earliestDate = $minDate ? \Carbon\Carbon::parse($minDate)->startOfDay() : null;
 @endphp
 
 <div class="calendar-scroll">
@@ -25,7 +29,17 @@
             <div class="calendar-cell calendar-cell-empty" style="min-height: {{ $minHeight }};"></div>
             @endfor
             @for($day = 1; $day <= $daysInMonth; $day++)
-            <div class="calendar-cell {{ $calendarDays[$day]->isNotEmpty() ? 'has-bookings' : '' }}" style="min-height: {{ $minHeight }};">
+            @php
+                $isOpen = $calendarDays[$day]->isEmpty();
+                $cellDate = $month ? $month->copy()->startOfMonth()->addDays($day - 1) : null;
+                $isTooSoon = $isOpen && $earliestDate && $cellDate && $cellDate->lt($earliestDate);
+                $isSelectable = $clickable && $isOpen && !$isTooSoon;
+            @endphp
+            <div
+                class="calendar-cell {{ $calendarDays[$day]->isNotEmpty() ? 'has-bookings' : '' }} {{ $isSelectable ? 'calendar-cell-clickable' : '' }} {{ $clickable && $isTooSoon ? 'calendar-cell-disabled' : '' }}"
+                style="min-height: {{ $minHeight }};"
+                @if($isSelectable) data-date="{{ $cellDate->format('Y-m-d') }}" role="button" tabindex="0" @endif
+            >
                 <p class="calendar-cell-date">{{ $day }}</p>
                 @forelse($calendarDays[$day] as $booking)
                 @php
@@ -40,7 +54,9 @@
                     </span>
                 </div>
                 @empty
-                    @if($showOpenBadge)
+                    @if($showOpenBadge && $clickable && $isTooSoon)
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle calendar-open-badge">Too soon</span>
+                    @elseif($showOpenBadge)
                     <span class="badge bg-success-subtle text-success border border-success-subtle calendar-open-badge">Open</span>
                     @endif
                 @endforelse

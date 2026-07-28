@@ -18,6 +18,7 @@ use App\Http\Controllers\Manager\MachineScheduleController;
 use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
 use App\Http\Controllers\Manager\LoanRequestController;
 use App\Http\Controllers\Manager\LoanManagementController;
+use App\Http\Controllers\Manager\MachineController;
 use App\Http\Controllers\Manager\PaymentController;
 use App\Http\Controllers\Manager\LoanAppointmentController as ManagerLoanAppointmentController;
 use App\Http\Controllers\Manager\FarmerProfileController;
@@ -30,7 +31,7 @@ Route::get('/', function () {
 })->name('welcome');
 
 // Dashboard routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     // Admin Routes
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
@@ -46,6 +47,8 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/admin/loan-approval/batch/{batch}/approve', [LoanApprovalController::class, 'approveBatch'])->name('admin.loan-approval.batch-approve');
     Route::patch('/admin/loan-approval/batch/{batch}/deny', [LoanApprovalController::class, 'denyBatch'])->name('admin.loan-approval.batch-deny');
 
+    Route::get('/admin/approved-loans', [LoanApprovalController::class, 'approved'])->name('admin.approved-loans');
+
     Route::get('/admin/schedule', function () {
         return view('admin.schedule');
     })->name('admin.schedule');
@@ -53,6 +56,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/user-management', [AdminUserController::class, 'index'])->name('admin.user-management');
     Route::post('/admin/user-management', [AdminUserController::class, 'store'])->name('admin.user.store');
     Route::patch('/admin/user-management/{user}/archive', [AdminUserController::class, 'archive'])->name('admin.user.archive');
+    Route::patch('/admin/user-management/{user}/unarchive', [AdminUserController::class, 'unarchive'])->name('admin.user.unarchive');
+    Route::patch('/admin/user-management/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('admin.user.toggle-status');
     Route::get('/admin/user-management/{user}', [AdminUserController::class, 'show'])->name('admin.user.show');
     Route::put('/admin/user-management/{user}', [AdminUserController::class, 'update'])->name('admin.user.update');
 
@@ -89,11 +94,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/manager/loan-request', [LoanRequestController::class, 'store'])->name('manager.loan-request.store');
     Route::put('/manager/loan-request/{loan_request}', [LoanRequestController::class, 'update'])->name('manager.loan-request.update');
     Route::post('/manager/loan-request/{loan_request}/finalize', [LoanRequestController::class, 'finalize'])->name('manager.loan-request.finalize');
+    Route::post('/manager/loan-request/batch/{batch}/finalize', [LoanRequestController::class, 'finalizeBatch'])->name('manager.loan-request.batch-finalize');
     Route::patch('/manager/loan-request/{loan_request}/archive', [LoanRequestController::class, 'archive'])->name('manager.loan-request.archive');
     Route::patch('/manager/loan-request/{loan_request}/remove-from-batch', [LoanRequestController::class, 'removeBatchMember'])->name('manager.loan-request.remove-batch-member');
 
     Route::get('/manager/loan-management', [LoanManagementController::class, 'index'])->name('manager.loan-management');
     Route::put('/manager/loan-management/{loan}', [LoanManagementController::class, 'update'])->name('manager.loan-management.update');
+    Route::patch('/manager/loan-management/{loan}/disburse', [LoanManagementController::class, 'disburse'])->name('manager.loan-management.disburse');
     Route::patch('/manager/loan-management/{loan}/archive', [LoanManagementController::class, 'archive'])->name('manager.loan-management.archive');
 
     Route::get('/manager/loan-appointment', [ManagerLoanAppointmentController::class, 'index'])->name('manager.loan-appointment');
@@ -102,10 +109,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/manager/payment', [PaymentController::class, 'index'])->name('manager.payment');
     Route::post('/manager/payment', [PaymentController::class, 'recordLoanPayment'])->name('manager.payment.record');
+    Route::get('/manager/payment/{loan_payment}/receipt', [PaymentController::class, 'receipt'])->name('manager.payment.receipt');
 
-    Route::get('/manager/machinery', function () {
-        return view('manager.machinery');
-    })->name('manager.machinery');
+    Route::get('/manager/machinery', [MachineController::class, 'index'])->name('manager.machinery');
+    Route::post('/manager/machinery', [MachineController::class, 'store'])->name('manager.machinery.store');
+    Route::put('/manager/machinery/{machine}', [MachineController::class, 'update'])->name('manager.machinery.update');
+    Route::patch('/manager/machinery/{machine}/archive', [MachineController::class, 'archive'])->name('manager.machinery.archive');
 
     Route::get('/manager/complaints', function () {
         return view('manager.complaints');
@@ -124,6 +133,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/manager/user-management', [UserController::class, 'store'])->name('user.store');
     Route::patch('/manager/user-management/{user}/archive', [UserController::class, 'archive'])->name('user.archive');
+    Route::patch('/manager/user-management/{user}/unarchive', [UserController::class, 'unarchive'])->name('user.unarchive');
+    Route::patch('/manager/user-management/{user}/unlock', [UserController::class, 'unlock'])->name('user.unlock');
+    Route::patch('/manager/user-management/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('user.toggle-status');
     Route::get('/manager/user-management/{user}', [UserController::class, 'show'])->name('user.show');
     Route::put('/manager/user-management/{user}', [UserController::class, 'update'])->name('user.update');
 

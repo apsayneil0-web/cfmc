@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'account.active' => \App\Http\Middleware\EnsureAccountIsActive::class,
+            'nocache' => \App\Http\Middleware\PreventBackHistoryCache::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

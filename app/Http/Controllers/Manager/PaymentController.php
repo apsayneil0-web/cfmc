@@ -17,14 +17,13 @@ class PaymentController extends Controller
     public function index()
     {
         $loanPayments = LoanPayment::with('loan.loanRequest.farmer')
-            ->orderByDesc('transaction_date')
-            ->orderByDesc('id')
+            ->orderByDesc('created_at')
             ->get();
 
         $payableLoans = Loan::whereNull('archived_at')
             ->whereIn('status', ['active', 'overdue'])
             ->with('loanRequest.farmer')
-            ->orderBy('next_due_date')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         $stats = [
@@ -48,11 +47,22 @@ class PaymentController extends Controller
         $loan = Loan::findOrFail($validated['loan_id']);
 
         abort_if(in_array($loan->status, ['fully_paid', 'archived']), 422, 'This loan is already closed.');
+        abort_if($loan->status === 'pending_disbursement', 422, 'This loan has not been disbursed yet.');
         abort_if((float) $validated['amount'] > (float) $loan->remaining_balance, 422, 'Payment exceeds remaining balance.');
 
         $loan->recordPayment($validated['amount'], $validated['notes'] ?? null, Auth::id());
 
         return redirect()->route('manager.payment')
             ->with('success', 'Payment recorded successfully.');
+    }
+
+    /**
+     * Printable receipt for a single loan payment, opened in its own tab.
+     */
+    public function receipt(LoanPayment $loan_payment)
+    {
+        $loan_payment->load('loan.loanRequest.farmer', 'recordedBy');
+
+        return view('manager.payment-receipt', ['payment' => $loan_payment]);
     }
 }

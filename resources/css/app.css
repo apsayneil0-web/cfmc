@@ -453,6 +453,18 @@ body.bg-light {
     color: inherit !important;
 }
 
+.sidebar-section-label {
+    padding: 0.5rem 1rem 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #6b7280);
+}
+.sidebar-section-label:first-child {
+    padding-top: 0.25rem;
+}
+
 .app-topbar {
     position: sticky;
     top: 0;
@@ -757,6 +769,21 @@ body.bg-light {
 .calendar-open-badge {
     font-size: 0.65rem;
 }
+.calendar-cell-clickable {
+    cursor: pointer;
+    transition: border-color 120ms var(--ease), background-color 120ms var(--ease), transform 120ms var(--ease);
+}
+.calendar-cell-clickable:hover,
+.calendar-cell-clickable:focus-visible {
+    border-color: var(--brand-primary);
+    background-color: var(--brand-primary-light);
+    transform: translateY(-1px);
+    outline: none;
+}
+.calendar-cell-disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
 
 /* Compact rendering: forced via .is-compact (dashboard widgets), and
    automatically below the sm breakpoint for the full-size calendars too. */
@@ -810,6 +837,104 @@ body.bg-light {
     .calendar-open-badge {
         display: none;
     }
+}
+
+/* -------------------------------------------------------------------------
+   Dark mode
+   Toggled via data-bs-theme="dark" on <html> (see x-theme-toggle + app.js).
+   Bootstrap recolors its own component internals from that attribute; the
+   rules below repoint our brand/text variables (which cascade through
+   cards, tables, badges, the sidebar, etc. automatically) and patch the
+   handful of literal Tailwind gray-scale utilities used directly in the
+   blade views, since those aren't wired to any variable Bootstrap's toggle
+   can reach.
+   ------------------------------------------------------------------------- */
+:root[data-bs-theme="dark"] {
+    --brand-primary-light: #163a30;
+    --brand-success-light: #0f2a1c;
+    --brand-danger-light: #3a1414;
+    --brand-warning-light: #3a2a0a;
+    --brand-info-light: #0c2c33;
+    --brand-purple-light: #291f47;
+    --brand-secondary: #94a3b8;
+    --brand-surface: #1e293b;
+    --brand-surface-muted: #0f172a;
+    --brand-border: #334155;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    --bs-body-bg: var(--brand-surface-muted);
+    --bs-border-color: var(--brand-border);
+    --bs-card-bg: var(--brand-surface);
+    --bs-modal-bg: var(--brand-surface);
+    --bs-dropdown-bg: var(--brand-surface);
+    --bs-dropdown-link-color: var(--text-primary);
+    --bs-dropdown-link-hover-bg: var(--brand-surface-muted);
+    --bs-table-bg: var(--brand-surface);
+    --bs-table-color: var(--text-primary);
+}
+
+:root[data-bs-theme="dark"] .table {
+    --bs-table-hover-bg: var(--brand-surface-muted);
+}
+
+:root[data-bs-theme="dark"] .app-topbar {
+    background-color: rgba(15, 23, 42, 0.85);
+}
+:root[data-bs-theme="dark"] .app-sidebar .sidebar-brand {
+    background: linear-gradient(135deg, #0f172a 0%, var(--brand-primary-light) 100%);
+}
+:root[data-bs-theme="dark"] .form-control,
+:root[data-bs-theme="dark"] .form-select {
+    background-color: var(--brand-surface);
+    border-color: var(--brand-border);
+    color: var(--text-primary);
+}
+:root[data-bs-theme="dark"] .form-control:hover,
+:root[data-bs-theme="dark"] .form-select:hover {
+    border-color: var(--text-muted);
+}
+:root[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background-color: #475569;
+}
+:root[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
+}
+
+/* Literal Tailwind gray-scale utilities used directly in the blade views */
+:root[data-bs-theme="dark"] .bg-white {
+    background-color: var(--brand-surface);
+}
+:root[data-bs-theme="dark"] .bg-gray-50 {
+    background-color: var(--brand-surface-muted);
+}
+:root[data-bs-theme="dark"] .text-gray-900,
+:root[data-bs-theme="dark"] .text-gray-700 {
+    color: var(--text-primary);
+}
+:root[data-bs-theme="dark"] .text-gray-600,
+:root[data-bs-theme="dark"] .text-gray-500 {
+    color: var(--text-secondary);
+}
+:root[data-bs-theme="dark"] .text-gray-400,
+:root[data-bs-theme="dark"] .text-gray-300,
+:root[data-bs-theme="dark"] .text-gray-200 {
+    color: var(--text-muted);
+}
+:root[data-bs-theme="dark"] .border-gray-200,
+:root[data-bs-theme="dark"] .border-gray-100 {
+    border-color: var(--brand-border);
+}
+
+.theme-toggle-icon-light {
+    display: none;
+}
+:root[data-bs-theme="dark"] .theme-toggle-icon-dark {
+    display: none;
+}
+:root[data-bs-theme="dark"] .theme-toggle-icon-light {
+    display: inline-block;
 }
 
 /* -------------------------------------------------------------------------

@@ -79,15 +79,35 @@ class UserController extends Controller
     /**
      * Display a listing of users.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('role')->where('roleID', '!=', 2)->orderBy('created_at', 'desc')->paginate(10);
+        $query = User::with('role')->where('roleID', '!=', 2);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('username', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('Phonenumber', 'like', '%'.$search.'%');
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('roleID', $request->role);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         // Approved membership records without an account yet, for the "Create Account" name picker
         $availableFarmers = Farmer::where('status', 'approved')
             ->whereNull('account_user_id')
-            ->orderBy('first_name')
-            ->get(['id', 'first_name', 'middle_initial', 'last_name', 'suffix', 'contact_number']);
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'first_name', 'middle_initial', 'last_name', 'suffix', 'contact_number', 'created_at']);
 
         return view('manager.user-management', compact('users', 'availableFarmers'));
     }
@@ -107,6 +127,105 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to archive user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Restore an archived account back to active use.
+     */
+    public function unarchive(User $user)
+    {
+        if ($user->status !== 'archived') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is not archived.'
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'status' => 'active',
+                'FailedLoginAttemps' => 0,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User unarchived successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to unarchive user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Unlock a farmer account that was locked after too many failed login
+     * attempts, and reset its failed-attempt count so it doesn't instantly
+     * re-lock on the next mistyped password.
+     */
+    public function unlock(User $user)
+    {
+        if ($user->status !== 'locked') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is not locked.'
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'status' => 'active',
+                'FailedLoginAttemps' => 0,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User unlocked successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to unlock user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Activate or deactivate a farmer account. Locked and archived accounts
+     * have their own dedicated flows (unlock / edit), so this only toggles
+     * between active and inactive.
+     */
+    public function toggleStatus(User $user)
+    {
+        if ((int) $user->roleID !== 3) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only farmer accounts can be activated or deactivated here.'
+            ], 422);
+        }
+
+        if (! in_array($user->status, ['active', 'inactive'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only active or inactive accounts can be toggled this way.'
+            ], 422);
+        }
+
+        try {
+            $newStatus = $user->status === 'active' ? 'inactive' : 'active';
+            $user->update(['status' => $newStatus]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User '.($newStatus === 'active' ? 'activated' : 'deactivated').' successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user status: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -143,13 +262,22 @@ class UserController extends Controller
         }
 
         try {
-            $user->update([
+            $updateData = [
                 'name' => $request->name,
                 'username' => $request->username,
                 'email' => $request->email,
                 'Phonenumber' => $request->Phonenumber ?? null,
                 'status' => $request->status,
-            ]);
+            ];
+
+            // Unlocking a farmer account (moving it off "locked") must also clear
+            // its failed-attempt count, or the very next mistyped password would
+            // instantly re-lock it.
+            if ($user->status === 'locked' && $request->status !== 'locked') {
+                $updateData['FailedLoginAttemps'] = 0;
+            }
+
+            $user->update($updateData);
 
             return response()->json([
                 'success' => true,

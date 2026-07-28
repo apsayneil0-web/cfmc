@@ -26,20 +26,20 @@ class PasswordResetController extends Controller
     {
         $request->validate([
             'username' => ['required', 'string'],
+            'email' => ['required', 'string', 'email'],
         ]);
 
-        $loginField = filter_var($request->username, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-
-        $user = User::where($loginField, $request->username)
+        $user = User::where('username', $request->username)
             ->whereIn('roleID', [1, 2])
             ->first();
 
-        // Staff only. The message is intentionally generic so we don't reveal
-        // whether an account exists.
-        if (! $user || ! $user->email) {
+        // Staff only, and the submitted email must match the one on file for
+        // that account. The error is intentionally generic so we don't reveal
+        // which of "account exists" / "email matches" failed.
+        if (! $user || ! $user->email || strcasecmp($user->email, $request->email) !== 0) {
             return back()->withErrors([
-                'username' => 'No staff account with an email address was found for that username.',
-            ])->onlyInput('username');
+                'email' => 'We could not find a staff account matching that username and email.',
+            ])->onlyInput('username', 'email');
         }
 
         $otp = (string) random_int(100000, 999999);

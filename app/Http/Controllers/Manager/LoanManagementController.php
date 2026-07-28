@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Loan;
 use App\Models\LoanPayment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LoanManagementController extends Controller
 {
@@ -17,10 +18,12 @@ class LoanManagementController extends Controller
     {
         $activeLoans = Loan::whereNull('archived_at')
             ->whereIn('status', ['active', 'overdue'])
+            ->with('loanRequest.farmer')
             ->get();
 
         foreach ($activeLoans as $loan) {
             $loan->applyOverdueInterest();
+            $loan->applyGracePeriodPolicy();
         }
 
         $query = Loan::with(['loanRequest.farmer', 'loanRequest.batch', 'payments']);
@@ -46,9 +49,10 @@ class LoanManagementController extends Controller
             });
         }
 
-        $loans = $query->orderBy('next_due_date')->get();
+        $loans = $query->orderBy('created_at', 'desc')->get();
 
         $stats = [
+            'pending_disbursement_count' => Loan::whereNull('archived_at')->where('status', 'pending_disbursement')->count(),
             'active_count' => Loan::whereNull('archived_at')->whereIn('status', ['active', 'overdue'])->count(),
             'total_outstanding' => Loan::whereNull('archived_at')->whereIn('status', ['active', 'overdue'])->sum('remaining_balance'),
             'due_this_month' => Loan::whereNull('archived_at')
@@ -79,6 +83,31 @@ class LoanManagementController extends Controller
 
         return redirect()->route('manager.loan-management')
             ->with('success', 'Loan record updated.');
+    }
+
+    /**
+     * Release funds for a finalized loan. Only allowed once, from
+     * pending_disbursement; this is what actually starts the repayment clock.
+     */
+    public function disburse(Request $request, Loan $loan)
+    {
+        abort_if($loan->status !== 'pending_disbursement', 422, 'Only loans awaiting disbursement can be released.');
+
+        $validated = $request->validate([
+            'disbursed_at' => 'required|date|before_or_equal:today',
+            'disbursement_method' => 'required|string|in:cash,bank_transfer,check',
+            'reference_no' => 'nullable|string|max:255',
+        ]);
+
+        $loan->disburse(
+            $validated['disbursement_method'],
+            $validated['reference_no'] ?? null,
+            Auth::id(),
+            $validated['disbursed_at'],
+        );
+
+        return redirect()->route('manager.loan-management')
+            ->with('success', "Loan for {$loan->farmer->full_name} has been disbursed and is now active.");
     }
 
     public function archive(Loan $loan)

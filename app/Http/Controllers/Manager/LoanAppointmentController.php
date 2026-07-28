@@ -15,8 +15,7 @@ class LoanAppointmentController extends Controller
     {
         $query = LoanAppointment::with('user.farmer')
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'cancelled')")
-            ->orderBy('appointment_date')
-            ->orderBy('appointment_time');
+            ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));

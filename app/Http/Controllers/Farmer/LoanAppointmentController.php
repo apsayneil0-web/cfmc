@@ -12,7 +12,7 @@ class LoanAppointmentController extends Controller
     public function index()
     {
         $appointments = LoanAppointment::where('user_id', Auth::id())
-            ->orderBy('appointment_date', 'desc')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return view('farmer.loan-appointment', compact('appointments'));

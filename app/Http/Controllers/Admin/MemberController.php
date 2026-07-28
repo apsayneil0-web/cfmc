@@ -29,7 +29,7 @@ class MemberController extends Controller
             $query->where('status', $request->status);
         }
 
-        $members = $query->orderBy('last_name')->get();
+        $members = $query->orderBy('created_at', 'desc')->get();
 
         return view('admin.members', compact('members'));
     }

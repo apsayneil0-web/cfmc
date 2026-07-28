@@ -35,7 +35,7 @@ class AnnouncementController extends Controller
 
         $announcements = $query->orderBy('created_at', 'desc')->get();
 
-        $farmers = Farmer::where('status', 'approved')->orderBy('first_name')->get();
+        $farmers = Farmer::where('status', 'approved')->orderBy('created_at', 'desc')->get();
 
         return view('manager.announcement', [
             'announcements' => $announcements,

@@ -20,13 +20,13 @@ class LoanApprovalController extends Controller
         $requests = LoanRequest::with('farmer')
             ->where('status', 'pending')
             ->where('type', 'regular')
-            ->orderBy('created_at')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
         $batchGroups = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
-            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at')])
-            ->orderBy('batch_number')
+            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at', 'desc')])
+            ->orderBy('created_at', 'desc')
             ->get()
             ->filter(fn (LoanBatch $batch) => $batch->is_full)
             ->values();
@@ -40,6 +40,27 @@ class LoanApprovalController extends Controller
             ->count();
 
         return view('admin.loan-approval', compact('requests', 'batchGroups', 'approvedThisMonth', 'deniedThisMonth'));
+    }
+
+    /**
+     * Display every loan request the Administrator has approved.
+     */
+    public function approved(Request $request)
+    {
+        $query = LoanRequest::with(['farmer', 'batch'])
+            ->where('status', 'approved');
+
+        if ($request->filled('search')) {
+            $search = $request->string('search');
+            $query->whereHas('farmer', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%");
+            });
+        }
+
+        $loans = $query->orderByDesc('created_at')->get();
+
+        return view('admin.approved-loans', compact('loans'));
     }
 
     /**

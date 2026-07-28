@@ -84,6 +84,7 @@
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
                             <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewPaymentModal{{ $payment->id }}" />
+                            <a href="{{ route('manager.payment.receipt', $payment) }}" target="_blank" class="icon-btn text-secondary" title="Receipt"><i class="fas fa-receipt"></i></a>
                         </div>
                     </td>
                 </tr>
@@ -99,6 +100,11 @@
                         @if($payment->notes)
                         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $payment->notes }}</p></div>
                         @endif
+                    </div>
+                    <div class="mt-3 text-end">
+                        <a href="{{ route('manager.payment.receipt', $payment) }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-receipt me-1"></i> View Receipt
+                        </a>
                     </div>
                 </x-modal>
                 @empty

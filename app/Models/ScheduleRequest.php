@@ -10,16 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ScheduleRequest extends Model
 {
     /**
-     * Static machinery list with availability status.
-     * No machinery inventory backend exists yet, so availability is a fixed reference list.
-     */
-    public const MACHINERY = [
-        ['name' => 'Harvester', 'status' => 'Available'],
-        ['name' => 'Tractor', 'status' => 'Available'],
-        ['name' => 'Pump Boat', 'status' => 'Unavailable'],
-    ];
-
-    /**
      * Minimum number of days of advance notice required before a schedule's
      * date, for both farmer requests and manager-created/assigned schedules.
      */
@@ -34,11 +24,50 @@ class ScheduleRequest extends Model
         return now()->addDays(self::MIN_LEAD_DAYS)->startOfDay();
     }
 
+    /**
+     * Hectares already reserved for a machine on a given date, counting any
+     * booking that still occupies capacity (pending, approved, or completed)
+     * and excluding archived records. Pending requests reserve capacity the
+     * same as approved ones, since they may still be approved later.
+     */
+    public static function reservedHectares(int $machineId, string $date, ?int $excludeId = null): float
+    {
+        $query = self::where('machine_id', $machineId)
+            ->where('scheduled_date', $date)
+            ->whereIn('status', ['pending', 'approved', 'completed'])
+            ->whereNull('archived_at');
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return (float) $query->sum('land_size');
+    }
+
+    /**
+     * Hectares still available for a machine on a given date before its
+     * own daily capacity (Machine::daily_hectare_limit) is reached.
+     */
+    public static function remainingCapacity(int $machineId, string $date, float $limit, ?int $excludeId = null): float
+    {
+        return max(0, $limit - self::reservedHectares($machineId, $date, $excludeId));
+    }
+
+    /**
+     * Whether adding a booking of the given size would push the machine's
+     * total reserved hectares for that date past its own daily capacity.
+     */
+    public static function wouldExceedDailyCapacity(int $machineId, string $date, float $landSize, float $limit, ?int $excludeId = null): bool
+    {
+        return self::reservedHectares($machineId, $date, $excludeId) + $landSize > $limit;
+    }
+
     protected $fillable = [
         'user_id',
         'farmer_name',
         'member_type',
         'machinery',
+        'machine_id',
         'land_size',
         'scheduled_date',
         'start_time',
@@ -68,6 +97,11 @@ class ScheduleRequest extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function machine(): BelongsTo
+    {
+        return $this->belongsTo(Machine::class);
+    }
+
     public function originalSchedule(): BelongsTo
     {
         return $this->belongsTo(self::class, 'original_schedule_id');
@@ -93,11 +127,15 @@ class ScheduleRequest extends Model
 
     /**
      * Whether this request overlaps with another active (pending/approved) request
-     * for the same machinery and date. Used to prevent double-booking.
+     * for the same machine and date. Used to prevent double-booking.
      */
-    public static function hasConflict(string $machinery, string $date, ?string $startTime, ?string $endTime, ?int $excludeId = null): bool
+    public static function hasConflict(?int $machineId, string $date, ?string $startTime, ?string $endTime, ?int $excludeId = null): bool
     {
-        $query = self::where('machinery', $machinery)
+        if (! $machineId) {
+            return false;
+        }
+
+        $query = self::where('machine_id', $machineId)
             ->where('scheduled_date', $date)
             ->whereIn('status', ['pending', 'approved'])
             ->whereNull('archived_at');

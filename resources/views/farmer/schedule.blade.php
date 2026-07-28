@@ -41,91 +41,149 @@
     </div>
 </div>
 
+@php
+    $earliestAllowedDate = \App\Models\ScheduleRequest::earliestAllowedDate();
+    $hasOldRequestInput = old('machinery') || old('land_size') || old('scheduled_date') || old('start_time') || old('end_time') || old('location');
+@endphp
+
 <!-- Schedule Availability Calendar -->
 <div class="section-card mb-6">
     <div class="table-toolbar d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
         <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-0">Schedule Availability</h3>
-            <p class="text-sm text-muted mb-0">See which days are already booked before requesting a schedule.</p>
+            <p class="text-sm text-muted mb-0">Click an open day to request a schedule for it.</p>
         </div>
-        <form method="GET" action="{{ route('farmer.schedule') }}" class="d-flex align-items-center gap-3 flex-wrap">
-            <select name="month" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                @foreach($monthOptions as $option)
-                <option value="{{ $option->format('Y-m') }}" {{ $option->format('Y-m') == $selectedMonth->format('Y-m') ? 'selected' : '' }}>{{ $option->format('F Y') }}</option>
-                @endforeach
-            </select>
-            <select name="calendar_machinery" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                <option value="">All Machines</option>
-                @foreach($machineryList as $machine)
-                <option value="{{ $machine }}" {{ $machineryFilter == $machine ? 'selected' : '' }}>{{ $machine }}</option>
-                @endforeach
-            </select>
-        </form>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <form method="GET" action="{{ route('farmer.schedule') }}" class="d-flex align-items-center gap-3 flex-wrap">
+                <select name="month" class="form-select" style="width: auto;" onchange="this.form.submit()">
+                    @foreach($monthOptions as $option)
+                    <option value="{{ $option->format('Y-m') }}" {{ $option->format('Y-m') == $selectedMonth->format('Y-m') ? 'selected' : '' }}>{{ $option->format('F Y') }}</option>
+                    @endforeach
+                </select>
+                <select name="calendar_machinery" class="form-select" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">All Machines</option>
+                    @foreach($machineryList as $machine)
+                    <option value="{{ $machine }}" {{ $machineryFilter == $machine ? 'selected' : '' }}>{{ $machine }}</option>
+                    @endforeach
+                </select>
+            </form>
+            <button type="button" class="btn btn-primary" onclick="openScheduleRequestModal()">
+                <i class="fas fa-plus me-1"></i> New Schedule Request
+            </button>
+        </div>
     </div>
 
     <div class="p-4 p-md-6">
         <x-schedule-calendar :calendar-days="$calendarDays" :first-weekday="$firstWeekday" :days-in-month="$daysInMonth"
-            :show-names="false" :show-open-badge="true" min-height="100px" />
+            :show-names="false" :show-open-badge="true" min-height="100px"
+            :month="$selectedMonth" :min-date="$earliestAllowedDate" :clickable="true" />
         <div class="d-flex align-items-center gap-4 mt-3 small text-muted">
-            <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-success" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Open</span>
+            <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-success" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Open &mdash; click to request</span>
             <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-danger" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Booked (approved)</span>
+            <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-secondary" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Too soon (min {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days lead time)</span>
         </div>
     </div>
 </div>
 
-<!-- Request Form -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Request a Schedule</h3>
-    <form action="{{ route('farmer.schedule.store') }}" method="POST">
-        @csrf
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Machinery Type <span class="text-danger">*</span></label>
-                <div class="d-flex flex-column gap-2">
-                    @foreach($machinery as $machine)
-                    <div class="form-check border rounded-lg p-2 {{ $machine['status'] == 'Unavailable' ? 'opacity-50' : '' }}">
-                        <input class="form-check-input" type="radio" name="machinery" id="machinery{{ $loop->index }}"
-                            value="{{ $machine['name'] }}" {{ $machine['status'] == 'Unavailable' ? 'disabled' : '' }}
-                            {{ old('machinery') == $machine['name'] ? 'checked' : '' }} required>
-                        <label class="form-check-label" for="machinery{{ $loop->index }}">
-                            {{ $machine['name'] }}
-                        </label>
+<!-- Request Form Modal -->
+<div class="modal fade" id="scheduleRequestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fas fa-tractor me-2"></i>Request a Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('farmer.schedule.store') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p class="text-muted small mb-3 d-none" id="scheduleRequestSelectedDateHint"></p>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Machinery Type <span class="text-danger">*</span></label>
+                            <div class="d-flex flex-column gap-2">
+                                @foreach($machinery as $machine)
+                                <div class="form-check border rounded-lg p-2 {{ $machine['status'] == 'Unavailable' ? 'opacity-50' : '' }}">
+                                    <input class="form-check-input" type="radio" name="machinery" id="machinery{{ $loop->index }}"
+                                        value="{{ $machine['name'] }}" {{ $machine['status'] == 'Unavailable' ? 'disabled' : '' }}
+                                        {{ old('machinery') == $machine['name'] ? 'checked' : '' }} required>
+                                    <label class="form-check-label" for="machinery{{ $loop->index }}">
+                                        {{ $machine['name'] }}
+                                    </label>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.1" min="0.1" name="land_size" class="form-control" value="{{ old('land_size') }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Preferred Date <span class="text-danger">*</span></label>
+                            <input type="date" id="scheduleRequestDateInput" name="scheduled_date" class="form-control" min="{{ $earliestAllowedDate->format('Y-m-d') }}" value="{{ old('scheduled_date') }}" required>
+                            <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
+                            <input type="time" name="start_time" class="form-control" value="{{ old('start_time') }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
+                            <input type="time" name="end_time" class="form-control" value="{{ old('end_time') }}" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Farm Location <span class="text-danger">*</span></label>
+                            <input type="text" name="location" class="form-control" value="{{ old('location') }}" placeholder="e.g. Brgy. San Jose" required>
+                        </div>
                     </div>
-                    @endforeach
                 </div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
-                <input type="number" step="0.1" min="0.1" name="land_size" class="form-control" value="{{ old('land_size') }}" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Preferred Date <span class="text-danger">*</span></label>
-                <input type="date" name="scheduled_date" class="form-control" min="{{ \App\Models\ScheduleRequest::earliestAllowedDate()->format('Y-m-d') }}" value="{{ old('scheduled_date') }}" required>
-                <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
-                <input type="time" name="start_time" class="form-control" value="{{ old('start_time') }}" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
-                <input type="time" name="end_time" class="form-control" value="{{ old('end_time') }}" required>
-            </div>
-            <div class="col-md-8">
-                <label class="form-label fw-semibold">Farm Location <span class="text-danger">*</span></label>
-                <input type="text" name="location" class="form-control" value="{{ old('location') }}" placeholder="e.g. Brgy. San Jose" required>
-            </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i> Submit Request
+                    </button>
+                </div>
+            </form>
         </div>
-        <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-paper-plane me-1"></i> Submit Request
-            </button>
-            <button type="reset" class="btn btn-outline-secondary">
-                <i class="fas fa-times me-1"></i> Unselect
-            </button>
-        </div>
-    </form>
+    </div>
 </div>
+
+<script>
+    function openScheduleRequestModal(date) {
+        var dateInput = document.getElementById('scheduleRequestDateInput');
+        var hint = document.getElementById('scheduleRequestSelectedDateHint');
+
+        if (date) {
+            dateInput.value = date;
+            dateInput.readOnly = true;
+            hint.textContent = 'Selected date: ' + new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            hint.classList.remove('d-none');
+        } else {
+            dateInput.value = '';
+            dateInput.readOnly = false;
+            hint.classList.add('d-none');
+        }
+
+        new bootstrap.Modal(document.getElementById('scheduleRequestModal')).show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.calendar-cell-clickable').forEach(function (cell) {
+            cell.addEventListener('click', function () {
+                openScheduleRequestModal(cell.dataset.date);
+            });
+            cell.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openScheduleRequestModal(cell.dataset.date);
+                }
+            });
+        });
+
+        @if($hasOldRequestInput)
+        openScheduleRequestModal(@json(old('scheduled_date')));
+        @endif
+    });
+</script>
 
 <!-- My Schedule Requests -->
 <div class="section-card">
