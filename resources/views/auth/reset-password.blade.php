@@ -38,15 +38,23 @@
         .form-group { margin-bottom: 1.4rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
         .input-wrap { position: relative; }
-        input[type="password"] {
-            width: 100%; padding: 0.8rem 0.9rem; border: 1.5px solid var(--border); border-radius: 0.75rem;
+        input[type="password"], input[type="text"].password-input {
+            width: 100%; padding: 0.8rem 2.6rem 0.8rem 0.9rem; border: 1.5px solid var(--border); border-radius: 0.75rem;
             font-size: 0.95rem; font-family: inherit; background-color: #fafafa;
             transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
         }
-        input[type="password"]:focus {
+        input[type="password"]:focus, input[type="text"].password-input:focus {
             outline: none; border-color: var(--brand-success); background-color: #fff;
             box-shadow: 0 0 0 4px rgba(31, 111, 92, 0.12);
         }
+        .toggle-password {
+            position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; color: var(--text-muted);
+            padding: 0.4rem; display: grid; place-items: center; border-radius: 0.5rem;
+            transition: color 150ms var(--ease), background-color 150ms var(--ease);
+        }
+        .toggle-password:hover { color: var(--text-primary); background: rgba(15, 23, 42, 0.05); }
+        .toggle-password svg { width: 1.1rem; height: 1.1rem; }
         .error { color: var(--brand-danger); font-size: 0.85rem; margin-top: 0.4rem; }
         .btn {
             width: 100%; padding: 0.9rem; border: none; border-radius: 0.75rem; font-size: 0.98rem;
@@ -95,11 +103,21 @@
                 @csrf
                 <div class="form-group">
                     <label for="password">New Password</label>
-                    <input type="password" id="password" name="password" required autofocus placeholder="••••••••" minlength="8">
+                    <div class="input-wrap">
+                        <input type="password" id="password" name="password" required autofocus placeholder="••••••••" minlength="8">
+                        <button type="button" class="toggle-password" data-target="password" aria-label="Show password">
+                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="password_confirmation">Confirm Password</label>
-                    <input type="password" id="password_confirmation" name="password_confirmation" required placeholder="••••••••" minlength="8">
+                    <div class="input-wrap">
+                        <input type="password" id="password_confirmation" name="password_confirmation" required placeholder="••••••••" minlength="8">
+                        <button type="button" class="toggle-password" data-target="password_confirmation" aria-label="Show password">
+                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
@@ -109,5 +127,23 @@
             </form>
         </div>
     </div>
+
+    <script>
+        var eyeOpen = '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+        var eyeClosed = '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-2.16 3.19"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 11s3.5 7 10 7a9.1 9.1 0 0 0 4.24-1.02"/><path d="m2 2 20 20"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>';
+
+        document.querySelectorAll('.toggle-password').forEach(function (toggle) {
+            var input = document.getElementById(toggle.dataset.target);
+            var icon = toggle.querySelector('.eye-icon');
+
+            toggle.addEventListener('click', function () {
+                var isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                input.classList.toggle('password-input', isPassword);
+                icon.innerHTML = isPassword ? eyeClosed : eyeOpen;
+                toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+        });
+    </script>
 </body>
 </html>

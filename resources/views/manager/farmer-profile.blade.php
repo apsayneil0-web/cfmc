@@ -73,7 +73,7 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->municipality }}, {{ $farmer->province }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->contact_number }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->crop->name }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->crop_names }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->land_area }} hectares</td>
                     <td class="px-4 px-md-6 py-4">
                         @if($docCount === 4)
@@ -115,7 +115,7 @@
                     <div class="mb-4">
                         <h4 class="text-sm fw-semibold text-dark mb-3">Farming Information</h4>
                         <div class="row g-3">
-                            <div class="col-md-4"><label class="text-muted small d-block">Crop Type</label><p class="fw-medium mb-0">{{ $farmer->crop->name }}</p></div>
+                            <div class="col-md-4"><label class="text-muted small d-block">Crop Type</label><p class="fw-medium mb-0">{{ $farmer->crop_names }}</p></div>
                             <div class="col-md-4"><label class="text-muted small d-block">Land Area</label><p class="fw-medium mb-0">{{ $farmer->land_area }} hectares</p></div>
                             <div class="col-md-4"><label class="text-muted small d-block mb-1">Membership Status</label><x-status-badge :status="ucfirst($farmer->status)" /></div>
                         </div>
@@ -253,11 +253,14 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Crop Type <span class="text-danger">*</span></label>
-                                        <select name="crop_id" class="form-select" required>
+                                        <div class="border rounded-3 p-2">
                                             @foreach($crops as $crop)
-                                                <option value="{{ $crop->id }}" {{ $farmer->crop_id == $crop->id ? 'selected' : '' }}>{{ $crop->name }}</option>
+                                                <div class="form-check">
+                                                    <input type="checkbox" class="form-check-input" name="crop_ids[]" value="{{ $crop->id }}" id="profileEditCrop{{ $farmer->id }}_{{ $crop->id }}" {{ $farmer->crops->contains($crop->id) ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="profileEditCrop{{ $farmer->id }}_{{ $crop->id }}">{{ $crop->name }}</label>
+                                                </div>
                                             @endforeach
-                                        </select>
+                                        </div>
                                     </div>
                                     <!-- Document Upload -->
                                     @php

@@ -25,7 +25,7 @@
                 <x-avatar-initials :name="$application->full_name" color="success" size="8" />
                 <div class="flex-1">
                     <p class="text-sm font-medium text-gray-900 mb-0">{{ $application->full_name }}</p>
-                    <p class="text-xs text-gray-500 mb-0">{{ $application->crop->name ?? 'N/A' }} &middot; Brgy. {{ $application->barangay ?? $application->municipality }}</p>
+                    <p class="text-xs text-gray-500 mb-0">{{ $application->crops->pluck('name')->implode(', ') ?: 'N/A' }} &middot; Brgy. {{ $application->barangay ?? $application->municipality }}</p>
                 </div>
                 <x-status-badge :status="$application->status" />
             </div>

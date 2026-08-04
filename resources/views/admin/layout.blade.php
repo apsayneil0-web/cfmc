@@ -47,9 +47,14 @@
                     Approved Membership
                 </a>
 
-                <a href="{{ route('admin.membership-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('admin.membership-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') && request('status') !== 'rejected' ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-user-clock w-5"></i>
                     Membership Approval
+                </a>
+
+                <a href="{{ route('admin.membership-approval', ['status' => 'rejected']) }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') && request('status') === 'rejected' ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-user-xmark w-5"></i>
+                    Rejected Applications
                 </a>
 
                 <div class="sidebar-section-label">Loans</div>

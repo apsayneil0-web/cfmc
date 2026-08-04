@@ -44,7 +44,7 @@
                     <td class="px-4 px-md-6 py-4 text-dark">{{ $member->full_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $member->barangay ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $member->contact_number }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $member->crop->name ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $member->crops->pluck('name')->implode(', ') ?: '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $member->municipality }}, {{ $member->province }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $member->land_area }} ha</td>
                     <td class="px-4 px-md-6 py-4">

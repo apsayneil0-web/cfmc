@@ -13,16 +13,22 @@ use Illuminate\Support\Str;
 class MembershipApprovalController extends Controller
 {
     /**
-     * Display pending membership applications awaiting approval.
+     * Display membership applications for a given status: pending applications
+     * awaiting approval by default, or previously rejected ones.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $applications = Farmer::with('crop')
-            ->where('status', 'pending')
+        $status = $request->get('status', 'pending');
+        if (! in_array($status, ['pending', 'rejected'], true)) {
+            $status = 'pending';
+        }
+
+        $applications = Farmer::with('crops')
+            ->where('status', $status)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.membership-approval', compact('applications'));
+        return view('admin.membership-approval', compact('applications', 'status'));
     }
 
     /**

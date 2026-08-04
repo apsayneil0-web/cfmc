@@ -50,6 +50,9 @@
             </select>
         </form>
         <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-warning d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shiftDayModal">
+                <i class="fas fa-forward"></i><span>Move Schedule +1 Day</span>
+            </button>
             <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
                 <i class="fas fa-plus"></i><span>Add Schedule</span>
             </button>
@@ -211,6 +214,28 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Move Schedule +1 Day Confirmation Modal -->
+<div class="modal fade" id="shiftDayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-forward me-2"></i>Move Schedule +1 Day</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">This will move <strong>every upcoming pending/approved schedule</strong> (today onward) forward by 1 day, and automatically notify each affected farmer of their new date. This action cannot be undone. Continue?</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ route('manager.machine-schedule.shift-day') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-warning">Yes, Move Schedules</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 

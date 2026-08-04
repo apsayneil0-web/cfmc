@@ -17,7 +17,7 @@ class MembershipController extends Controller
     {
         $crops = Crop::all();
 
-        $query = Farmer::with('crop');
+        $query = Farmer::with('crops');
 
         // Default: hide archived records unless specifically filtered
         if (!$request->has('status') || $request->status == '') {
@@ -69,7 +69,8 @@ class MembershipController extends Controller
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
             'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
-            'crop_id' => 'required|exists:crops,id',
+            'crop_ids' => 'required|array|min:1',
+            'crop_ids.*' => 'exists:crops,id',
             'land_area' => 'required|numeric|min:0',
             'documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'certificate_of_title' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
@@ -89,7 +90,6 @@ class MembershipController extends Controller
             'last_name' => $validated['last_name'],
             'suffix' => $validated['suffix'],
             'contact_number' => $validated['contact_number'],
-            'crop_id' => $validated['crop_id'],
             'land_area' => $validated['land_area'],
             'documents_path' => $this->storeFarmerDocument($request, 'documents'),
             'certificate_of_title_path' => $this->storeFarmerDocument($request, 'certificate_of_title'),
@@ -101,6 +101,8 @@ class MembershipController extends Controller
             'status' => 'pending',
             'user_id' => Auth::check() ? Auth::id() : null,
         ]);
+
+        $farmer->crops()->sync($validated['crop_ids']);
 
         return redirect()->route('manager.membership')
             ->with('success', 'Membership request submitted successfully!');
@@ -121,7 +123,8 @@ class MembershipController extends Controller
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
             'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
-            'crop_id' => 'required|exists:crops,id',
+            'crop_ids' => 'required|array|min:1',
+            'crop_ids.*' => 'exists:crops,id',
             'land_area' => 'required|numeric|min:0',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
@@ -140,7 +143,6 @@ class MembershipController extends Controller
             'last_name' => $validated['last_name'],
             'suffix' => $validated['suffix'],
             'contact_number' => $validated['contact_number'],
-            'crop_id' => $validated['crop_id'],
             'land_area' => $validated['land_area'],
             'province' => $validated['province'],
             'municipality' => $validated['municipality'],
@@ -153,6 +155,7 @@ class MembershipController extends Controller
         $this->applyDocumentUpdate($request, $farmer, $updateData, 'rsbsa', 'rsbsa_path');
 
         $farmer->update($updateData);
+        $farmer->crops()->sync($validated['crop_ids']);
 
         return redirect()->back()
             ->with('success', 'Farmer updated successfully!');

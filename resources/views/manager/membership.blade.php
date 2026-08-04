@@ -84,7 +84,7 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->municipality }}, {{ $farmer->province }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->contact_number }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->crop->name }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->crop_names }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $farmer->land_area }} hectares</td>
                     <td class="px-4 px-md-6 py-4">
                         <span class="text-success"><i class="fas fa-check-circle"></i> Complete</span>
@@ -135,7 +135,7 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Crop Type</label>
-                                        <p class="fw-semibold mb-0">{{ $farmer->crop->name }}</p>
+                                        <p class="fw-semibold mb-0">{{ $farmer->crop_names }}</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Land Area</label>
@@ -269,11 +269,14 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
                                             <label class="form-label fw-semibold">Crop Type <span class="text-danger">*</span></label>
-                                            <select name="crop_id" class="form-select" required>
+                                            <div class="border rounded-3 p-2">
                                                 @foreach($crops as $crop)
-                                                    <option value="{{ $crop->id }}" {{ $farmer->crop_id == $crop->id ? 'selected' : '' }}>{{ $crop->name }}</option>
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input" name="crop_ids[]" value="{{ $crop->id }}" id="editCrop{{ $farmer->id }}_{{ $crop->id }}" {{ $farmer->crops->contains($crop->id) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="editCrop{{ $farmer->id }}_{{ $crop->id }}">{{ $crop->name }}</label>
+                                                    </div>
                                                 @endforeach
-                                            </select>
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
@@ -535,43 +538,8 @@
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-lg" id="provinceSelect" name="province" required>
-                                <option value="" selected disabled>Select Province</option>
-                                <optgroup label="Region X - Northern Mindanao">
-                                    <option value="Bukidnon">Bukidnon</option>
-                                    <option value="Camiguin">Camiguin</option>
-                                    <option value="Lanao del Norte">Lanao del Norte</option>
-                                    <option value="Misamis Occidental">Misamis Occidental</option>
-                                    <option value="Misamis Oriental">Misamis Oriental</option>
-                                </optgroup>
-                                <optgroup label="Region XI - Davao Region">
-                                    <option value="Davao de Oro">Davao de Oro (Compostela Valley)</option>
-                                    <option value="Davao del Norte">Davao del Norte</option>
-                                    <option value="Davao del Sur">Davao del Sur</option>
-                                    <option value="Davao Oriental">Davao Oriental</option>
-                                </optgroup>
-                                <optgroup label="Region XII - SOCCSKSARGEN">
-                                    <option value="Cotabato">Cotabato</option>
-                                    <option value="Cotabato del Sur">Cotabato del Sur (Sultan Kudarat)</option>
-                                    <option value="South Cotabato">South Cotabato</option>
-                                    <option value="Sarangani">Sarangani</option>
-                                </optgroup>
-                                <optgroup label="Region XIII - Caraga">
-                                    <option value="Agusan del Norte">Agusan del Norte</option>
-                                    <option value="Agusan del Sur">Agusan del Sur</option>
-                                    <option value="Surigao del Norte">Surigao del Norte</option>
-                                    <option value="Surigao del Sur">Surigao del Sur</option>
-                                    <option value="Dinagat Islands">Dinagat Islands</option>
-                                </optgroup>
-                                <optgroup label="BARMM">
-                                    <option value="Basilan">Basilan</option>
-                                    <option value="Lanao del Sur">Lanao del Sur</option>
-                                    <option value="Maguindanao">Maguindanao</option>
-                                    <option value="Sulu">Sulu</option>
-                                    <option value="Tawi-Tawi">Tawi-Tawi</option>
-                                </optgroup>
-                            </select>
-                            <div class="invalid-feedback">Please select province.</div>
+                            <input type="text" class="form-control form-control-lg" value="South Cotabato" readonly>
+                            <input type="hidden" name="province" value="South Cotabato">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
@@ -598,13 +566,15 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Crop Type <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-lg" name="crop_id" required>
-                                <option value="" selected disabled>Select Crop</option>
+                            <div class="border rounded-3 p-2" id="cropCheckboxGroup">
                                 @foreach($crops as $crop)
-                                    <option value="{{ $crop->id }}">{{ $crop->name }}</option>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="crop_ids[]" value="{{ $crop->id }}" id="newCrop{{ $crop->id }}">
+                                        <label class="form-check-label" for="newCrop{{ $crop->id }}">{{ $crop->name }}</label>
+                                    </div>
                                 @endforeach
-                            </select>
-                            <div class="invalid-feedback">Please select crop type.</div>
+                            </div>
+                            <div class="text-danger small mt-1" id="cropCheckboxError" style="display:none;">Please select at least one crop type.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
@@ -881,27 +851,16 @@
     wireDocumentDropZone('barangayDropZone', 'barangayInput', 'barangayFileName');
     wireDocumentDropZone('rsbsaDropZone', 'rsbsaInput', 'rsbsaFileName');
 
-    // Province Select Change Handler
-    document.getElementById('provinceSelect').addEventListener('change', function() {
-        const selectedProvince = this.value;
+    // Province is fixed to South Cotabato — populate its municipalities on load
+    (function() {
         const municipalitySelect = document.getElementById('municipalitySelect');
-
-        // Clear current options
-        municipalitySelect.innerHTML = '<option value="" selected disabled>Select Municipality</option>';
-
-        if (selectedProvince && municipalitiesData[selectedProvince]) {
-            // Add municipalities for selected province
-            municipalitiesData[selectedProvince].forEach(function(municipality) {
-                const option = document.createElement('option');
-                option.value = municipality;
-                option.textContent = municipality;
-                municipalitySelect.appendChild(option);
-            });
-        }
-
-        // Municipality reset, so the barangay field resets too
-        municipalitySelect.dispatchEvent(new Event('change'));
-    });
+        municipalitiesData['South Cotabato'].forEach(function(municipality) {
+            const option = document.createElement('option');
+            option.value = municipality;
+            option.textContent = municipality;
+            municipalitySelect.appendChild(option);
+        });
+    })();
 
     // Municipality Select Change Handler — swaps in a barangay dropdown for
     // municipalities we have a barangay list for, otherwise falls back to
@@ -978,28 +937,40 @@
         var forms = document.querySelectorAll('.needs-validation');
         Array.prototype.slice.call(forms).forEach(function(form) {
             form.addEventListener('submit', function(event) {
-                if (!form.checkValidity()) {
+                const checkedCrops = form.querySelectorAll('input[name="crop_ids[]"]:checked');
+                const cropError = document.getElementById('cropCheckboxError');
+
+                if (!form.checkValidity() || checkedCrops.length === 0) {
                     event.preventDefault();
                     event.stopPropagation();
                     form.classList.add('was-validated');
+                    if (cropError) {
+                        cropError.style.display = checkedCrops.length === 0 ? 'block' : 'none';
+                    }
                     return;
+                }
+
+                if (cropError) {
+                    cropError.style.display = 'none';
                 }
 
                 // Prevent default submission and show confirmation modal
                 event.preventDefault();
                 event.stopPropagation();
 
-                // Get form values for confirmation
-                const firstName = document.querySelector('input[name="first_name"]').value;
-                const middleInitial = document.querySelector('input[name="middle_initial"]').value;
-                const lastName = document.querySelector('input[name="last_name"]').value;
-                const suffix = document.querySelector('select[name="suffix"]').value;
-                const contactNumber = document.querySelector('input[name="contact_number"]').value;
-                const cropSelect = document.querySelector('select[name="crop_id"]');
-                const cropName = cropSelect.options[cropSelect.selectedIndex].text;
-                const landArea = document.querySelector('input[name="land_area"]').value;
-                const municipality = document.querySelector('select[name="municipality"]').value;
-                const province = document.querySelector('select[name="province"]').value;
+                // Get form values for confirmation (scoped to this form — the page
+                // also contains per-farmer edit modals with the same field names)
+                const firstName = form.querySelector('input[name="first_name"]').value;
+                const middleInitial = form.querySelector('input[name="middle_initial"]').value;
+                const lastName = form.querySelector('input[name="last_name"]').value;
+                const suffix = form.querySelector('select[name="suffix"]').value;
+                const contactNumber = form.querySelector('input[name="contact_number"]').value;
+                const cropName = Array.prototype.map.call(checkedCrops, function(checkbox) {
+                    return checkbox.nextElementSibling.textContent;
+                }).join(', ');
+                const landArea = form.querySelector('input[name="land_area"]').value;
+                const municipality = form.querySelector('select[name="municipality"]').value;
+                const province = form.querySelector('input[name="province"]').value;
 
                 // Build full name
                 let fullName = firstName;
@@ -1049,10 +1020,18 @@
             const form = document.getElementById('membershipForm');
             form.reset();
             form.classList.remove('was-validated');
+            document.getElementById('cropCheckboxError').style.display = 'none';
             ['documentFileName', 'certificateFileName', 'barangayFileName', 'rsbsaFileName'].forEach(function(id) {
                 document.getElementById(id).textContent = '';
             });
-            document.getElementById('municipalitySelect').innerHTML = '<option value="" selected disabled>Select Municipality</option>';
+            const municipalitySelect = document.getElementById('municipalitySelect');
+            municipalitySelect.innerHTML = '<option value="" selected disabled>Select Municipality</option>';
+            municipalitiesData['South Cotabato'].forEach(function(municipality) {
+                const option = document.createElement('option');
+                option.value = municipality;
+                option.textContent = municipality;
+                municipalitySelect.appendChild(option);
+            });
 
             const barangaySelect = document.getElementById('barangayNameSelect');
             const barangayInput = document.getElementById('barangayNameInput');

@@ -19,7 +19,6 @@ class Farmer extends Model
         'last_name',
         'suffix',
         'contact_number',
-        'crop_id',
         'land_area',
         'province',
         'municipality',
@@ -76,11 +75,19 @@ class Farmer extends Model
     }
 
     /**
-     * Get the crop that belongs to the farmer.
+     * Get the crops grown by the farmer.
      */
-    public function crop(): BelongsTo
+    public function crops(): BelongsToMany
     {
-        return $this->belongsTo(Crop::class);
+        return $this->belongsToMany(Crop::class, 'farmer_crop');
+    }
+
+    /**
+     * Comma-separated list of the farmer's crop names, for display.
+     */
+    public function getCropNamesAttribute(): string
+    {
+        return $this->crops->pluck('name')->implode(', ');
     }
 
     /**

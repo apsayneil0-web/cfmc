@@ -17,7 +17,7 @@ class FarmerProfileController extends Controller
     {
         $crops = Crop::all();
 
-        $query = Farmer::with(['crop', 'account'])
+        $query = Farmer::with(['crops', 'account'])
             ->where('status', 'approved');
 
         if ($request->filled('search')) {

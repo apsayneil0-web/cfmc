@@ -13,7 +13,7 @@ class MemberController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Farmer::with('crop')->whereIn('status', ['approved', 'archived']);
+        $query = Farmer::with('crops')->whereIn('status', ['approved', 'archived']);
 
         if ($request->filled('search')) {
             $search = $request->search;

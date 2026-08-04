@@ -81,6 +81,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::put('/manager/machine-schedule/{schedule}', [MachineScheduleController::class, 'update'])->name('manager.machine-schedule.update');
     Route::patch('/manager/machine-schedule/{schedule}/archive', [MachineScheduleController::class, 'archive'])->name('manager.machine-schedule.archive');
     Route::patch('/manager/machine-schedule/{schedule}/complete', [MachineScheduleController::class, 'complete'])->name('manager.machine-schedule.complete');
+    Route::post('/manager/machine-schedule/shift-day', [MachineScheduleController::class, 'shiftDay'])->name('manager.machine-schedule.shift-day');
 
     Route::get('/manager/financial', function () {
         return view('manager.financial');

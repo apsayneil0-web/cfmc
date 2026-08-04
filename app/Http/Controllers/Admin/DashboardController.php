@@ -17,7 +17,7 @@ class DashboardController extends Controller
         $archivedFarmers = Farmer::where('status', 'archived')->count();
         $rejectedFarmers = Farmer::where('status', 'rejected')->count();
 
-        $recentApplications = Farmer::with('crop')
+        $recentApplications = Farmer::with('crops')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();

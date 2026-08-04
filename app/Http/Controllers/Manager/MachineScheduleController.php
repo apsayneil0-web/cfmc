@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Farmer;
 use App\Models\Machine;
+use App\Models\Notification;
 use App\Models\ScheduleRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class MachineScheduleController extends Controller
@@ -160,6 +162,53 @@ class MachineScheduleController extends Controller
 
         return redirect()->route('manager.machine-schedule')
             ->with('success', 'Schedule marked complete and harvest yield recorded.');
+    }
+
+    /**
+     * Push every active (pending/approved), non-archived schedule dated today
+     * or later forward by one day — e.g. for a fleet-wide rainout or delay —
+     * and notify each affected farmer account of their new date.
+     */
+    public function shiftDay(Request $request)
+    {
+        $today = now()->startOfDay()->toDateString();
+
+        $schedules = ScheduleRequest::whereIn('status', ['pending', 'approved'])
+            ->whereNull('archived_at')
+            ->where('scheduled_date', '>=', $today)
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return redirect()->route('manager.machine-schedule')
+                ->with('error', 'There are no upcoming schedules to move.');
+        }
+
+        DB::transaction(function () use ($schedules) {
+            ScheduleRequest::whereIn('id', $schedules->pluck('id'))
+                ->update(['scheduled_date' => DB::raw('DATE_ADD(scheduled_date, INTERVAL 1 DAY)')]);
+
+            $rows = $schedules->whereNotNull('user_id')->map(function ($schedule) {
+                $oldDate = $schedule->scheduled_date->format('M d, Y');
+                $newDate = $schedule->scheduled_date->copy()->addDay()->format('M d, Y');
+                $time = Carbon::parse($schedule->start_time)->format('g:i A').' - '.Carbon::parse($schedule->end_time)->format('g:i A');
+
+                return [
+                    'user_id' => $schedule->user_id,
+                    'title' => 'Your Schedule Has Been Moved',
+                    'message' => "Your {$schedule->machinery} schedule originally set for {$oldDate} has been moved to {$newDate}. Time ({$time}) and location ({$schedule->location}) remain the same.",
+                    'type' => 'reminder',
+                    'is_read' => false,
+                    'created_at' => now(),
+                ];
+            })->values()->all();
+
+            if (! empty($rows)) {
+                Notification::insert($rows);
+            }
+        });
+
+        return redirect()->route('manager.machine-schedule')
+            ->with('success', count($schedules).' schedule(s) moved forward by 1 day. Affected farmers have been notified.');
     }
 
     private function validateSchedule(Request $request): array

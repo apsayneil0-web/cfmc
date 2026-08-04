@@ -12,12 +12,54 @@
 </div>
 @endif
 
+@php
+    $isRejectedView = $status === 'rejected';
+@endphp
+
 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
     <div class="p-4 p-md-6 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-0">Pending Applications</h3>
-        <p class="text-sm text-muted mb-0">Review farmer membership applications against the cooperative's criteria and bylaws.</p>
+        <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ $isRejectedView ? 'Rejected Applications' : 'Pending Applications' }}</h3>
+        <p class="text-sm text-muted mb-0">
+            @if($isRejectedView)
+                Membership applications that were declined, along with the reason given at the time.
+            @else
+                Review farmer membership applications against the cooperative's criteria and bylaws.
+            @endif
+        </p>
     </div>
 
+    @if($isRejectedView)
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Applicant</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Barangay</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Contact</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Crop</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date Rejected</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($applications as $application)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-dark fw-medium">{{ $application->full_name }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $application->barangay ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $application->contact_number }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $application->crops->pluck('name')->implode(', ') ?: '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $application->updated_at->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $application->rejection_reason ?: '—' }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No rejected membership applications.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @else
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-light">
@@ -36,7 +78,7 @@
                     <td class="px-4 px-md-6 py-4 text-dark fw-medium">{{ $application->full_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $application->barangay ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $application->contact_number }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $application->crop->name ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $application->crops->pluck('name')->implode(', ') ?: '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $application->created_at->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
@@ -75,7 +117,7 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Crop Type</label>
-                                        <p class="fw-semibold mb-0">{{ $application->crop->name ?? '—' }}</p>
+                                        <p class="fw-semibold mb-0">{{ $application->crops->pluck('name')->implode(', ') ?: '—' }}</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted small">Land Area</label>
@@ -155,6 +197,7 @@
             </tbody>
         </table>
     </div>
+    @endif
 </div>
 
 <!-- Approve/Reject Confirmation Modal -->
