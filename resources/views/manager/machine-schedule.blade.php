@@ -170,7 +170,7 @@
                                 @csrf
                                 @method('PATCH')
                                 <div class="modal-body">
-                                    <p>Close out this schedule for <strong>{{ $req->display_name }}</strong> and record the total harvest yield.</p>
+                                    <p>Confirm that this schedule for <strong>{{ $req->display_name }}</strong> is finished and record the total harvest yield. Once marked complete, it can't be reopened.</p>
                                     <div class="mb-0">
                                         <label class="form-label fw-semibold">Harvest Yield (sacks/tons) <span class="text-danger">*</span></label>
                                         <input type="number" step="0.01" min="0" name="harvest_yield" class="form-control" required>
@@ -178,7 +178,7 @@
                                 </div>
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-success">Mark Complete</button>
+                                    <button type="submit" class="btn btn-success">Confirm Complete</button>
                                 </div>
                             </form>
                         </div>

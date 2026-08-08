@@ -9,8 +9,9 @@ use Illuminate\Http\Request;
 class MachineController extends Controller
 {
     /**
-     * Status and usage hours are computed (see Machine accessors), so
-     * filtering/counting by them happens in memory rather than in SQL.
+     * Fleet roster only — add/edit/archive. Usage hours, status, and
+     * maintenance tier are monitoring concerns handled by
+     * MachineUsageController on a separate page.
      */
     public function index(Request $request)
     {
@@ -18,9 +19,9 @@ class MachineController extends Controller
 
         $stats = [
             'total' => $machines->count(),
-            'available' => $machines->where('status', 'available')->count(),
-            'in_use' => $machines->where('status', 'in_use')->count(),
-            'maintenance' => $machines->where('status', 'maintenance')->count(),
+            'total_units' => $machines->sum('quantity'),
+            'with_operator' => $machines->whereNotNull('assigned_operator')->count(),
+            'archived' => Machine::whereNotNull('archived_at')->count(),
         ];
 
         if ($request->filled('search')) {
@@ -28,11 +29,6 @@ class MachineController extends Controller
             $machines = $machines->filter(fn (Machine $m) => str_contains(mb_strtolower($m->name), $search)
                 || str_contains(mb_strtolower((string) $m->brand), $search)
                 || str_contains(mb_strtolower((string) $m->serial_number), $search));
-        }
-
-        if ($request->filled('status')) {
-            $status = $request->string('status')->toString();
-            $machines = $machines->filter(fn (Machine $m) => $m->status === $status);
         }
 
         $machines = $machines->sortByDesc('created_at')->values();

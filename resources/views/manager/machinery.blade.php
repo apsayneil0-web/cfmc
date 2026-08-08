@@ -28,9 +28,9 @@
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <x-stat-card label="Total Machinery" value="{{ $stats['total'] }}" icon="fa-cogs" color="secondary" />
-    <x-stat-card label="Available" value="{{ $stats['available'] }}" icon="fa-check-circle" color="success" />
-    <x-stat-card label="In Use" value="{{ $stats['in_use'] }}" icon="fa-tractor" color="primary" />
-    <x-stat-card label="Under Maintenance" value="{{ $stats['maintenance'] }}" icon="fa-wrench" color="danger" />
+    <x-stat-card label="Total Units" value="{{ $stats['total_units'] }}" icon="fa-layer-group" color="primary" />
+    <x-stat-card label="With Operator Assigned" value="{{ $stats['with_operator'] }}" icon="fa-user-check" color="success" />
+    <x-stat-card label="Archived" value="{{ $stats['archived'] }}" icon="fa-box-archive" color="secondary" />
 </div>
 
 <!-- Machinery Table -->
@@ -42,19 +42,16 @@
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
-                <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Status</option>
-                    <option value="available" {{ request('status') == 'available' ? 'selected' : '' }}>Available</option>
-                    <option value="in_use" {{ request('status') == 'in_use' ? 'selected' : '' }}>In Use</option>
-                    <option value="maintenance" {{ request('status') == 'maintenance' ? 'selected' : '' }}>Maintenance</option>
-                </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->anyFilled(['search', 'status']))
+                @if(request()->anyFilled(['search']))
                 <a href="{{ route('manager.machinery') }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
         </x-slot:filters>
         <x-slot:actions>
+            <a href="{{ route('manager.machine-usage') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="fas fa-chart-line"></i><span>Usage Monitor</span>
+            </a>
             <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addMachineModal">
                 <i class="fas fa-plus"></i><span>Add Machinery</span>
             </button>
@@ -70,10 +67,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Brand</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Serial Number</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Quantity</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Usage Hours</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Times Used</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Maintenance</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Daily Hectare Limit</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Assigned Operator</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
@@ -86,10 +80,7 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->brand ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->serial_number ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->quantity }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ $machine->usage_hours }} hrs</td>
-                    <td class="px-4 px-md-6 py-4 text-muted" title="Completed bookings for this machine">{{ $machine->times_used }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$machine->maintenance_label" :title="$machine->maintenance_recommendation" /></td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucwords(str_replace('_', ' ', $machine->status))" /></td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->daily_hectare_limit }} ha/day</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->assigned_operator ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
@@ -101,7 +92,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="11" class="px-4 px-md-6 py-6 text-center text-muted">No machinery on record yet.</td>
+                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No machinery on record yet.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -122,15 +113,15 @@
         <div class="col-6"><label class="text-muted small d-block">Serial Number</label><p class="fw-medium mb-0">{{ $machine->serial_number ?? '—' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Quantity</label><p class="fw-medium mb-0">{{ $machine->quantity }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Daily Hectare Limit</label><p class="fw-medium mb-0">{{ $machine->daily_hectare_limit }} ha / day</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Usage Hours</label><p class="fw-medium mb-0">{{ $machine->usage_hours }} hrs</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Times Used</label><p class="fw-medium mb-0">{{ $machine->times_used }} completed booking(s)</p></div>
-        <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucwords(str_replace('_', ' ', $machine->status))" /></div>
         <div class="col-6"><label class="text-muted small d-block">Assigned Operator</label><p class="fw-medium mb-0">{{ $machine->assigned_operator ?? '—' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block mb-1">Maintenance Tier</label><x-status-badge :status="$machine->maintenance_label" /></div>
-        <div class="col-12"><label class="text-muted small d-block">Maintenance Recommendation</label><p class="fw-medium mb-0">{{ $machine->maintenance_recommendation }}</p></div>
         @if($machine->notes)
         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $machine->notes }}</p></div>
         @endif
+        <div class="col-12">
+            <a href="{{ route('manager.machine-usage') }}?search={{ urlencode($machine->name) }}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-chart-line me-1"></i>View Usage &amp; Maintenance
+            </a>
+        </div>
     </div>
 </x-modal>
 
@@ -175,7 +166,7 @@
                             <input type="text" name="assigned_operator" class="form-control" value="{{ $machine->assigned_operator }}">
                         </div>
                         <div class="col-12">
-                            <p class="text-muted small mb-0"><i class="fas fa-circle-info me-1"></i>Usage hours ({{ $machine->usage_hours }} hrs) and status ({{ ucwords(str_replace('_', ' ', $machine->status)) }}) are tracked automatically from completed bookings and can't be edited directly.</p>
+                            <p class="text-muted small mb-0"><i class="fas fa-circle-info me-1"></i>Usage hours, status, and maintenance tier are tracked automatically from completed bookings — see the <a href="{{ route('manager.machine-usage') }}">Usage Monitor</a> for those.</p>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Notes</label>
@@ -257,7 +248,7 @@
                             <input type="text" name="assigned_operator" class="form-control" value="{{ old('assigned_operator') }}">
                         </div>
                         <div class="col-12">
-                            <p class="text-muted small mb-0"><i class="fas fa-circle-info me-1"></i>Usage hours and status will be tracked automatically once bookings are scheduled and completed for this machine.</p>
+                            <p class="text-muted small mb-0"><i class="fas fa-circle-info me-1"></i>Usage hours and status will be tracked automatically once bookings are scheduled and completed — visible on the <a href="{{ route('manager.machine-usage') }}">Usage Monitor</a>.</p>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Notes</label>

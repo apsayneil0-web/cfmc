@@ -74,7 +74,7 @@
             <form action="{{ route('manager.loan-request.batch-finalize', $batch) }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">Finalizing applies to all {{ $batch->loanRequests->count() }} approved members below at once, each using their own requested amount and repayment term. Set one interest rate to apply across the batch.</p>
+                    <p class="text-muted small mb-3">Confirm to finalize all {{ $batch->loanRequests->count() }} approved members below into loans at once, each using their own requested amount and repayment term, and send them to disbursement. This can't be undone from here. Set one interest rate to apply across the batch.</p>
                     <div class="table-responsive mb-3">
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
@@ -104,7 +104,7 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Save &amp; Send to Disbursement</button>
+                    <button type="submit" class="btn btn-success">Confirm &amp; Send Batch to Disbursement</button>
                 </div>
             </form>
         </div>
@@ -427,6 +427,7 @@
                             <form action="{{ route('manager.loan-request.finalize', $req) }}" method="POST">
                                 @csrf
                                 <div class="modal-body">
+                                    <p class="text-muted small">Confirm the terms below to finalize {{ $req->farmer->full_name }}'s loan and send it to disbursement. This can't be undone from here.</p>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Approved Principal Amount <span class="text-danger">*</span></label>
                                         <input type="number" step="0.01" min="1" name="principal_amount" class="form-control" value="{{ $req->requested_amount }}" required>
@@ -448,7 +449,7 @@
                                 </div>
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-success">Save &amp; Send to Disbursement</button>
+                                    <button type="submit" class="btn btn-success">Confirm &amp; Send to Disbursement</button>
                                 </div>
                             </form>
                         </div>

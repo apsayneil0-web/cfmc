@@ -101,6 +101,11 @@
                     Machinery
                 </a>
 
+                <a href="{{ route('manager.machine-usage') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.machine-usage') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-chart-line w-5"></i>
+                    Machine Usage
+                </a>
+
                 <div class="sidebar-section-label">Engagement</div>
 
                 <a href="{{ route('manager.complaints') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.complaints') ? 'active text-gray-900' : 'text-gray-600' }}">

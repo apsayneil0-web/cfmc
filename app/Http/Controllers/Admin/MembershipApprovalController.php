@@ -49,20 +49,25 @@ class MembershipApprovalController extends Controller
             }
 
             $username = $this->generateUsername($farmer);
-            $password = Str::password(10);
 
             $user = User::create([
                 'name' => $farmer->full_name,
                 'username' => $username,
                 'email' => $username.'@farm.local',
-                'password' => Hash::make($password),
-                'temp_password' => $password,
+                'password' => Hash::make(Str::random(32)),
                 'status' => 'inactive',
                 'roleID' => 3,
                 'Phonenumber' => $farmer->contact_number,
                 'firstTimelogin' => true,
                 'isloggedin' => false,
                 'FailedLoginAttemps' => 0,
+            ]);
+
+            $password = $this->generatePassword($farmer, $user->id);
+
+            $user->update([
+                'password' => Hash::make($password),
+                'temp_password' => $password,
             ]);
 
             $farmer->update(['account_user_id' => $user->id]);
@@ -96,6 +101,20 @@ class MembershipApprovalController extends Controller
         }
 
         return $username;
+    }
+
+    /**
+     * Build the farmer's temporary password: MiddleName@LastNameFirstNameUserID
+     * (e.g. "D.@DelaCruzJuan42"), using the middle initial on file and the
+     * newly created login account's ID.
+     */
+    private function generatePassword(Farmer $farmer, int $userId): string
+    {
+        $middle = str_replace(' ', '', (string) $farmer->middle_initial);
+        $last = str_replace(' ', '', (string) $farmer->last_name);
+        $first = str_replace(' ', '', (string) $farmer->first_name);
+
+        return "{$middle}@{$last}{$first}{$userId}";
     }
 
     /**

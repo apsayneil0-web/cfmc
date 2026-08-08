@@ -19,6 +19,7 @@ use App\Http\Controllers\Manager\DashboardController as ManagerDashboardControll
 use App\Http\Controllers\Manager\LoanRequestController;
 use App\Http\Controllers\Manager\LoanManagementController;
 use App\Http\Controllers\Manager\MachineController;
+use App\Http\Controllers\Manager\MachineUsageController;
 use App\Http\Controllers\Manager\PaymentController;
 use App\Http\Controllers\Manager\LoanAppointmentController as ManagerLoanAppointmentController;
 use App\Http\Controllers\Manager\FarmerProfileController;
@@ -116,6 +117,8 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::post('/manager/machinery', [MachineController::class, 'store'])->name('manager.machinery.store');
     Route::put('/manager/machinery/{machine}', [MachineController::class, 'update'])->name('manager.machinery.update');
     Route::patch('/manager/machinery/{machine}/archive', [MachineController::class, 'archive'])->name('manager.machinery.archive');
+
+    Route::get('/manager/machine-usage', [MachineUsageController::class, 'index'])->name('manager.machine-usage');
 
     Route::get('/manager/complaints', function () {
         return view('manager.complaints');
