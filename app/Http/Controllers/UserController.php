@@ -231,6 +231,52 @@ class UserController extends Controller
     }
 
     /**
+     * Manager-initiated password reset for a farmer account (e.g. the farmer
+     * forgot their password and has no way to self-service a reset). Scoped
+     * to Farmer accounts only — a manager must never be able to overwrite an
+     * Admin's or another Manager's credentials from this screen.
+     */
+    public function changePassword(Request $request, User $user)
+    {
+        if ((int) $user->roleID !== 3) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only farmer accounts can have their password changed here.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'password' => Hash::make($request->password),
+                // Kept in the clear (same as a farmer's initial account setup) so
+                // the manager can relay it to the farmer directly from this screen.
+                'temp_password' => $request->password,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password changed successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change password: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Display user details.
      */
     public function show(User $user)

@@ -483,7 +483,7 @@
                     @auth
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="btn btn-danger btn-sm">Log Out</button>
+                            <button type="submit" class="btn btn-outline btn-sm">Log In</button>
                         </form>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-outline btn-sm">Log In</a>
@@ -513,7 +513,7 @@
                     @auth
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="btn btn-danger btn-lg">Log Out</button>
+                            <button type="submit" class="btn btn-solid btn-lg">Sign In</button>
                         </form>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-solid btn-lg">

@@ -10,7 +10,8 @@
         'denied' => 'danger', 'rejected' => 'danger', 'overdue' => 'danger', 'locked' => 'danger', 'replaceable parts' => 'danger',
         'archived' => 'secondary', 'inactive' => 'secondary', 'non-member' => 'secondary', 'cancelled' => 'secondary',
         'member' => 'primary', 'in use' => 'primary', 'new' => 'primary', 'assigned' => 'primary',
-        'cbu contribution' => 'info', 'billing' => 'info', 'loan payment' => 'primary', 'interest charge' => 'warning',
+        'cbu contribution' => 'info', 'cbu expense' => 'danger', 'billing' => 'info', 'loan payment' => 'primary', 'interest charge' => 'warning',
+        'operational expense' => 'warning',
         'routine inspection' => 'success', 'basic maintenance' => 'info', 'full maintenance' => 'warning',
         'comprehensive servicing' => 'danger', 'not yet used' => 'secondary',
     ];

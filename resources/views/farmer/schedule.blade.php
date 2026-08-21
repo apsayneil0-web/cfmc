@@ -191,7 +191,7 @@
         <h3 class="text-lg font-semibold text-gray-900 mb-0">My Schedule Requests</h3>
     </div>
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 table-mobile-cards">
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machinery</th>
@@ -205,15 +205,15 @@
             <tbody>
                 @forelse($requests as $req)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 text-dark fw-medium">
+                    <td class="px-4 px-md-6 py-4 text-dark fw-medium" data-label="Machinery">
                         {{ $req->machinery }}
                         @if($req->is_reschedule)<span class="badge bg-info-subtle text-info border border-info-subtle ms-1">Reschedule</span>@endif
                     </td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->land_size }} ha</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->location }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
-                    <td class="px-4 px-md-6 py-4">
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Land Size">{{ $req->land_size }} ha</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Date &amp; Time">{{ $req->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Location">{{ $req->location }}</td>
+                    <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucfirst($req->status)" /></td>
+                    <td class="px-4 px-md-6 py-4" data-label="Actions">
                         @if($req->status === 'approved')
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $req->id }}">
                             <i class="fas fa-calendar-alt me-1"></i>Reschedule

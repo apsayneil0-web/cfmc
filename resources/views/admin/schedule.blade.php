@@ -13,9 +13,9 @@
             </div>
             <select class="form-select" style="width: auto;">
                 <option value="">All Machinery</option>
-                <option value="harvester">Harvester</option>
-                <option value="tractor">Tractor</option>
-                <option value="pump-boat">Pump Boat</option>
+                @foreach($machineryList as $machinery)
+                <option value="{{ $machinery }}">{{ $machinery }}</option>
+                @endforeach
             </select>
             <select class="form-select" style="width: auto;">
                 <option value="">All Status</option>
@@ -41,48 +41,46 @@
                 </tr>
             </thead>
             <tbody>
+                @forelse($schedules as $schedule)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-001</td>
-                    <td class="px-4 px-md-6 py-4">Juan Dela Cruz</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Harvester</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Jul 10, 2026</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">8:00 AM - 12:00 PM</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Brgy. San Jose</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Approved" /></td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $schedule->display_name }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $schedule->machinery }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $schedule->scheduled_date->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $schedule->location }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($schedule->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-eye" color="primary" title="View Details" />
+                        <x-icon-button icon="fa-eye" color="primary" title="View Details" data-bs-toggle="modal" data-bs-target="#viewScheduleModal{{ $schedule->id }}" />
                     </td>
                 </tr>
+
+                <x-modal id="viewScheduleModal{{ $schedule->id }}" title="Schedule Details">
+                    <div class="row g-3">
+                        <div class="col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Status</label><p class="fw-medium mb-0"><x-status-badge :status="ucfirst($schedule->status)" /></p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $schedule->display_name }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $schedule->machinery }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Land Size</label><p class="fw-medium mb-0">{{ $schedule->land_size }} ha</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">{{ $schedule->location }}</p></div>
+                        @if($schedule->remarks)
+                        <div class="col-12"><label class="text-muted small d-block">Remarks</label><p class="fw-medium mb-0">{{ $schedule->remarks }}</p></div>
+                        @endif
+                    </div>
+                </x-modal>
+                @empty
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-002</td>
-                    <td class="px-4 px-md-6 py-4">Maria Santos</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Tractor</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Jul 12, 2026</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">7:00 AM - 11:00 AM</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Brgy. Poblacion</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Approved" /></td>
-                    <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-eye" color="primary" title="View Details" />
-                    </td>
+                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No schedules recorded yet.</td>
                 </tr>
-                <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-003</td>
-                    <td class="px-4 px-md-6 py-4">Roberto Tan</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Pump Boat</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Jul 15, 2026</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">6:00 AM - 9:00 AM</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">Brgy. Malinao</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Pending" /></td>
-                    <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-eye" color="primary" title="View Details" />
-                    </td>
-                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
 
     <div class="px-4 px-md-6 py-4 border-top d-flex align-items-center justify-content-between">
-        <p class="text-muted small mb-0">Showing 1-3 of 3 entries</p>
+        <p class="text-muted small mb-0">Showing {{ $schedules->count() }} of {{ $schedules->count() }} entries</p>
     </div>
 </div>
 

@@ -38,7 +38,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 table-mobile-cards">
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Subject</th>
@@ -50,15 +50,22 @@
             <tbody>
                 @forelse($complaints as $complaint)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 text-dark fw-medium">{{ $complaint->subject }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $complaint->created_at->format('M d, Y') }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></td>
-                    <td class="px-4 px-md-6 py-4">
+                    <td class="px-4 px-md-6 py-4 text-dark fw-medium" data-label="Subject">{{ $complaint->subject }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Submitted">{{ $complaint->created_at->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></td>
+                    <td class="px-4 px-md-6 py-4" data-label="Actions">
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $complaint->id }}"><i class="fas fa-eye"></i></button>
                             @if($complaint->status == 'draft')
                             <button class="btn btn-sm btn-outline-warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $complaint->id }}"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $complaint->id }}"><i class="fas fa-trash"></i></button>
+                            @endif
+                            @if($complaint->status == 'resolved')
+                            <form action="{{ route('farmer.complaints.reopen', $complaint->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Reopen"><i class="fas fa-rotate-left"></i></button>
+                            </form>
                             @endif
                         </div>
                     </td>
@@ -116,7 +123,7 @@
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                                     <button type="submit" name="action" value="draft" class="btn btn-outline-primary">Save Draft</button>
-                                    <button type="submit" name="action" value="submit" class="btn btn-primary">Submit for Review</button>
+                                    <button type="submit" name="action" value="submit" class="btn btn-primary" onclick="return confirm('Submit this complaint for review? You won\'t be able to edit it once submitted.')">Submit for Review</button>
                                 </div>
                             </form>
                         </div>
@@ -179,7 +186,7 @@
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" name="action" value="draft" class="btn btn-outline-primary">Save as Draft</button>
-                    <button type="submit" name="action" value="submit" class="btn btn-primary">Submit for Review</button>
+                    <button type="submit" name="action" value="submit" class="btn btn-primary" onclick="return confirm('Submit this complaint for review? You won\'t be able to edit it once submitted.')">Submit for Review</button>
                 </div>
             </form>
         </div>

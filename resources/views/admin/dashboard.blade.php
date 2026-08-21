@@ -8,8 +8,8 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <x-stat-card label="Registered Farmers" value="{{ $totalFarmers }}" icon="fa-seedling" color="success" />
     <x-stat-card label="Pending Membership Applications" value="{{ $pendingMembership }}" icon="fa-user-clock" color="warning" />
-    <x-stat-card label="Pending Loan Requests" value="0" icon="fa-hand-holding-usd" color="danger" />
-    <x-stat-card label="Machinery Schedules" value="0" icon="fa-tractor" color="info" />
+    <x-stat-card label="Pending Loan Requests" value="{{ $pendingLoanRequests }}" icon="fa-hand-holding-usd" color="danger" />
+    <x-stat-card label="Machinery Schedules" value="{{ $machinerySchedules }}" icon="fa-tractor" color="info" />
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

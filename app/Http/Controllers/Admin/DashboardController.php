@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Farmer;
+use App\Models\LoanRequest;
 use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,9 @@ class DashboardController extends Controller
         $approvedFarmers = Farmer::where('status', 'approved')->count();
         $archivedFarmers = Farmer::where('status', 'archived')->count();
         $rejectedFarmers = Farmer::where('status', 'rejected')->count();
+
+        $pendingLoanRequests = LoanRequest::where('status', 'pending')->count();
+        $machinerySchedules = ScheduleRequest::whereNull('archived_at')->count();
 
         $recentApplications = Farmer::with('crops')
             ->orderBy('created_at', 'desc')
@@ -33,6 +37,8 @@ class DashboardController extends Controller
             'approvedFarmers',
             'archivedFarmers',
             'rejectedFarmers',
+            'pendingLoanRequests',
+            'machinerySchedules',
             'recentApplications',
             'calendarDays',
             'firstWeekday',

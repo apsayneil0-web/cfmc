@@ -38,7 +38,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 table-mobile-cards">
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
@@ -51,11 +51,11 @@
             <tbody>
                 @forelse($appointments as $appointment)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 text-dark fw-medium">{{ $appointment->appointment_date->format('M d, Y') }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $appointment->purpose }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($appointment->status)" /></td>
-                    <td class="px-4 px-md-6 py-4">
+                    <td class="px-4 px-md-6 py-4 text-dark fw-medium" data-label="Date">{{ $appointment->appointment_date->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Time">{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Purpose">{{ $appointment->purpose }}</td>
+                    <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucfirst($appointment->status)" /></td>
+                    <td class="px-4 px-md-6 py-4" data-label="Actions">
                         @if($appointment->status == 'pending')
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-warning" title="Reschedule" data-bs-toggle="modal" data-bs-target="#editModal{{ $appointment->id }}"><i class="fas fa-edit"></i></button>

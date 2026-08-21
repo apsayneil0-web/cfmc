@@ -39,7 +39,7 @@
 
     <h4 class="text-sm fw-semibold text-dark px-4 px-md-6 mb-2">Payment &amp; Interest History</h4>
     <div class="table-responsive">
-        <table class="table table-sm mb-0">
+        <table class="table table-sm mb-0 table-mobile-cards">
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 small">Date</th>
@@ -51,16 +51,16 @@
             <tbody>
                 @forelse($activeLoan->payments->sortByDesc('created_at') as $payment)
                 <tr>
-                    <td class="px-4 px-md-6 small">{{ $payment->transaction_date->format('M d, Y') }}</td>
-                    <td class="small">
+                    <td class="px-4 px-md-6 small" data-label="Date">{{ $payment->transaction_date->format('M d, Y') }}</td>
+                    <td class="small" data-label="Type">
                         @if($payment->type === 'payment')
                         <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
                         @else
                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
                         @endif
                     </td>
-                    <td class="small">{{ $payment->type === 'payment' ? '-' : '+' }}{{ peso($payment->amount) }}</td>
-                    <td class="small">{{ peso($payment->balance_after) }}</td>
+                    <td class="small" data-label="Amount">{{ $payment->type === 'payment' ? '-' : '+' }}{{ peso($payment->amount) }}</td>
+                    <td class="small" data-label="Balance After">{{ peso($payment->balance_after) }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="4" class="text-center text-muted small py-3">No transactions yet.</td></tr>
@@ -77,7 +77,7 @@
         <h3 class="text-lg font-semibold text-gray-900 mb-0">Loan Applications</h3>
     </div>
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 table-mobile-cards">
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date Requested</th>
@@ -90,13 +90,13 @@
             <tbody class="divide-y">
                 @forelse($loanRequests as $req)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->created_at->format('M d, Y') }}</td>
-                    <td class="px-4 px-md-6 py-4">
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Date Requested">{{ $req->created_at->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4" data-label="Type">
                         {{ $req->type === 'batch' ? ($req->batch?->label ?? 'Batch') : 'Regular Loan' }}
                     </td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($req->requested_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->purpose ?? '—' }}</td>
-                    <td class="px-4 px-md-6 py-4">
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark" data-label="Amount Requested">{{ peso($req->requested_amount) }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Purpose">{{ $req->purpose ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4" data-label="Status">
                         <x-status-badge :status="ucfirst($req->status)" />
                         @if($req->status === 'denied' && $req->denial_reason)
                         <p class="text-danger small mb-0 mt-1">{{ $req->denial_reason }}</p>

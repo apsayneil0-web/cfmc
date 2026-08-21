@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Farmer extends Model
@@ -120,5 +121,13 @@ class Farmer extends Model
     public function announcements(): BelongsToMany
     {
         return $this->belongsToMany(Announcement::class, 'announcement_recipients');
+    }
+
+    /**
+     * Get this farmer's CBU (Capital Build-Up) account, if one has been opened yet.
+     */
+    public function cbu(): HasOne
+    {
+        return $this->hasOne(Cbu::class);
     }
 }

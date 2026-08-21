@@ -8,11 +8,13 @@ use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\MembershipApprovalController;
 use App\Http\Controllers\Admin\LoanApprovalController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController;
 use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
 use App\Http\Controllers\Farmer\LoanAppointmentController;
 use App\Http\Controllers\Farmer\LoanController as FarmerLoanController;
 use App\Http\Controllers\Farmer\ComplaintController;
+use App\Http\Controllers\Farmer\CbuController as FarmerCbuController;
 use App\Http\Controllers\Manager\ScheduleApprovalController;
 use App\Http\Controllers\Manager\MachineScheduleController;
 use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
@@ -21,9 +23,13 @@ use App\Http\Controllers\Manager\LoanManagementController;
 use App\Http\Controllers\Manager\MachineController;
 use App\Http\Controllers\Manager\MachineUsageController;
 use App\Http\Controllers\Manager\PaymentController;
+use App\Http\Controllers\Manager\CbuController;
+use App\Http\Controllers\Manager\FinancialController;
+use App\Http\Controllers\Manager\ReportController;
 use App\Http\Controllers\Manager\LoanAppointmentController as ManagerLoanAppointmentController;
 use App\Http\Controllers\Manager\FarmerProfileController;
 use App\Http\Controllers\Manager\AnnouncementController;
+use App\Http\Controllers\Manager\ComplaintController as ManagerComplaintController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 
@@ -50,9 +56,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
 
     Route::get('/admin/approved-loans', [LoanApprovalController::class, 'approved'])->name('admin.approved-loans');
 
-    Route::get('/admin/schedule', function () {
-        return view('admin.schedule');
-    })->name('admin.schedule');
+    Route::get('/admin/schedule', [AdminScheduleController::class, 'index'])->name('admin.schedule');
 
     Route::get('/admin/user-management', [AdminUserController::class, 'index'])->name('admin.user-management');
     Route::post('/admin/user-management', [AdminUserController::class, 'store'])->name('admin.user.store');
@@ -84,13 +88,11 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/manager/machine-schedule/{schedule}/complete', [MachineScheduleController::class, 'complete'])->name('manager.machine-schedule.complete');
     Route::post('/manager/machine-schedule/shift-day', [MachineScheduleController::class, 'shiftDay'])->name('manager.machine-schedule.shift-day');
 
-    Route::get('/manager/financial', function () {
-        return view('manager.financial');
-    })->name('manager.financial');
+    Route::get('/manager/financial', [FinancialController::class, 'index'])->name('manager.financial');
+    Route::post('/manager/financial', [FinancialController::class, 'store'])->name('manager.financial.store');
 
-    Route::get('/manager/cbu', function () {
-        return view('manager.cbu');
-    })->name('manager.cbu');
+    Route::get('/manager/cbu', [CbuController::class, 'index'])->name('manager.cbu');
+    Route::post('/manager/cbu', [CbuController::class, 'store'])->name('manager.cbu.store');
 
     Route::get('/manager/loan-request', [LoanRequestController::class, 'index'])->name('manager.loan-request');
     Route::post('/manager/loan-request', [LoanRequestController::class, 'store'])->name('manager.loan-request.store');
@@ -111,6 +113,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
 
     Route::get('/manager/payment', [PaymentController::class, 'index'])->name('manager.payment');
     Route::post('/manager/payment', [PaymentController::class, 'recordLoanPayment'])->name('manager.payment.record');
+    Route::post('/manager/payment/cbu', [PaymentController::class, 'recordCbuPayment'])->name('manager.payment.record-cbu');
     Route::get('/manager/payment/{loan_payment}/receipt', [PaymentController::class, 'receipt'])->name('manager.payment.receipt');
 
     Route::get('/manager/machinery', [MachineController::class, 'index'])->name('manager.machinery');
@@ -120,18 +123,16 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
 
     Route::get('/manager/machine-usage', [MachineUsageController::class, 'index'])->name('manager.machine-usage');
 
-    Route::get('/manager/complaints', function () {
-        return view('manager.complaints');
-    })->name('manager.complaints');
+    Route::get('/manager/complaints', [ManagerComplaintController::class, 'index'])->name('manager.complaints');
+    Route::patch('/manager/complaints/{complaint}/respond', [ManagerComplaintController::class, 'respond'])->name('manager.complaints.respond');
 
     Route::get('/manager/announcement', [AnnouncementController::class, 'index'])->name('manager.announcement');
     Route::post('/manager/announcement', [AnnouncementController::class, 'store'])->name('manager.announcement.store');
     Route::put('/manager/announcement/{announcement}', [AnnouncementController::class, 'update'])->name('manager.announcement.update');
     Route::patch('/manager/announcement/{announcement}/archive', [AnnouncementController::class, 'archive'])->name('manager.announcement.archive');
 
-    Route::get('/manager/reporting', function () {
-        return view('manager.reporting');
-    })->name('manager.reporting');
+    Route::get('/manager/reporting', [ReportController::class, 'index'])->name('manager.reporting');
+    Route::get('/manager/reporting/export', [ReportController::class, 'export'])->name('manager.reporting.export');
 
     Route::get('/manager/user-management', [UserController::class, 'index'])->name('manager.user-management');
 
@@ -139,6 +140,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/manager/user-management/{user}/archive', [UserController::class, 'archive'])->name('user.archive');
     Route::patch('/manager/user-management/{user}/unarchive', [UserController::class, 'unarchive'])->name('user.unarchive');
     Route::patch('/manager/user-management/{user}/unlock', [UserController::class, 'unlock'])->name('user.unlock');
+    Route::patch('/manager/user-management/{user}/change-password', [UserController::class, 'changePassword'])->name('user.change-password');
     Route::patch('/manager/user-management/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('user.toggle-status');
     Route::get('/manager/user-management/{user}', [UserController::class, 'show'])->name('user.show');
     Route::put('/manager/user-management/{user}', [UserController::class, 'update'])->name('user.update');
@@ -157,14 +159,13 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::put('/farmer/loan-appointment/{loan_appointment}', [LoanAppointmentController::class, 'update'])->name('farmer.loan-appointment.update');
     Route::patch('/farmer/loan-appointment/{loan_appointment}/cancel', [LoanAppointmentController::class, 'cancel'])->name('farmer.loan-appointment.cancel');
 
-    Route::get('/farmer/cbu', function () {
-        return view('farmer.cbu');
-    })->name('farmer.cbu');
+    Route::get('/farmer/cbu', [FarmerCbuController::class, 'index'])->name('farmer.cbu');
 
     Route::get('/farmer/complaints', [ComplaintController::class, 'index'])->name('farmer.complaints');
     Route::post('/farmer/complaints', [ComplaintController::class, 'store'])->name('farmer.complaints.store');
     Route::put('/farmer/complaints/{complaint}', [ComplaintController::class, 'update'])->name('farmer.complaints.update');
     Route::delete('/farmer/complaints/{complaint}', [ComplaintController::class, 'destroy'])->name('farmer.complaints.destroy');
+    Route::patch('/farmer/complaints/{complaint}/reopen', [ComplaintController::class, 'reopen'])->name('farmer.complaints.reopen');
 
     // Shared Routes
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');

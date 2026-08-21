@@ -69,4 +69,14 @@ class ComplaintController extends Controller
 
         return redirect()->route('farmer.complaints')->with('success', 'Draft complaint deleted.');
     }
+
+    public function reopen(Complaint $complaint)
+    {
+        abort_if($complaint->user_id !== Auth::id(), 403);
+        abort_if($complaint->status !== 'resolved', 422, 'Only resolved complaints can be reopened.');
+
+        $complaint->update(['status' => 'submitted']);
+
+        return redirect()->route('farmer.complaints')->with('success', 'Complaint reopened for further review.');
+    }
 }

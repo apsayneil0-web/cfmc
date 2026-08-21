@@ -89,6 +89,9 @@
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-primary" title="View" onclick="viewUser({{ $user->id }})"><i class="fas fa-eye"></i></button>
                             <button class="btn btn-sm btn-outline-warning" title="Edit" onclick="editUser({{ $user->id }})"><i class="fas fa-edit"></i></button>
+                            @if($user->roleID == 3)
+                            <button class="btn btn-sm btn-outline-primary" title="Change Password" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }})"><i class="fas fa-key"></i></button>
+                            @endif
                             @if($user->status === 'locked')
                             <button class="btn btn-sm btn-outline-success" title="Unlock" onclick="unlockUser({{ $user->id }})"><i class="fas fa-unlock"></i></button>
                             @endif
@@ -426,6 +429,60 @@
     </div>
 </div>
 
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="changePasswordModalLabel">
+                    <i class="fas fa-key me-2 text-primary"></i>
+                    Change Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light border d-flex align-items-center gap-2 mb-4">
+                    <i class="fas fa-user text-primary"></i>
+                    <span>Setting a new password for <strong id="changePasswordUserName">-</strong>. They will need to use it next time they log in.</span>
+                </div>
+                <form id="changePasswordForm" class="needs-validation" novalidate>
+                    <input type="hidden" id="changePasswordUserId">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">New Password <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-lg">
+                            <input type="password" class="form-control" name="password" id="newPasswordInput" minlength="8" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('newPasswordInput', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Minimum 8 characters.</div>
+                        <div class="invalid-feedback">Password must be at least 8 characters.</div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-lg">
+                            <input type="password" class="form-control" name="password_confirmation" id="confirmPasswordInput" minlength="8" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('confirmPasswordInput', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="invalid-feedback">Please confirm the new password.</div>
+                        <div class="small text-danger mt-1 d-none" id="passwordMismatchError">Passwords do not match.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary btn-lg px-4" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary btn-lg px-4" id="submitChangePasswordBtn" onclick="submitChangePassword()">
+                    <i class="fas fa-key me-2"></i>Change Password
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Notification Modal -->
 <div class="modal fade" id="notifyModal" tabindex="-1" aria-labelledby="notifyMessage" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -596,6 +653,100 @@
             this.innerHTML = '<i class="fas fa-eye"></i>';
         }
     });
+
+    // Toggle password visibility for a field referenced by id (Change Password modal)
+    function togglePasswordField(inputId, button) {
+        var input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+            input.type = 'password';
+            button.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+    }
+
+    // Opens the Change Password modal for a specific farmer account.
+    function openChangePassword(userId, userName) {
+        document.getElementById('changePasswordUserId').value = userId;
+        document.getElementById('changePasswordUserName').textContent = userName;
+        new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
+    }
+
+    document.getElementById('changePasswordModal').addEventListener('hidden.bs.modal', function() {
+        var form = document.getElementById('changePasswordForm');
+        form.reset();
+        form.classList.remove('was-validated');
+        document.getElementById('passwordMismatchError').classList.add('d-none');
+    });
+
+    // Submits a manager-initiated password reset for a farmer account. Only
+    // Farmer accounts can be targeted — enforced again server-side.
+    function submitChangePassword() {
+        var form = document.getElementById('changePasswordForm');
+        var newPassword = document.getElementById('newPasswordInput').value;
+        var confirmPassword = document.getElementById('confirmPasswordInput').value;
+        var mismatchError = document.getElementById('passwordMismatchError');
+
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            mismatchError.classList.remove('d-none');
+            return;
+        }
+        mismatchError.classList.add('d-none');
+
+        var userId = document.getElementById('changePasswordUserId').value;
+        var userName = document.getElementById('changePasswordUserName').textContent;
+
+        if (!confirm('Change the login password for ' + userName + '? They will need to use the new password next time they log in.')) {
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('_token', '{{ csrf_token() }}');
+        formData.append('_method', 'PATCH');
+        formData.append('password', newPassword);
+        formData.append('password_confirmation', confirmPassword);
+
+        var submitBtn = document.getElementById('submitChangePasswordBtn');
+        var originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Changing...';
+
+        fetch('/manager/user-management/' + userId + '/change-password', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+                showAlert(data.message, 'success', function() {
+                    window.location.reload();
+                });
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            showAlert(error.message, 'danger');
+        });
+    }
 
     // Validates the create-account form and, if valid, shows a review
     // step before the account is actually created.

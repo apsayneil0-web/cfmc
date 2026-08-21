@@ -260,6 +260,9 @@ body.bg-light {
     font-size: 1rem;
     transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
 }
+.form-select {
+    padding-right: 2.25rem;
+}
 .form-control:hover,
 .form-select:hover {
     border-color: #b6bfcc;
@@ -329,6 +332,66 @@ body.bg-light {
 }
 .table-responsive {
     border-radius: var(--radius-md);
+}
+
+/* Opt-in: stack a table into cards on narrow screens instead of squeezing
+   columns / horizontal-scrolling. Add data-label="Column Name" to each <td>
+   so the label can be reconstructed in the stacked layout. */
+@media (max-width: 767.98px) {
+    .table-mobile-cards thead {
+        display: none;
+    }
+    .table-mobile-cards,
+    .table-mobile-cards tbody,
+    .table-mobile-cards tr,
+    .table-mobile-cards td {
+        display: block;
+        width: 100%;
+    }
+    .table-mobile-cards tr {
+        background-color: var(--brand-surface);
+        border: 1px solid var(--brand-border);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.75rem;
+        padding: 0.25rem 1rem;
+    }
+    .table-mobile-cards tr:last-child {
+        margin-bottom: 0;
+    }
+    .table-mobile-cards td {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.6rem 0 !important;
+        border: none !important;
+        border-bottom: 1px solid var(--brand-border) !important;
+        text-align: right;
+    }
+    .table-mobile-cards td:last-child {
+        border-bottom: none !important;
+    }
+    .table-mobile-cards td::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        text-align: left;
+    }
+    .table-mobile-cards td[data-label=""],
+    .table-mobile-cards td:not([data-label]) {
+        justify-content: center;
+        text-align: center;
+    }
+    .table-mobile-cards td[colspan] {
+        text-align: center;
+    }
+    .table-mobile-cards td[colspan]::before {
+        content: none;
+    }
 }
 
 /* -------------------------------------------------------------------------
@@ -902,9 +965,11 @@ body.bg-light {
     background-color: #64748b;
 }
 
-/* Literal Tailwind gray-scale utilities used directly in the blade views */
+/* Literal Tailwind gray-scale utilities used directly in the blade views.
+   .bg-white collides with Bootstrap's own !important utility of the same
+   name, so it needs !important here too or Bootstrap's white always wins. */
 :root[data-bs-theme="dark"] .bg-white {
-    background-color: var(--brand-surface);
+    background-color: var(--brand-surface) !important;
 }
 :root[data-bs-theme="dark"] .bg-gray-50 {
     background-color: var(--brand-surface-muted);

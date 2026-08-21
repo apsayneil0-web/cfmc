@@ -6,18 +6,18 @@
 @section('content')
 <!-- Statistics Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <x-stat-card label="Total Registered Farmers" value="156" icon="fa-users" color="primary" trend="12% from last month" />
-    <x-stat-card label="Pending Membership Requests" value="23" icon="fa-user-clock" color="warning" />
-    <x-stat-card label="Pending Schedule Requests" value="18" icon="fa-calendar-alt" color="purple" />
-    <x-stat-card label="Approved Schedules" value="45" icon="fa-calendar-check" color="success" />
+    <x-stat-card label="Total Registered Farmers" value="{{ $stats['total_farmers'] }}" icon="fa-users" color="primary" />
+    <x-stat-card label="Pending Membership Requests" value="{{ $stats['pending_membership'] }}" icon="fa-user-clock" color="warning" />
+    <x-stat-card label="Pending Schedule Requests" value="{{ $stats['pending_schedules'] }}" icon="fa-calendar-alt" color="purple" />
+    <x-stat-card label="Approved Schedules" value="{{ $stats['approved_schedules'] }}" icon="fa-calendar-check" color="success" />
 </div>
 
 <!-- Second Row -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <x-stat-card label="Active Loan Applications" value="12" icon="fa-hand-holding-usd" color="danger" />
-    <x-stat-card label="Available Machinery" value="8" icon="fa-tractor" color="info" />
-    <x-stat-card label="Total CBU" value="₱1.2M" icon="fa-piggy-bank" color="purple" trend="8% growth" />
-    <x-stat-card label="Net Income" value="₱890K" icon="fa-chart-line" color="success" trend="15% from last month" />
+    <x-stat-card label="Active Loan Applications" value="{{ $stats['active_loan_applications'] }}" icon="fa-hand-holding-usd" color="danger" />
+    <x-stat-card label="Available Machinery" value="{{ $stats['available_machinery'] }}" icon="fa-tractor" color="info" />
+    <x-stat-card label="Total CBU" value="{{ peso($stats['total_cbu']) }}" icon="fa-piggy-bank" color="purple" />
+    <x-stat-card label="Total Expenses" value="{{ peso($stats['total_expenses']) }}" icon="fa-chart-line" color="success" />
 </div>
 
 <!-- Recent Activities & Quick Actions -->
@@ -29,46 +29,20 @@
             <a href="{{ route('manager.reporting') }}" class="text-sm text-brand text-decoration-none">View All</a>
         </div>
         <div class="space-y-4">
-            <div class="flex items-center gap-4 pb-4 border-b border-gray-100">
-                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <i class="fas fa-check text-green-600"></i>
+            @forelse($recentActivities as $index => $activity)
+            <div class="flex items-center gap-4 {{ $loop->last ? '' : 'pb-4 border-b border-gray-100' }}">
+                <div class="w-10 h-10 rounded-full {{ $activity->bg }} flex items-center justify-center">
+                    <i class="fas {{ $activity->icon }} {{ $activity->color }}"></i>
                 </div>
                 <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">Membership request approved</p>
-                    <p class="text-xs text-gray-500">Juan Dela Cruz - Brgy. San Jose</p>
+                    <p class="text-sm font-medium text-gray-900">{{ $activity->title }}</p>
+                    <p class="text-xs text-gray-500">{{ $activity->subtitle }}</p>
                 </div>
-                <p class="text-xs text-gray-400">2 hours ago</p>
+                <p class="text-xs text-gray-400">{{ $activity->at->diffForHumans() }}</p>
             </div>
-            <div class="flex items-center gap-4 pb-4 border-b border-gray-100">
-                <div class="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center">
-                    <i class="fas fa-calendar text-brand"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">Schedule request submitted</p>
-                    <p class="text-xs text-gray-500">Maria Santos - Harvester Rental</p>
-                </div>
-                <p class="text-xs text-gray-400">4 hours ago</p>
-            </div>
-            <div class="flex items-center gap-4 pb-4 border-b border-gray-100">
-                <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">Machinery maintenance alert</p>
-                    <p class="text-xs text-gray-500">Tractor #003 - 500 hours reached</p>
-                </div>
-                <p class="text-xs text-gray-400">6 hours ago</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <i class="fas fa-money-bill-wave text-purple-600"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">Loan payment received</p>
-                    <p class="text-xs text-gray-500">Pedro Reyes - PHP 15,000</p>
-                </div>
-                <p class="text-xs text-gray-400">1 day ago</p>
-            </div>
+            @empty
+            <p class="text-sm text-muted mb-0">No recent activity yet.</p>
+            @endforelse
         </div>
     </div>
 
