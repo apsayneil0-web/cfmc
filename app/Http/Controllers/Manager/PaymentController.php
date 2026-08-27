@@ -38,7 +38,11 @@ class PaymentController extends Controller
             'transaction_code' => 'LNPAY-'.str_pad($payment->id, 3, '0', STR_PAD_LEFT),
             'date' => $payment->transaction_date,
             'payer' => $payment->loan->farmer->full_name,
-            'type_label' => $payment->type === 'payment' ? 'Loan Payment' : 'Interest Charge',
+            'type_label' => match ($payment->type) {
+                'payment' => 'Loan Payment',
+                'prepayment' => 'Prepayment',
+                default => 'Interest Charge',
+            },
             'reference' => 'LN-'.str_pad($payment->loan_id, 3, '0', STR_PAD_LEFT),
             'amount' => $payment->amount,
             'balance_after' => $payment->balance_after,
@@ -82,7 +86,7 @@ class PaymentController extends Controller
             ->get();
 
         $stats = [
-            'loan_payments' => LoanPayment::where('type', 'payment')->sum('amount'),
+            'loan_payments' => LoanPayment::whereIn('type', ['payment', 'prepayment'])->sum('amount'),
             'cbu_contributions' => CbuTransaction::where('type', 'contribution')->sum('amount'),
             'operational_expenses' => Expense::where('category', 'operational')->sum('amount'),
             'replaceable_parts' => Expense::where('category', 'replaceable_parts')->sum('amount'),
@@ -131,6 +135,7 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'loan_id' => 'required|exists:loans,id',
+            'type' => 'required|in:payment,prepayment',
             'amount' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -141,7 +146,7 @@ class PaymentController extends Controller
         abort_if($loan->status === 'pending_disbursement', 422, 'This loan has not been disbursed yet.');
         abort_if((float) $validated['amount'] > (float) $loan->remaining_balance, 422, 'Payment exceeds remaining balance.');
 
-        $loan->recordPayment($validated['amount'], $validated['notes'] ?? null, Auth::id());
+        $loan->recordPayment($validated['amount'], $validated['notes'] ?? null, Auth::id(), $validated['type']);
 
         return redirect()->route('manager.payment')
             ->with('success', 'Payment recorded successfully.');

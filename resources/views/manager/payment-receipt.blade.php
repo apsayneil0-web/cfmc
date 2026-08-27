@@ -148,8 +148,16 @@
             <span class="receipt-badge">LNPAY-{{ str_pad($payment->id, 3, '0', STR_PAD_LEFT) }}</span>
         </div>
 
+        @php
+            $paymentTypeLabel = match ($payment->type) {
+                'payment' => 'Loan Payment',
+                'prepayment' => 'Prepayment',
+                default => 'Interest Charge',
+            };
+        @endphp
+
         <div class="receipt-title">
-            <h2>{{ $payment->type === 'payment' ? 'Loan Payment' : 'Interest Charge' }} Receipt</h2>
+            <h2>{{ $paymentTypeLabel }} Receipt</h2>
         </div>
 
         <div class="grid">
@@ -158,14 +166,14 @@
             <div class="field"><label>Loan ID</label><p>LN-{{ str_pad($payment->loan_id, 3, '0', STR_PAD_LEFT) }}</p></div>
             <div class="field"><label>Balance After Payment</label><p>{{ peso($payment->balance_after) }}</p></div>
             <div class="field"><label>Recorded By</label><p>{{ $payment->recordedBy->name ?? '—' }}</p></div>
-            <div class="field"><label>Transaction Type</label><p>{{ $payment->type === 'payment' ? 'Loan Payment' : 'Interest Charge' }}</p></div>
+            <div class="field"><label>Transaction Type</label><p>{{ $paymentTypeLabel }}</p></div>
             @if($payment->notes)
             <div class="field full"><label>Notes</label><p>{{ $payment->notes }}</p></div>
             @endif
         </div>
 
         <div class="amount-box">
-            <label>{{ $payment->type === 'payment' ? 'Amount Paid' : 'Interest Charged' }}</label>
+            <label>{{ $payment->type === 'interest' ? 'Interest Charged' : 'Amount Paid' }}</label>
             <div class="amount">{{ peso($payment->amount) }}</div>
         </div>
 

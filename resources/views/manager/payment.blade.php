@@ -155,7 +155,7 @@
                         <select name="loan_id" id="recordPaymentLoanSelect" class="form-select" required>
                             <option value="" disabled selected>Select a loan</option>
                             @forelse($payableLoans as $loan)
-                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}">
+                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->monthly_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}">
                                 LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — {{ $loan->farmer->full_name }} (Balance: {{ peso($loan->remaining_balance) }})
                             </option>
                             @empty
@@ -164,6 +164,13 @@
                         </select>
                     </div>
                     <p class="text-muted small" id="recordPaymentBalanceHint"></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Payment Type <span class="text-danger">*</span></label>
+                        <select name="type" class="form-select" required>
+                            <option value="payment" selected>Regular Payment</option>
+                            <option value="prepayment">Prepayment (ahead of the due date)</option>
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Payment Amount <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" min="0.01" name="amount" id="recordPaymentAmount" class="form-control" required>
@@ -240,12 +247,21 @@
     document.getElementById('recordPaymentLoanSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];
         var balance = option ? option.getAttribute('data-balance') : null;
+        var monthlyDue = option ? option.getAttribute('data-monthly-due') : null;
+        var nextDueDate = option ? option.getAttribute('data-next-due-date') : null;
         var amountInput = document.getElementById('recordPaymentAmount');
         var hint = document.getElementById('recordPaymentBalanceHint');
 
         if (balance) {
             amountInput.max = balance;
-            hint.textContent = 'Current balance: ₱' + parseFloat(balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            var text = 'Current balance: ₱' + parseFloat(balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (monthlyDue) {
+                text += ' &bull; Monthly due: ₱' + parseFloat(monthlyDue).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            if (nextDueDate) {
+                text += ' (due ' + nextDueDate + ')';
+            }
+            hint.innerHTML = text;
         } else {
             amountInput.removeAttribute('max');
             hint.textContent = '';

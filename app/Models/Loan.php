@@ -123,14 +123,14 @@ class Loan extends Model
      * Record a farmer payment against this loan, reducing the balance and
      * closing the loan out once it reaches zero.
      */
-    public function recordPayment(float $amount, ?string $notes, ?int $recordedBy): LoanPayment
+    public function recordPayment(float $amount, ?string $notes, ?int $recordedBy, string $type = 'payment'): LoanPayment
     {
         $this->remaining_balance = max(0, round((float) $this->remaining_balance - $amount, 2));
         $this->status = $this->remaining_balance <= 0 ? 'fully_paid' : 'active';
         $this->save();
 
         return $this->payments()->create([
-            'type' => 'payment',
+            'type' => $type,
             'amount' => $amount,
             'transaction_date' => now()->toDateString(),
             'balance_after' => $this->remaining_balance,

@@ -17,6 +17,16 @@ class LoanRequestController extends Controller
     private const TYPES = ['regular', 'batch'];
 
     /**
+     * Production loan schedule for batch loans: the maximum amount a farmer
+     * may borrow and the minimum CBU balance required, per hectare owned.
+     */
+    private const PRODUCTION_LOAN_BRACKETS = [
+        1 => ['max_loanable' => 32000, 'min_cbu' => 4000],
+        2 => ['max_loanable' => 64000, 'min_cbu' => 8000],
+        3 => ['max_loanable' => 96000, 'min_cbu' => 12000],
+    ];
+
+    /**
      * Display all loan requests awaiting or past decision.
      */
     public function index(Request $request)
@@ -283,7 +293,40 @@ class LoanRequestController extends Controller
                     }
                 },
             ],
-            'requested_amount' => 'required|numeric|min:1',
+            'requested_amount' => [
+                'required',
+                'numeric',
+                'min:1',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->input('type') !== 'batch') {
+                        return;
+                    }
+
+                    $farmer = Farmer::with('cbu')->find($request->input('farmer_id'));
+
+                    if (! $farmer) {
+                        return;
+                    }
+
+                    $bracket = self::PRODUCTION_LOAN_BRACKETS[(int) floor($farmer->land_area)] ?? null;
+
+                    if (! $bracket) {
+                        $fail("No production loan bracket is defined for {$farmer->land_area} hectare(s).");
+
+                        return;
+                    }
+
+                    if ($value > $bracket['max_loanable']) {
+                        $fail("Maximum loanable amount for {$farmer->land_area} hectare(s) is ".peso($bracket['max_loanable']).".");
+
+                        return;
+                    }
+
+                    if (($farmer->cbu->balance ?? 0) < $bracket['min_cbu']) {
+                        $fail("This farmer needs at least ".peso($bracket['min_cbu'])." in CBU for {$farmer->land_area} hectare(s).");
+                    }
+                },
+            ],
             'purpose' => ['required', 'string', 'in:'.implode(',', self::PURPOSES)],
             'repayment_terms_months' => ['required', 'integer', 'in:'.implode(',', self::TERMS)],
             'collateral' => 'nullable|string|max:255',

@@ -25,7 +25,7 @@ class LoanApprovalController extends Controller
 
         $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
         $batchGroups = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
-            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at', 'desc')])
+            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with(['farmer', 'requestedBy'])->orderBy('created_at', 'desc')])
             ->orderBy('created_at', 'desc')
             ->get()
             ->filter(fn (LoanBatch $batch) => $batch->is_full)

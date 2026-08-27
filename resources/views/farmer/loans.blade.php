@@ -55,11 +55,13 @@
                     <td class="small" data-label="Type">
                         @if($payment->type === 'payment')
                         <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
+                        @elseif($payment->type === 'prepayment')
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Prepayment</span>
                         @else
                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
                         @endif
                     </td>
-                    <td class="small" data-label="Amount">{{ $payment->type === 'payment' ? '-' : '+' }}{{ peso($payment->amount) }}</td>
+                    <td class="small" data-label="Amount">{{ $payment->type === 'interest' ? '+' : '-' }}{{ peso($payment->amount) }}</td>
                     <td class="small" data-label="Balance After">{{ peso($payment->balance_after) }}</td>
                 </tr>
                 @empty

@@ -75,6 +75,7 @@
                                                 <th class="small">Purpose</th>
                                                 <th class="small">Terms</th>
                                                 <th class="small">Applied</th>
+                                                <th class="small">Details</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -85,6 +86,39 @@
                                                 <td class="small text-muted">{{ $member->purpose }}</td>
                                                 <td class="small text-muted">{{ $member->repayment_terms_months }} months</td>
                                                 <td class="small text-muted">{{ $member->created_at->format('M d, Y') }}</td>
+                                                <td class="small">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="collapse" data-bs-target="#memberDetail{{ $batch->id }}-{{ $member->id }}" aria-expanded="false">
+                                                        <i class="fas fa-chevron-down"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr class="collapse" id="memberDetail{{ $batch->id }}-{{ $member->id }}">
+                                                <td colspan="6" class="bg-light">
+                                                    <div class="row py-2">
+                                                        <div class="col-md-4 mb-2">
+                                                            <label class="text-muted small d-block">Membership Status</label>
+                                                            <x-status-badge :status="$member->farmer->status === 'approved' ? 'Member' : 'Non-member'" />
+                                                        </div>
+                                                        <div class="col-md-4 mb-2">
+                                                            <label class="text-muted small d-block">Collateral</label>
+                                                            <p class="small fw-semibold mb-0">{{ $member->collateral ?? '—' }}</p>
+                                                        </div>
+                                                        <div class="col-md-4 mb-2">
+                                                            <label class="text-muted small d-block">Encoded By</label>
+                                                            <p class="small fw-semibold mb-0">{{ $member->requestedBy->name ?? '—' }}</p>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="text-muted small d-block">Supporting Document</label>
+                                                            @if($member->documents_path)
+                                                                <a href="{{ asset('storage/'.$member->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                    <i class="fas fa-file me-1"></i> View Document
+                                                                </a>
+                                                            @else
+                                                                <span class="small text-muted">No document uploaded</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </td>
                                             </tr>
                                             @endforeach
                                         </tbody>
