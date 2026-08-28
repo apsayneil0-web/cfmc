@@ -347,7 +347,7 @@
                                 <div class="modal-body">
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
-                                        <select name="farmer_id" class="form-select" required>
+                                        <select name="farmer_id" class="form-select farmer-select" required>
                                             @foreach($farmers as $farmer)
                                             @php $blockReason = $farmer->id != $req->farmer_id ? ($farmersIneligibleForNewRequest[$farmer->id] ?? null) : null; @endphp
                                             <option value="{{ $farmer->id }}" {{ $farmer->id == $req->farmer_id ? 'selected' : '' }} {{ $blockReason ? 'disabled' : '' }}>
@@ -502,7 +502,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
-                        <select name="farmer_id" class="form-select" required>
+                        <select name="farmer_id" id="createFarmerSelect" class="form-select farmer-select" required>
                             <option value="">Select Farmer</option>
                             @foreach($farmers as $farmer)
                             @php $blockReason = $farmersIneligibleForNewRequest[$farmer->id] ?? null; @endphp
@@ -580,7 +580,26 @@
     New requests are forwarded to the Administrator for final authorization. Once approved, use "Finalize into Loan" here to lock in the terms; the loan then waits in Loan Management for funds to actually be released via "Mark Disbursed" before repayment tracking begins. Batch Loans group up to 10 farmers under one batch, but each member's repayment, balance, due date, and status are tracked individually. A batch is only sent to the Administrator for approval once it has reached its full 10 members, and once approved, use "Finalize Batch" above to send every member to disbursement in one step.
 </x-info-banner>
 
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
 <script>
+    // Upgrades the Farmer <select> in the New/Edit Loan Request modals into a
+    // searchable dropdown once its modal is shown (Tom Select needs a visible,
+    // laid-out element to size itself against correctly).
+    document.addEventListener('shown.bs.modal', function (event) {
+        event.target.querySelectorAll('select.farmer-select').forEach(function (select) {
+            if (select.tomselect) {
+                return;
+            }
+
+            new TomSelect(select, {
+                placeholder: 'Search farmer by name...',
+                sortField: { field: 'text', direction: 'asc' },
+            });
+        });
+    });
+
     function toggleBatchField(select) {
         var wrapper = document.getElementById(select.dataset.batchWrapper);
         var batchSelect = wrapper.querySelector('select[name="batch_id"]');

@@ -112,6 +112,9 @@
                         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $req->display_name }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $req->machinery }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-1">Member Status</label><x-status-badge :status="$req->member_type === 'member' ? 'Member' : 'Non-member'" /></div>
+                        @if($req->member_type === 'non-member' && $req->contact_number)
+                        <div class="col-6"><label class="text-muted small d-block">Contact Number</label><p class="fw-medium mb-0">{{ $req->contact_number }}</p></div>
+                        @endif
                         <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $req->scheduled_date->format('M d, Y') }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">{{ $req->location }}</p></div>
@@ -264,13 +267,13 @@
 <script>
     document.querySelectorAll('.schedule-form').forEach(function (form) {
         var radios = form.querySelectorAll('input[name="member_type"]');
-        var memberBlock = form.querySelector('.member-only');
-        var nonMemberBlock = form.querySelector('.nonmember-only');
+        var memberBlocks = form.querySelectorAll('.member-only');
+        var nonMemberBlocks = form.querySelectorAll('.nonmember-only');
 
         function toggle() {
             var isMember = form.querySelector('input[name="member_type"]:checked').value === 'member';
-            memberBlock.classList.toggle('d-none', !isMember);
-            nonMemberBlock.classList.toggle('d-none', isMember);
+            memberBlocks.forEach(function (block) { block.classList.toggle('d-none', !isMember); });
+            nonMemberBlocks.forEach(function (block) { block.classList.toggle('d-none', isMember); });
         }
 
         radios.forEach(function (radio) {

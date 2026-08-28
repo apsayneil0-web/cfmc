@@ -7,6 +7,7 @@ use App\Models\Farmer;
 use App\Models\Machine;
 use App\Models\Notification;
 use App\Models\ScheduleRequest;
+use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -78,6 +79,7 @@ class MachineScheduleController extends Controller
         ScheduleRequest::create([
             'user_id' => $validated['member_type'] === 'member' ? $validated['user_id'] : null,
             'farmer_name' => $validated['farmer_name'],
+            'contact_number' => $validated['member_type'] === 'non-member' ? $validated['contact_number'] : null,
             'member_type' => $validated['member_type'],
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
@@ -117,6 +119,7 @@ class MachineScheduleController extends Controller
         $schedule->update([
             'user_id' => $validated['member_type'] === 'member' ? $validated['user_id'] : null,
             'farmer_name' => $validated['farmer_name'],
+            'contact_number' => $validated['member_type'] === 'non-member' ? $validated['contact_number'] : null,
             'member_type' => $validated['member_type'],
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
@@ -187,20 +190,27 @@ class MachineScheduleController extends Controller
             ScheduleRequest::whereIn('id', $schedules->pluck('id'))
                 ->update(['scheduled_date' => DB::raw('DATE_ADD(scheduled_date, INTERVAL 1 DAY)')]);
 
-            $rows = $schedules->whereNotNull('user_id')->map(function ($schedule) {
+            $rows = [];
+
+            foreach ($schedules as $schedule) {
                 $oldDate = $schedule->scheduled_date->format('M d, Y');
                 $newDate = $schedule->scheduled_date->copy()->addDay()->format('M d, Y');
                 $time = Carbon::parse($schedule->start_time)->format('g:i A').' - '.Carbon::parse($schedule->end_time)->format('g:i A');
+                $message = "Your {$schedule->machinery} schedule originally set for {$oldDate} has been moved to {$newDate}. Time ({$time}) and location ({$schedule->location}) remain the same.";
 
-                return [
-                    'user_id' => $schedule->user_id,
-                    'title' => 'Your Schedule Has Been Moved',
-                    'message' => "Your {$schedule->machinery} schedule originally set for {$oldDate} has been moved to {$newDate}. Time ({$time}) and location ({$schedule->location}) remain the same.",
-                    'type' => 'reminder',
-                    'is_read' => false,
-                    'created_at' => now(),
-                ];
-            })->values()->all();
+                if ($schedule->user_id) {
+                    $rows[] = [
+                        'user_id' => $schedule->user_id,
+                        'title' => 'Your Schedule Has Been Moved',
+                        'message' => $message,
+                        'type' => 'reminder',
+                        'is_read' => false,
+                        'created_at' => now(),
+                    ];
+                } elseif ($schedule->contact_number) {
+                    app(SmsService::class)->send($schedule->contact_number, $message);
+                }
+            }
 
             if (! empty($rows)) {
                 Notification::insert($rows);
@@ -217,6 +227,7 @@ class MachineScheduleController extends Controller
             'member_type' => ['required', Rule::in(['member', 'non-member'])],
             'user_id' => 'nullable|required_if:member_type,member|exists:users,id',
             'farmer_name' => 'nullable|required_if:member_type,non-member|string|max:255',
+            'contact_number' => 'nullable|required_if:member_type,non-member|string|max:20',
             'machinery' => ['required', Rule::in($this->machineryNames())],
             'land_size' => 'required|numeric|min:0.1',
             'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],

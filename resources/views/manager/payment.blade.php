@@ -152,7 +152,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Loan <span class="text-danger">*</span></label>
-                        <select name="loan_id" id="recordPaymentLoanSelect" class="form-select" required>
+                        <select name="loan_id" id="recordPaymentLoanSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
                             <option value="" disabled selected>Select a loan</option>
                             @forelse($payableLoans as $loan)
                             <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->monthly_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}">
@@ -202,7 +202,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
-                        <select name="farmer_id" id="recordCbuFarmerSelect" class="form-select" required>
+                        <select name="farmer_id" id="recordCbuFarmerSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
                             <option value="" disabled selected>Select a farmer</option>
                             @forelse($cbuFarmers as $farmer)
                             <option value="{{ $farmer->id }}" data-balance="{{ $farmer->cbu->balance ?? 0 }}">
@@ -243,7 +243,27 @@
     </div>
 </div>
 
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
 <script>
+    // Upgrades the Loan and Farmer <select> fields in the payment modals into
+    // searchable dropdowns once their modal is shown. Tom Select keeps the
+    // underlying <select> in sync and still fires native "change" events on
+    // it, so the balance/due-date hint listeners below need no changes.
+    document.addEventListener('shown.bs.modal', function (event) {
+        event.target.querySelectorAll('select.searchable-select').forEach(function (select) {
+            if (select.tomselect) {
+                return;
+            }
+
+            new TomSelect(select, {
+                placeholder: select.dataset.placeholder || select.options[0]?.textContent.trim() || 'Search...',
+                sortField: { field: 'text', direction: 'asc' },
+            });
+        });
+    });
+
     document.getElementById('recordPaymentLoanSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];
         var balance = option ? option.getAttribute('data-balance') : null;

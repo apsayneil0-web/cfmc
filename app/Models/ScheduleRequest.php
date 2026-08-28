@@ -65,6 +65,7 @@ class ScheduleRequest extends Model
     protected $fillable = [
         'user_id',
         'farmer_name',
+        'contact_number',
         'member_type',
         'machinery',
         'machine_id',

@@ -31,6 +31,12 @@
         <input type="text" name="farmer_name" class="form-control" value="{{ old('farmer_name', !$isMember ? ($schedule->farmer_name ?? '') : '') }}" placeholder="Full name">
     </div>
 
+    <div class="mb-3 nonmember-only">
+        <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
+        <input type="text" name="contact_number" class="form-control" value="{{ old('contact_number', !$isMember ? ($schedule->contact_number ?? '') : '') }}" placeholder="e.g. 09171234567">
+        <small class="text-muted">Used to text the farmer when this schedule changes.</small>
+    </div>
+
     <div class="row g-3">
         <div class="col-md-6">
             <label class="form-label fw-semibold">Machinery <span class="text-danger">*</span></label>
