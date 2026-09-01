@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MembershipApprovalController;
 use App\Http\Controllers\Admin\LoanApprovalController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ScheduleController as AdminScheduleController;
+use App\Http\Controllers\Admin\CbuController as AdminCbuController;
 use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController;
 use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
 use App\Http\Controllers\Farmer\LoanAppointmentController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Manager\MachineScheduleController;
 use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
 use App\Http\Controllers\Manager\LoanRequestController;
 use App\Http\Controllers\Manager\LoanManagementController;
+use App\Http\Controllers\Manager\BatchLoanManagementController;
 use App\Http\Controllers\Manager\MachineController;
 use App\Http\Controllers\Manager\MachineUsageController;
 use App\Http\Controllers\Manager\PaymentController;
@@ -55,6 +57,8 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/admin/loan-approval/batch/{batch}/deny', [LoanApprovalController::class, 'denyBatch'])->name('admin.loan-approval.batch-deny');
 
     Route::get('/admin/approved-loans', [LoanApprovalController::class, 'approved'])->name('admin.approved-loans');
+
+    Route::get('/admin/cbu', [AdminCbuController::class, 'index'])->name('admin.cbu');
 
     Route::get('/admin/schedule', [AdminScheduleController::class, 'index'])->name('admin.schedule');
 
@@ -106,6 +110,8 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::put('/manager/loan-management/{loan}', [LoanManagementController::class, 'update'])->name('manager.loan-management.update');
     Route::patch('/manager/loan-management/{loan}/disburse', [LoanManagementController::class, 'disburse'])->name('manager.loan-management.disburse');
     Route::patch('/manager/loan-management/{loan}/archive', [LoanManagementController::class, 'archive'])->name('manager.loan-management.archive');
+
+    Route::get('/manager/batch-loan-management', [BatchLoanManagementController::class, 'index'])->name('manager.batch-loan-management');
 
     Route::get('/manager/loan-appointment', [ManagerLoanAppointmentController::class, 'index'])->name('manager.loan-appointment');
     Route::patch('/manager/loan-appointment/{loan_appointment}/approve', [ManagerLoanAppointmentController::class, 'approve'])->name('manager.loan-appointment.approve');

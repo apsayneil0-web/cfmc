@@ -1,7 +1,7 @@
 @extends('manager.layout')
 
-@section('title', 'Loan Management')
-@section('header', 'Loan Management')
+@section('title', 'Batch Loans')
+@section('header', 'Batch Loan Management')
 
 @section('content')
 @if(session('success'))
@@ -34,12 +34,12 @@
     <x-stat-card label="Interest Earned" value="{{ peso($stats['interest_earned']) }}" icon="fa-chart-line" color="success" />
 </div>
 
-<!-- Loans Table -->
+<!-- Batches Table -->
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Loans</h3>
-            <form method="GET" action="{{ route('manager.loan-management') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Batch Loans</h3>
+            <form method="GET" action="{{ route('manager.batch-loan-management') }}" class="d-flex flex-wrap align-items-center gap-3">
                 <div class="position-relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
@@ -54,7 +54,7 @@
                 </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'status']))
-                <a href="{{ route('manager.loan-management') }}" class="btn btn-link btn-sm">Clear</a>
+                <a href="{{ route('manager.batch-loan-management') }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
         </x-slot:filters>
@@ -64,62 +64,35 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Principal</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Remaining Balance</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Monthly Due</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Next Due</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Members</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Total Principal</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Total Outstanding</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status Breakdown</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($loans as $loan)
+                @forelse($batchGroups as $group)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ $loan->farmer->full_name }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ peso($loan->principal_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ peso($loan->monthly_due) }}</td>
-                    <td class="px-4 px-md-6 py-4 {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $group->batch->label }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $group->loans->count() }} farmer(s)</td>
+                    <td class="px-4 px-md-6 py-4">{{ peso($group->loans->sum('principal_amount')) }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($group->loans->sum('remaining_balance')) }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        @if($loan->archived_at)
-                        <x-status-badge status="Archived" />
-                        @else
-                        <x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" />
-                        @endif
-                        @if($loan->delinquency_stage)
-                        <div class="mt-1">
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
-                                @switch($loan->delinquency_stage)
-                                    @case('grace') 2% Grace Interest @break
-                                    @case('penalized') 10% Penalty &mdash; Restricted @break
-                                    @case('barangay_summon') Barangay Summons @break
-                                    @case('legal_action') Legal Action @break
-                                @endswitch
-                            </span>
-                        </div>
-                        @endif
+                        @foreach($group->loans->groupBy(fn($loan) => $loan->archived_at ? 'archived' : $loan->status) as $status => $members)
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $members->count() }} {{ ucwords(str_replace('_', ' ', $status)) }}</span>
+                        @endforeach
                     </td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $loan->id }}" />
-                            @if(!$loan->archived_at)
-                                @if($loan->status === 'pending_disbursement')
-                                <x-icon-button icon="fa-money-check-alt" color="success" title="Mark Disbursed" data-bs-toggle="modal" data-bs-target="#disburseModal{{ $loan->id }}" />
-                                @endif
-                                @if(!in_array($loan->status, ['fully_paid', 'pending_disbursement']))
-                                <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $loan->id }}" />
-                                @endif
-                                <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}" />
-                            @endif
+                            <x-icon-button icon="fa-eye" color="primary" title="Review Members" data-bs-toggle="modal" data-bs-target="#batchDetailModal{{ $group->batch->id }}" />
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No loans found.</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No batch loans found.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -127,16 +100,71 @@
     </div>
 </div>
 
-{{-- Modals rendered outside <tbody>: a <div> is not valid directly inside a
+{{-- Modals rendered outside the table: a <div> is not valid directly inside a
      table body, and browsers "correct" that by ejecting everything after the
      first row's modals out of the table, breaking every row after the first. --}}
-@foreach($loans as $loan)
+@foreach($batchGroups as $group)
+<x-modal id="batchDetailModal{{ $group->batch->id }}" title="{{ $group->batch->label }} Members" size="modal-xl">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="small">Loan ID</th>
+                    <th class="small">Farmer</th>
+                    <th class="small">Principal</th>
+                    <th class="small">Balance</th>
+                    <th class="small">Monthly Due</th>
+                    <th class="small">Next Due</th>
+                    <th class="small">Status</th>
+                    <th class="small">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($group->loans as $loan)
+                <tr>
+                    <td class="small fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="small">{{ $loan->farmer->full_name }}</td>
+                    <td class="small">{{ peso($loan->principal_amount) }}</td>
+                    <td class="small fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
+                    <td class="small text-muted">{{ peso($loan->monthly_due) }}</td>
+                    <td class="small {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
+                    <td class="small">
+                        @if($loan->archived_at)
+                        <x-status-badge status="Archived" />
+                        @else
+                        <x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" />
+                        @endif
+                    </td>
+                    <td class="small">
+                        <div class="d-flex gap-1">
+                            <button type="button" class="icon-btn text-primary" title="View" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'viewModal{{ $loan->id }}')"><i class="fas fa-eye"></i></button>
+                            @if(!$loan->archived_at)
+                                @if($loan->status === 'pending_disbursement')
+                                <button type="button" class="icon-btn text-success" title="Mark Disbursed" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'disburseModal{{ $loan->id }}')"><i class="fas fa-money-check-alt"></i></button>
+                                @endif
+                                @if(!in_array($loan->status, ['fully_paid', 'pending_disbursement']))
+                                <button type="button" class="icon-btn text-warning" title="Edit" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'editModal{{ $loan->id }}')"><i class="fas fa-edit"></i></button>
+                                @endif
+                                <button type="button" class="icon-btn text-secondary" title="Archive" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'archiveModal{{ $loan->id }}')"><i class="fas fa-archive"></i></button>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</x-modal>
+@endforeach
+
+@foreach($batchGroups as $group)
+@foreach($group->loans as $loan)
 <!-- View Modal (details + payment history) -->
 <x-modal id="viewModal{{ $loan->id }}" title="Loan Details">
     <div class="row g-3 mb-3">
         <div class="col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $loan->farmer->full_name }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">Regular Loan</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $group->batch->label }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months</p></div>
@@ -199,6 +227,12 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    <div class="mt-3 text-end">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchModal('viewModal{{ $loan->id }}', 'batchDetailModal{{ $group->batch->id }}')">
+            <i class="fas fa-arrow-left me-1"></i> Back to {{ $group->batch->label }}
+        </button>
     </div>
 </x-modal>
 
@@ -304,6 +338,7 @@
 </div>
 @endif
 @endforeach
+@endforeach
 
 <!-- Interest Computation Info -->
 <x-info-banner variant="info" title="Interest Computation: 2% every due date" class="mt-6">
@@ -314,4 +349,25 @@
 <x-info-banner variant="warning" title="Grace Period &amp; Penalty Policy" class="mt-4">
     If a due date passes with a balance still unpaid, a one-time 2% grace-period interest applies. If it's still unpaid after the 30-day grace period, a one-time 10% penalty applies and the farmer is restricted from new loan requests until fully paid. Accounts unpaid for 5 months are flagged for Barangay summons, and for 6 months for legal action &mdash; both notify the Administrator.
 </x-info-banner>
+
+<script>
+    // Hides one modal and, once it's fully closed, opens another. Bootstrap
+    // doesn't support two open modals cleanly, so a batch's detail modal must
+    // finish closing before a member's view/disburse/edit/archive modal opens
+    // (and vice versa when navigating back).
+    function switchModal(fromModalId, toModalId) {
+        var fromEl = document.getElementById(fromModalId);
+        var fromModal = bootstrap.Modal.getInstance(fromEl);
+        var openTarget = function() {
+            new bootstrap.Modal(document.getElementById(toModalId)).show();
+        };
+
+        if (fromModal) {
+            fromEl.addEventListener('hidden.bs.modal', openTarget, { once: true });
+            fromModal.hide();
+        } else {
+            openTarget();
+        }
+    }
+</script>
 @endsection

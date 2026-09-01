@@ -69,6 +69,11 @@
                     Approved Loans
                 </a>
 
+                <a href="{{ route('admin.cbu') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.cbu') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-piggy-bank w-5"></i>
+                    Capital Build Up
+                </a>
+
                 <div class="sidebar-section-label">Operations</div>
 
                 <a href="{{ route('admin.schedule') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.schedule') ? 'active text-gray-900' : 'text-gray-600' }}">

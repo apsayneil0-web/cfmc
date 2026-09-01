@@ -52,7 +52,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Crop Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Land Area</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Documents</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Account</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>

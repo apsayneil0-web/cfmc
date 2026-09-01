@@ -61,7 +61,7 @@
 
                 <a href="{{ route('manager.cbu') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.cbu') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-piggy-bank w-5"></i>
-                    CBU Management
+                    Capital Build Up
                 </a>
 
                 <a href="{{ route('manager.loan-request') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.loan-request') ? 'active text-gray-900' : 'text-gray-600' }}">
@@ -72,6 +72,11 @@
                 <a href="{{ route('manager.loan-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.loan-management') ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-file-invoice-dollar w-5"></i>
                     Loan Management
+                </a>
+
+                <a href="{{ route('manager.batch-loan-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.batch-loan-management') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-layer-group w-5"></i>
+                    Batch Loans
                 </a>
 
                 <a href="{{ route('manager.loan-appointment') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.loan-appointment') ? 'active text-gray-900' : 'text-gray-600' }}">
