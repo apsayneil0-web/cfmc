@@ -13,7 +13,7 @@ class ScheduleApprovalController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ScheduleRequest::with(['user.farmer', 'originalSchedule'])
+        $query = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'crop'])
             ->whereNull('archived_at')
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'denied', 'completed')")
             ->orderBy('created_at', 'desc');

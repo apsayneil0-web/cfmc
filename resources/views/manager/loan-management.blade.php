@@ -80,7 +80,10 @@
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $loan->farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4">{{ peso($loan->principal_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">
+                        {{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}
+                        <div class="small text-muted fw-normal">Total repayable: {{ peso($loan->monthly_due * $loan->repayment_terms_months) }}</div>
+                    </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ peso($loan->monthly_due) }}</td>
                     <td class="px-4 px-md-6 py-4 {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">

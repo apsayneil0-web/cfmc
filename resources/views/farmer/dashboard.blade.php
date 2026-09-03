@@ -47,7 +47,7 @@
             <a href="{{ route('farmer.schedule') }}" class="text-sm text-primary text-decoration-none">Full calendar</a>
         </div>
         <x-schedule-calendar :calendar-days="$calendarDays" :first-weekday="$firstWeekday" :days-in-month="$daysInMonth"
-            :show-names="false" :compact="true" min-height="46px" />
+            :show-names="false" :compact="true" min-height="46px" booked-class="calendar-booking-approved" />
     </div>
 </div>
 @endsection

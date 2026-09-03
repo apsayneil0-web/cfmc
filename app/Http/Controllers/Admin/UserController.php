@@ -163,6 +163,10 @@ class UserController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        } else {
+            // Archived accounts are kept out of the default view — they're only
+            // ever reachable by explicitly filtering the Status dropdown to Archived.
+            $query->where('status', '!=', 'archived');
         }
 
         $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
@@ -258,6 +262,52 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update user status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin-initiated password reset for a Manager or Farmer account. Admin
+     * accounts are excluded on purpose — one admin overwriting another
+     * admin's credentials from this screen would be a takeover vector, so an
+     * admin who's locked out has to go through the normal forgot-password flow.
+     */
+    public function changePassword(Request $request, User $user)
+    {
+        if (! in_array((int) $user->roleID, [2, 3], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only Manager and Farmer accounts can have their password changed here.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'password' => Hash::make($request->password),
+                // Kept in the clear (same as the temp-password relay already used
+                // elsewhere) so the admin can hand it to the account holder directly.
+                'temp_password' => $request->password,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password changed successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change password: ' . $e->getMessage()
             ], 500);
         }
     }

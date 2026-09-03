@@ -125,7 +125,10 @@
                     <td class="small fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="small">{{ $loan->farmer->full_name }}</td>
                     <td class="small">{{ peso($loan->principal_amount) }}</td>
-                    <td class="small fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
+                    <td class="small fw-medium text-dark">
+                        {{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}
+                        <div class="text-muted fw-normal" style="font-size: 0.7rem;">Total repayable: {{ peso($loan->monthly_due * $loan->repayment_terms_months) }}</div>
+                    </td>
                     <td class="small text-muted">{{ peso($loan->monthly_due) }}</td>
                     <td class="small {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
                     <td class="small">
@@ -134,14 +137,14 @@
                         @else
                         <x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" />
                         @endif
+                        @if($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
+                        <div class="text-muted" style="font-size: 0.7rem;">Auto-disburses {{ $loan->scheduled_disbursement_date->format('M d, Y') }}</div>
+                        @endif
                     </td>
                     <td class="small">
                         <div class="d-flex gap-1">
                             <button type="button" class="icon-btn text-primary" title="View" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'viewModal{{ $loan->id }}')"><i class="fas fa-eye"></i></button>
                             @if(!$loan->archived_at)
-                                @if($loan->status === 'pending_disbursement')
-                                <button type="button" class="icon-btn text-success" title="Mark Disbursed" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'disburseModal{{ $loan->id }}')"><i class="fas fa-money-check-alt"></i></button>
-                                @endif
                                 @if(!in_array($loan->status, ['fully_paid', 'pending_disbursement']))
                                 <button type="button" class="icon-btn text-warning" title="Edit" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'editModal{{ $loan->id }}')"><i class="fas fa-edit"></i></button>
                                 @endif
@@ -174,6 +177,9 @@
         @if($loan->disbursed_at)
         <div class="col-6"><label class="text-muted small d-block">Disbursed</label><p class="fw-medium mb-0">{{ $loan->disbursed_at->format('M d, Y') }} &mdash; {{ ucwords(str_replace('_', ' ', $loan->disbursement_method)) }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Released By</label><p class="fw-medium mb-0">{{ $loan->disbursedBy->name ?? '—' }}</p></div>
+        @elseif($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
+        <div class="col-6"><label class="text-muted small d-block">Scheduled Disbursement</label><p class="fw-medium mb-0">{{ $loan->scheduled_disbursement_date->format('M d, Y') }} &mdash; {{ ucwords(str_replace('_', ' ', $loan->disbursement_method ?? 'cash')) }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Scheduled By</label><p class="fw-medium mb-0">{{ $loan->scheduledBy->name ?? '—' }}</p></div>
         @endif
         @if($loan->notes)
         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $loan->notes }}</p></div>
@@ -235,47 +241,6 @@
         </button>
     </div>
 </x-modal>
-
-@if($loan->status === 'pending_disbursement')
-<!-- Disburse Modal -->
-<div class="modal fade" id="disburseModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold"><i class="fas fa-money-check-alt me-2"></i>Mark as Disbursed</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('manager.loan-management.disburse', $loan) }}" method="POST">
-                @csrf
-                @method('PATCH')
-                <div class="modal-body">
-                    <p class="text-muted small">Confirm that {{ $loan->principal_amount ? peso($loan->principal_amount) : '' }} has been released to {{ $loan->farmer->full_name }}. This starts the repayment schedule from the date below.</p>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Date Released <span class="text-danger">*</span></label>
-                        <input type="date" name="disbursed_at" class="form-control" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Disbursement Method <span class="text-danger">*</span></label>
-                        <select name="disbursement_method" class="form-select" required>
-                            <option value="cash">Cash</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="check">Check</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label fw-semibold">Reference No.</label>
-                        <input type="text" name="reference_no" class="form-control" placeholder="Check no. / transfer reference (optional)">
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Confirm Disbursement</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
 
 @if(!$loan->archived_at && !in_array($loan->status, ['fully_paid', 'pending_disbursement']))
 <!-- Edit Modal -->

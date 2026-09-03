@@ -155,7 +155,7 @@
                         <select name="loan_id" id="recordPaymentLoanSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
                             <option value="" disabled selected>Select a loan</option>
                             @forelse($payableLoans as $loan)
-                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->monthly_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}">
+                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->monthly_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}" data-total-repayable="{{ $loan->monthly_due * $loan->repayment_terms_months }}">
                                 LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — {{ $loan->farmer->full_name }} (Balance: {{ peso($loan->remaining_balance) }})
                             </option>
                             @empty
@@ -166,10 +166,11 @@
                     <p class="text-muted small" id="recordPaymentBalanceHint"></p>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Payment Type <span class="text-danger">*</span></label>
-                        <select name="type" class="form-select" required>
+                        <select name="type" id="recordPaymentTypeSelect" class="form-select" required>
                             <option value="payment" selected>Regular Payment</option>
                             <option value="prepayment">Prepayment (ahead of the due date)</option>
                         </select>
+                        <p class="text-muted small mb-0 mt-1" id="recordPaymentTotalRepayableHint"></p>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Payment Amount <span class="text-danger">*</span></label>
@@ -264,6 +265,21 @@
         });
     });
 
+    // Shows the loan's total repayable amount (monthly due x term) only when
+    // the manager is recording a Prepayment, since that's the figure relevant
+    // to paying off ahead of schedule.
+    function updateTotalRepayableHint() {
+        var loanSelect = document.getElementById('recordPaymentLoanSelect');
+        var typeSelect = document.getElementById('recordPaymentTypeSelect');
+        var hint = document.getElementById('recordPaymentTotalRepayableHint');
+        var option = loanSelect.options[loanSelect.selectedIndex];
+        var totalRepayable = option ? option.getAttribute('data-total-repayable') : null;
+
+        hint.textContent = (typeSelect.value === 'prepayment' && totalRepayable)
+            ? 'Total repayable: ₱' + parseFloat(totalRepayable).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '';
+    }
+
     document.getElementById('recordPaymentLoanSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];
         var balance = option ? option.getAttribute('data-balance') : null;
@@ -286,7 +302,11 @@
             amountInput.removeAttribute('max');
             hint.textContent = '';
         }
+
+        updateTotalRepayableHint();
     });
+
+    document.getElementById('recordPaymentTypeSelect')?.addEventListener('change', updateTotalRepayableHint);
 
     document.getElementById('recordCbuFarmerSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];

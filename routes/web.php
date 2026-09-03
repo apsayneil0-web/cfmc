@@ -67,6 +67,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/admin/user-management/{user}/archive', [AdminUserController::class, 'archive'])->name('admin.user.archive');
     Route::patch('/admin/user-management/{user}/unarchive', [AdminUserController::class, 'unarchive'])->name('admin.user.unarchive');
     Route::patch('/admin/user-management/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('admin.user.toggle-status');
+    Route::patch('/admin/user-management/{user}/change-password', [AdminUserController::class, 'changePassword'])->name('admin.user.change-password');
     Route::get('/admin/user-management/{user}', [AdminUserController::class, 'show'])->name('admin.user.show');
     Route::put('/admin/user-management/{user}', [AdminUserController::class, 'update'])->name('admin.user.update');
 

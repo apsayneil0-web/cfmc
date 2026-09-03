@@ -43,7 +43,7 @@
 
 @php
     $earliestAllowedDate = \App\Models\ScheduleRequest::earliestAllowedDate();
-    $hasOldRequestInput = old('machinery') || old('land_size') || old('scheduled_date') || old('start_time') || old('end_time') || old('location');
+    $hasOldRequestInput = old('machinery') || old('land_size') || old('crop_id') || old('scheduled_date') || old('start_time') || old('end_time') || old('location');
 @endphp
 
 <!-- Schedule Availability Calendar -->
@@ -115,7 +115,17 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.1" min="0.1" name="land_size" class="form-control" value="{{ old('land_size') }}" required>
+                            <input type="number" step="0.1" min="0.1" id="scheduleRequestLandSize" name="land_size" class="form-control" value="{{ old('land_size') }}" required>
+                            <small class="text-muted">End Time is estimated at {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }} hrs/hectare and can be adjusted.</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
+                            <select name="crop_id" class="form-select" required>
+                                <option value="">Select crop...</option>
+                                @foreach($crops as $crop)
+                                <option value="{{ $crop->id }}" {{ old('crop_id') == $crop->id ? 'selected' : '' }}>{{ $crop->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Preferred Date <span class="text-danger">*</span></label>
@@ -124,11 +134,11 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
-                            <input type="time" name="start_time" class="form-control" value="{{ old('start_time') }}" required>
+                            <input type="time" id="scheduleRequestStartTime" name="start_time" class="form-control" value="{{ old('start_time') }}" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
-                            <input type="time" name="end_time" class="form-control" value="{{ old('end_time') }}" required>
+                            <input type="time" id="scheduleRequestEndTime" name="end_time" class="form-control" value="{{ old('end_time') }}" required>
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-semibold">Farm Location <span class="text-danger">*</span></label>
@@ -148,6 +158,25 @@
 </div>
 
 <script>
+    var SCHEDULE_HOURS_PER_HECTARE = {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }};
+
+    function estimateScheduleRequestEndTime() {
+        var landSize = parseFloat(document.getElementById('scheduleRequestLandSize').value);
+        var startTime = document.getElementById('scheduleRequestStartTime').value;
+
+        if (!landSize || landSize <= 0 || !startTime) {
+            return;
+        }
+
+        var totalMinutes = Math.round(landSize * SCHEDULE_HOURS_PER_HECTARE * 60 / 5) * 5;
+        var parts = startTime.split(':');
+        var end = new Date(0, 0, 0, parseInt(parts[0], 10), parseInt(parts[1], 10));
+        end.setMinutes(end.getMinutes() + totalMinutes);
+
+        document.getElementById('scheduleRequestEndTime').value =
+            String(end.getHours()).padStart(2, '0') + ':' + String(end.getMinutes()).padStart(2, '0');
+    }
+
     function openScheduleRequestModal(date) {
         var dateInput = document.getElementById('scheduleRequestDateInput');
         var hint = document.getElementById('scheduleRequestSelectedDateHint');
@@ -182,6 +211,9 @@
         @if($hasOldRequestInput)
         openScheduleRequestModal(@json(old('scheduled_date')));
         @endif
+
+        document.getElementById('scheduleRequestLandSize').addEventListener('input', estimateScheduleRequestEndTime);
+        document.getElementById('scheduleRequestStartTime').addEventListener('input', estimateScheduleRequestEndTime);
     });
 </script>
 
@@ -196,6 +228,7 @@
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machinery</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Land Size</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Crop</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date & Time</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Location</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
@@ -210,6 +243,7 @@
                         @if($req->is_reschedule)<span class="badge bg-info-subtle text-info border border-info-subtle ms-1">Reschedule</span>@endif
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Land Size">{{ $req->land_size }} ha</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Crop">{{ $req->crop->name ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Date &amp; Time">{{ $req->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Location">{{ $req->location }}</td>
                     <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucfirst($req->status)" /></td>
@@ -269,7 +303,7 @@
                 @endif
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No schedule requests yet.</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">No schedule requests yet.</td>
                 </tr>
                 @endforelse
             </tbody>

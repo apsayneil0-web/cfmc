@@ -28,7 +28,7 @@ class DashboardController extends Controller
             ->get();
 
         $month = now()->startOfMonth();
-        $calendarDays = ScheduleRequest::calendarForMonth($month);
+        $calendarDays = ScheduleRequest::calendarForMonth($month, null, $userId);
         $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
         $daysInMonth = $month->daysInMonth;
 

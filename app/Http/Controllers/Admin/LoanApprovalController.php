@@ -53,8 +53,7 @@ class LoanApprovalController extends Controller
         if ($request->filled('search')) {
             $search = $request->string('search');
             $query->whereHas('farmer', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%");
+                $q->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"]);
             });
         }
 

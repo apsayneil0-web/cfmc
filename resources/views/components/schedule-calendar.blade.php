@@ -9,11 +9,12 @@
     'month' => null,
     'minDate' => null,
     'clickable' => false,
+    'bookedClass' => null,
 ])
 
 @php
     $dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    $statusClass = $showNames ? 'calendar-booking-approved' : 'calendar-booking-booked';
+    $statusClass = $bookedClass ?? ($showNames ? 'calendar-booking-approved' : 'calendar-booking-booked');
     $earliestDate = $minDate ? \Carbon\Carbon::parse($minDate)->startOfDay() : null;
 @endphp
 

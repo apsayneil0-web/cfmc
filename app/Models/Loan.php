@@ -43,6 +43,8 @@ class Loan extends Model
         'disbursement_method',
         'reference_no',
         'disbursed_by',
+        'scheduled_disbursement_date',
+        'scheduled_by',
     ];
 
     protected function casts(): array
@@ -56,6 +58,7 @@ class Loan extends Model
             'legal_action_at' => 'datetime',
             'archived_at' => 'datetime',
             'disbursed_at' => 'datetime',
+            'scheduled_disbursement_date' => 'date',
         ];
     }
 
@@ -85,6 +88,11 @@ class Loan extends Model
     public function disbursedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'disbursed_by');
+    }
+
+    public function scheduledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'scheduled_by');
     }
 
     /**

@@ -119,6 +119,7 @@
                         <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">{{ $req->location }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Land Area</label><p class="fw-medium mb-0">{{ $req->land_size }} hectares</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Crop to be Harvested</label><p class="fw-medium mb-0">{{ $req->crop->name ?? '—' }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucfirst($req->status)" /></div>
                         @if($req->is_reschedule && $req->originalSchedule)
                         <div class="col-12"><label class="text-muted small d-block">Original Schedule</label><p class="fw-medium mb-0">{{ $req->originalSchedule->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->originalSchedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->originalSchedule->end_time)->format('g:i A') }}</p></div>
@@ -265,6 +266,8 @@
 </div>
 
 <script>
+    var SCHEDULE_HOURS_PER_HECTARE = {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }};
+
     document.querySelectorAll('.schedule-form').forEach(function (form) {
         var radios = form.querySelectorAll('input[name="member_type"]');
         var memberBlocks = form.querySelectorAll('.member-only');
@@ -280,6 +283,29 @@
             radio.addEventListener('change', toggle);
         });
         toggle();
+
+        var landSizeInput = form.querySelector('input[name="land_size"]');
+        var startTimeInput = form.querySelector('input[name="start_time"]');
+        var endTimeInput = form.querySelector('input[name="end_time"]');
+
+        function estimateEndTime() {
+            var landSize = parseFloat(landSizeInput.value);
+            var startTime = startTimeInput.value;
+
+            if (!landSize || landSize <= 0 || !startTime) {
+                return;
+            }
+
+            var totalMinutes = Math.round(landSize * SCHEDULE_HOURS_PER_HECTARE * 60 / 5) * 5;
+            var parts = startTime.split(':');
+            var end = new Date(0, 0, 0, parseInt(parts[0], 10), parseInt(parts[1], 10));
+            end.setMinutes(end.getMinutes() + totalMinutes);
+
+            endTimeInput.value = String(end.getHours()).padStart(2, '0') + ':' + String(end.getMinutes()).padStart(2, '0');
+        }
+
+        landSizeInput.addEventListener('input', estimateEndTime);
+        startTimeInput.addEventListener('input', estimateEndTime);
     });
 </script>
 @endsection

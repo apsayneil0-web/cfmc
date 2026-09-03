@@ -16,6 +16,12 @@ class ScheduleRequest extends Model
     public const MIN_LEAD_DAYS = 3;
 
     /**
+     * Estimated hours of machine time needed per hectare, used to auto-suggest
+     * an End Time from Land Size and Start Time on the schedule forms.
+     */
+    public const HOURS_PER_HECTARE = 1.5;
+
+    /**
      * The earliest date a new or rescheduled/reassigned booking may fall on,
      * given the minimum lead-time requirement.
      */
@@ -70,6 +76,7 @@ class ScheduleRequest extends Model
         'machinery',
         'machine_id',
         'land_size',
+        'crop_id',
         'scheduled_date',
         'start_time',
         'end_time',
@@ -101,6 +108,11 @@ class ScheduleRequest extends Model
     public function machine(): BelongsTo
     {
         return $this->belongsTo(Machine::class);
+    }
+
+    public function crop(): BelongsTo
+    {
+        return $this->belongsTo(Crop::class);
     }
 
     public function originalSchedule(): BelongsTo
@@ -161,7 +173,7 @@ class ScheduleRequest extends Model
      *
      * @return array<int, \Illuminate\Support\Collection>
      */
-    public static function calendarForMonth(Carbon $month, ?string $machinery = null): array
+    public static function calendarForMonth(Carbon $month, ?string $machinery = null, ?int $userId = null): array
     {
         $query = self::with('user.farmer')
             ->whereNull('archived_at')
@@ -170,6 +182,10 @@ class ScheduleRequest extends Model
 
         if ($machinery) {
             $query->where('machinery', $machinery);
+        }
+
+        if ($userId) {
+            $query->where('user_id', $userId);
         }
 
         $schedules = $query->get();

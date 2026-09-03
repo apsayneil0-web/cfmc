@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Farmer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Crop;
 use App\Models\Machine;
 use App\Models\ScheduleRequest;
 use Carbon\Carbon;
@@ -20,8 +21,10 @@ class ScheduleController extends Controller
             'status' => $m->status === 'maintenance' ? 'Unavailable' : 'Available',
         ])->all();
         $machineryList = $machines->pluck('name')->all();
+        $crops = Crop::orderBy('name')->get();
 
-        $requests = ScheduleRequest::where('user_id', Auth::id())
+        $requests = ScheduleRequest::with('crop')
+            ->where('user_id', Auth::id())
             ->whereNull('archived_at')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -37,7 +40,7 @@ class ScheduleController extends Controller
         $monthOptions = collect(range(0, 3))->map(fn ($offset) => now()->startOfMonth()->addMonths($offset));
 
         return view('farmer.schedule', compact(
-            'machinery', 'requests', 'machineryList', 'calendarDays', 'selectedMonth',
+            'machinery', 'requests', 'machineryList', 'crops', 'calendarDays', 'selectedMonth',
             'firstWeekday', 'daysInMonth', 'monthOptions', 'machineryFilter'
         ));
     }
@@ -67,6 +70,7 @@ class ScheduleController extends Controller
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
             'land_size' => $validated['land_size'],
+            'crop_id' => $validated['crop_id'],
             'scheduled_date' => $validated['scheduled_date'],
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
@@ -115,6 +119,7 @@ class ScheduleController extends Controller
             'machinery' => $schedule->machinery,
             'machine_id' => $schedule->machine_id,
             'land_size' => $schedule->land_size,
+            'crop_id' => $schedule->crop_id,
             'scheduled_date' => $validated['scheduled_date'],
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
@@ -135,6 +140,7 @@ class ScheduleController extends Controller
         return $request->validate([
             'machinery' => ['required', 'string', Rule::in($machineryNames)],
             'land_size' => 'required|numeric|min:0.1',
+            'crop_id' => 'required|exists:crops,id',
             'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',

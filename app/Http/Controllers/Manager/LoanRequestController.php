@@ -181,6 +181,12 @@ class LoanRequestController extends Controller
      * Finalize every approved, not-yet-finalized member of a batch at once,
      * using each member's own requested amount and term with one shared
      * interest rate — mirrors the Administrator's batch approve/deny decision.
+     * Also collects one shared disbursement date/method/reference for the
+     * whole batch: a today-or-earlier date disburses every member's loan
+     * immediately, while a future date schedules them, to be released
+     * automatically by the loans:process-scheduled-disbursements command
+     * once that date arrives — batch loans never need a separate manual
+     * "Mark Disbursed" step.
      */
     public function finalizeBatch(Request $request, LoanBatch $batch)
     {
@@ -194,10 +200,15 @@ class LoanRequestController extends Controller
 
         $validated = $request->validate([
             'interest_rate' => 'required|numeric|min:0|max:100',
+            'disbursement_date' => 'required|date|after_or_equal:today',
+            'disbursement_method' => 'required|string|in:cash,bank_transfer,check',
+            'reference_no' => 'nullable|string|max:255',
         ]);
 
+        $isImmediate = now()->toDateString() >= $validated['disbursement_date'];
+
         foreach ($members as $member) {
-            Loan::create([
+            $loan = Loan::create([
                 'loan_request_id' => $member->id,
                 'principal_amount' => $member->requested_amount,
                 'interest_rate' => $validated['interest_rate'],
@@ -205,11 +216,31 @@ class LoanRequestController extends Controller
                 'installment_amount' => round($member->requested_amount / $member->repayment_terms_months, 2),
                 'collateral' => $member->collateral,
                 'status' => 'pending_disbursement',
+                'scheduled_disbursement_date' => $validated['disbursement_date'],
+                'scheduled_by' => Auth::id(),
             ]);
+
+            if ($isImmediate) {
+                $loan->disburse(
+                    $validated['disbursement_method'],
+                    $validated['reference_no'] ?? null,
+                    Auth::id(),
+                    $validated['disbursement_date'],
+                );
+            } else {
+                $loan->update([
+                    'disbursement_method' => $validated['disbursement_method'],
+                    'reference_no' => $validated['reference_no'] ?? null,
+                ]);
+            }
         }
 
-        return redirect()->route('manager.loan-management')
-            ->with('success', "{$batch->label}'s {$members->count()} loan(s) are finalized. Awaiting disbursement.");
+        $message = $isImmediate
+            ? "{$batch->label}'s {$members->count()} loan(s) are finalized and disbursed."
+            : "{$batch->label}'s {$members->count()} loan(s) are finalized and scheduled for disbursement on ".now()->parse($validated['disbursement_date'])->format('M d, Y').'.';
+
+        return redirect()->route('manager.batch-loan-management')
+            ->with('success', $message);
     }
 
     public function archive(LoanRequest $loan_request)

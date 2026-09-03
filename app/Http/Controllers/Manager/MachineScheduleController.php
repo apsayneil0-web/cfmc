@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Crop;
 use App\Models\Farmer;
 use App\Models\Machine;
 use App\Models\Notification;
@@ -33,7 +34,7 @@ class MachineScheduleController extends Controller
 
         $calendarDays = ScheduleRequest::calendarForMonth($month, $request->string('machinery')->toString() ?: null);
 
-        $requests = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'rescheduleRequests'])
+        $requests = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'rescheduleRequests', 'crop'])
             ->whereNull('archived_at')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -44,13 +45,14 @@ class MachineScheduleController extends Controller
             ->get();
 
         $machineryList = $this->machineryNames()->all();
+        $crops = Crop::orderBy('name')->get();
         $selectedMonth = $month;
         $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
         $daysInMonth = $month->daysInMonth;
         $monthOptions = collect(range(-2, 3))->map(fn ($offset) => now()->startOfMonth()->addMonths($offset));
 
         return view('manager.machine-schedule', compact(
-            'requests', 'calendarDays', 'machineryList', 'members', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'monthOptions'
+            'requests', 'calendarDays', 'machineryList', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'monthOptions'
         ));
     }
 
@@ -84,6 +86,7 @@ class MachineScheduleController extends Controller
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
             'land_size' => $validated['land_size'],
+            'crop_id' => $validated['crop_id'],
             'scheduled_date' => $validated['scheduled_date'],
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
@@ -124,6 +127,7 @@ class MachineScheduleController extends Controller
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
             'land_size' => $validated['land_size'],
+            'crop_id' => $validated['crop_id'],
             'scheduled_date' => $validated['scheduled_date'],
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
@@ -230,6 +234,7 @@ class MachineScheduleController extends Controller
             'contact_number' => 'nullable|required_if:member_type,non-member|string|max:20',
             'machinery' => ['required', Rule::in($this->machineryNames())],
             'land_size' => 'required|numeric|min:0.1',
+            'crop_id' => 'required|exists:crops,id',
             'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
