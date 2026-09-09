@@ -764,6 +764,7 @@ body.bg-light {
     padding: 0.4rem 0;
 }
 .calendar-cell {
+    position: relative;
     border: 1px solid var(--brand-border);
     border-radius: var(--radius-sm);
     padding: 0.5rem;
@@ -791,8 +792,10 @@ body.bg-light {
     padding: 0.25rem 0.4rem;
     line-height: 1.25;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.35rem;
+    min-width: 0;
+    max-width: 100%;
 }
 .calendar-booking-dot {
     display: none;
@@ -800,20 +803,26 @@ body.bg-light {
     height: 0.5rem;
     border-radius: 999px;
     flex-shrink: 0;
+    margin-top: 0.3rem;
+}
+.calendar-booking-text {
+    min-width: 0;
+    flex: 1 1 auto;
 }
 .calendar-booking-title {
     font-size: 0.75rem;
     font-weight: 600;
     margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: break-word;
 }
 .calendar-booking-time {
     font-size: 0.7rem;
     margin: 0;
     opacity: 0.85;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .calendar-booking-approved {
     background-color: var(--brand-success-light);
@@ -846,6 +855,29 @@ body.bg-light {
 .calendar-cell-disabled {
     cursor: not-allowed;
     opacity: 0.6;
+}
+.calendar-cell-select {
+    display: none;
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+    z-index: 1;
+    cursor: pointer;
+}
+.calendar-grid.is-selecting .calendar-cell-select {
+    display: block;
+}
+.calendar-select-checkbox {
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+}
+.calendar-grid.is-selecting .calendar-cell.has-bookings {
+    cursor: pointer;
+}
+.calendar-cell.is-day-selected {
+    border-color: var(--brand-warning);
+    background-color: var(--brand-warning-light);
 }
 
 /* Compact rendering: forced via .is-compact (dashboard widgets), and

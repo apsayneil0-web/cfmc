@@ -10,6 +10,7 @@
     'minDate' => null,
     'clickable' => false,
     'bookedClass' => null,
+    'selectionMode' => false,
 ])
 
 @php
@@ -41,6 +42,11 @@
                 style="min-height: {{ $minHeight }};"
                 @if($isSelectable) data-date="{{ $cellDate->format('Y-m-d') }}" role="button" tabindex="0" @endif
             >
+                @if($selectionMode && $calendarDays[$day]->isNotEmpty() && $cellDate)
+                <label class="calendar-cell-select" title="Select {{ $cellDate->format('M d, Y') }} to move">
+                    <input type="checkbox" class="calendar-select-checkbox" value="{{ $cellDate->format('Y-m-d') }}" data-count="{{ $calendarDays[$day]->count() }}">
+                </label>
+                @endif
                 <p class="calendar-cell-date">{{ $day }}</p>
                 @forelse($calendarDays[$day] as $booking)
                 @php

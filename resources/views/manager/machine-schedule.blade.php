@@ -48,8 +48,24 @@
                 <option value="{{ $machine }}" {{ request('machinery') == $machine ? 'selected' : '' }}>{{ $machine }}</option>
                 @endforeach
             </select>
+            <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                <option value="denied" {{ request('status') == 'denied' ? 'selected' : '' }}>Denied</option>
+                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+            </select>
+            @if($showArchived)
+            <input type="hidden" name="archived" value="1">
+            @endif
+            @if(request()->filled('status'))
+            <a href="{{ route('manager.machine-schedule', request()->except('status')) }}" class="btn btn-link btn-sm">Clear Status</a>
+            @endif
         </form>
         <div class="d-flex align-items-center gap-2">
+            <button type="button" id="moveOneDayBtn" class="btn btn-outline-info d-flex align-items-center gap-2">
+                <i class="fas fa-calendar-day"></i><span>Move One Day</span>
+            </button>
             <button class="btn btn-outline-warning d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shiftDayModal">
                 <i class="fas fa-forward"></i><span>Move Schedule +1 Day</span>
             </button>
@@ -59,17 +75,35 @@
         </div>
     </div>
 
+    <!-- Move One Day: selection toolbar (shown while picking dates) -->
+    <div id="moveOneDayToolbar" class="d-none align-items-center justify-content-between gap-3 px-4 px-md-6 py-3 border-top border-bottom" style="background-color: var(--brand-warning-light);">
+        <p class="mb-0 small fw-medium"><i class="fas fa-info-circle me-1"></i>Check the days you want to move, then confirm. <span id="moveOneDayCount">0 selected</span></p>
+        <div class="d-flex gap-2">
+            <button type="button" id="moveOneDayCancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
+            <button type="button" id="moveOneDayConfirm" class="btn btn-sm btn-warning" disabled>Move Selected Day(s)</button>
+        </div>
+    </div>
+
     <!-- Calendar View -->
     <div class="p-4 p-md-6">
         <x-schedule-calendar :calendar-days="$calendarDays" :first-weekday="$firstWeekday" :days-in-month="$daysInMonth"
-            :show-names="true" min-height="120px" />
+            :show-names="true" min-height="120px" :month="$selectedMonth" selection-mode="true" />
     </div>
 </div>
 
 <!-- Schedule List -->
 <div class="section-card">
-    <div class="table-toolbar">
-        <h3 class="text-lg font-semibold text-gray-900 mb-0">All Schedules</h3>
+    <div class="table-toolbar d-flex align-items-center justify-content-between gap-3">
+        <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ $showArchived ? 'Archived Schedules' : 'All Schedules' }}</h3>
+        @if($showArchived)
+        <a href="{{ route('manager.machine-schedule', request()->except('archived')) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to Active
+        </a>
+        @else
+        <a href="{{ route('manager.machine-schedule', array_merge(request()->query(), ['archived' => 1])) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-box-archive me-1"></i>View Archived
+        </a>
+        @endif
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -96,11 +130,15 @@
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
                             <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $req->id }}" />
+                            @if($showArchived)
+                            <x-icon-button icon="fa-box-open" color="success" title="Restore" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $req->id }}" />
+                            @else
                             <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}" />
                             @if($req->status === 'approved')
                             <x-icon-button icon="fa-clipboard-check" color="success" title="Complete & Record Yield" data-bs-toggle="modal" data-bs-target="#completeModal{{ $req->id }}" />
                             @endif
                             <x-icon-button icon="fa-archive" color="danger" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}" />
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -211,9 +249,32 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Unarchive (Restore) Modal -->
+                <div class="modal fade" id="unarchiveModal{{ $req->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold"><i class="fas fa-box-open me-2"></i>Restore Schedule</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">Restore SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }} for {{ $req->display_name }}? It will reappear on the active calendar and schedule list.</p>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{{ route('manager.machine-schedule.unarchive', $req) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-success">Restore</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">No schedules found for this month.</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived schedules.' : 'No schedules found for this month.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -230,7 +291,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">This will move <strong>every upcoming pending/approved schedule</strong> (today onward) forward by 1 day, and automatically notify each affected farmer of their new date. This action cannot be undone. Continue?</p>
+                <p class="mb-0">This will move <strong>every pending/approved schedule</strong> — every scheduled date, including any already overdue — forward by 1 day, and automatically notify each affected farmer of their new date. This action cannot be undone. Continue?</p>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -239,6 +300,30 @@
                     <button type="submit" class="btn btn-warning">Yes, Move Schedules</button>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Move One Day Confirmation Modal -->
+<div class="modal fade" id="moveOneDayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-calendar-day me-2"></i>Move Selected Day(s)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.machine-schedule.shift-specific-day') }}" method="POST">
+                @csrf
+                <div id="moveOneDayHiddenInputs"></div>
+                <div class="modal-body">
+                    <p>This will move every pending/approved schedule on the date(s) below forward by 1 day, and notify each affected farmer. Any schedule that would conflict with an existing booking on the next day is skipped instead of overbooking. Continue?</p>
+                    <ul id="moveOneDaySummary" class="mb-0 ps-3 small"></ul>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Yes, Move</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -307,5 +392,91 @@
         landSizeInput.addEventListener('input', estimateEndTime);
         startTimeInput.addEventListener('input', estimateEndTime);
     });
+
+    (function () {
+        var moveBtn = document.getElementById('moveOneDayBtn');
+        var toolbar = document.getElementById('moveOneDayToolbar');
+        var cancelBtn = document.getElementById('moveOneDayCancel');
+        var confirmBtn = document.getElementById('moveOneDayConfirm');
+        var countLabel = document.getElementById('moveOneDayCount');
+        var calendarGrid = document.querySelector('.calendar-grid');
+        var hiddenInputs = document.getElementById('moveOneDayHiddenInputs');
+        var summaryList = document.getElementById('moveOneDaySummary');
+
+        if (!moveBtn || !calendarGrid) {
+            return;
+        }
+
+        function checkboxes() {
+            return Array.prototype.slice.call(calendarGrid.querySelectorAll('.calendar-select-checkbox'));
+        }
+
+        function updateSelectionState() {
+            var checked = checkboxes().filter(function (cb) { return cb.checked; });
+            countLabel.textContent = checked.length + ' selected';
+            confirmBtn.disabled = checked.length === 0;
+
+            checkboxes().forEach(function (cb) {
+                cb.closest('.calendar-cell').classList.toggle('is-day-selected', cb.checked);
+            });
+        }
+
+        function exitSelectionMode() {
+            calendarGrid.classList.remove('is-selecting');
+            checkboxes().forEach(function (cb) {
+                cb.checked = false;
+                cb.closest('.calendar-cell').classList.remove('is-day-selected');
+            });
+            toolbar.classList.add('d-none');
+            toolbar.classList.remove('d-flex');
+            moveBtn.classList.remove('d-none');
+            updateSelectionState();
+        }
+
+        moveBtn.addEventListener('click', function () {
+            calendarGrid.classList.add('is-selecting');
+            toolbar.classList.remove('d-none');
+            toolbar.classList.add('d-flex');
+            moveBtn.classList.add('d-none');
+            updateSelectionState();
+        });
+
+        cancelBtn.addEventListener('click', exitSelectionMode);
+
+        calendarGrid.addEventListener('change', function (e) {
+            if (e.target.classList.contains('calendar-select-checkbox')) {
+                updateSelectionState();
+            }
+        });
+
+        confirmBtn.addEventListener('click', function () {
+            var checked = checkboxes().filter(function (cb) { return cb.checked; });
+
+            if (checked.length === 0) {
+                return;
+            }
+
+            hiddenInputs.innerHTML = '';
+            summaryList.innerHTML = '';
+
+            checked.forEach(function (cb) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'dates[]';
+                input.value = cb.value;
+                hiddenInputs.appendChild(input);
+
+                var date = new Date(cb.value + 'T00:00:00');
+                var formatted = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                var count = cb.dataset.count;
+
+                var li = document.createElement('li');
+                li.textContent = formatted + ' — ' + count + ' schedule(s)';
+                summaryList.appendChild(li);
+            });
+
+            new bootstrap.Modal(document.getElementById('moveOneDayModal')).show();
+        });
+    })();
 </script>
 @endsection

@@ -31,11 +31,13 @@ class MachineScheduleController extends Controller
     public function index(Request $request)
     {
         $month = $request->filled('month') ? Carbon::parse($request->string('month').'-01') : now()->startOfMonth();
+        $showArchived = $request->boolean('archived');
 
         $calendarDays = ScheduleRequest::calendarForMonth($month, $request->string('machinery')->toString() ?: null);
 
         $requests = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'rescheduleRequests', 'crop'])
-            ->whereNull('archived_at')
+            ->when($showArchived, fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -52,7 +54,7 @@ class MachineScheduleController extends Controller
         $monthOptions = collect(range(-2, 3))->map(fn ($offset) => now()->startOfMonth()->addMonths($offset));
 
         return view('manager.machine-schedule', compact(
-            'requests', 'calendarDays', 'machineryList', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'monthOptions'
+            'requests', 'calendarDays', 'machineryList', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'monthOptions', 'showArchived'
         ));
     }
 
@@ -151,6 +153,17 @@ class MachineScheduleController extends Controller
     }
 
     /**
+     * Restore an archived schedule back onto the active list.
+     */
+    public function unarchive(ScheduleRequest $schedule)
+    {
+        $schedule->update(['archived_at' => null]);
+
+        return redirect()->route('manager.machine-schedule', ['archived' => 1])
+            ->with('success', 'Schedule restored.');
+    }
+
+    /**
      * Close out a completed schedule by recording the total harvest yield,
      * which then feeds into the Harvesting Report.
      */
@@ -172,22 +185,19 @@ class MachineScheduleController extends Controller
     }
 
     /**
-     * Push every active (pending/approved), non-archived schedule dated today
-     * or later forward by one day — e.g. for a fleet-wide rainout or delay —
-     * and notify each affected farmer account of their new date.
+     * Push every active (pending/approved), non-archived schedule — every
+     * scheduled date, not just today onward — forward by one day, e.g. for a
+     * fleet-wide rainout or delay, and notify each affected farmer account.
      */
     public function shiftDay(Request $request)
     {
-        $today = now()->startOfDay()->toDateString();
-
         $schedules = ScheduleRequest::whereIn('status', ['pending', 'approved'])
             ->whereNull('archived_at')
-            ->where('scheduled_date', '>=', $today)
             ->get();
 
         if ($schedules->isEmpty()) {
             return redirect()->route('manager.machine-schedule')
-                ->with('error', 'There are no upcoming schedules to move.');
+                ->with('error', 'There are no schedules to move.');
         }
 
         DB::transaction(function () use ($schedules) {
@@ -223,6 +233,86 @@ class MachineScheduleController extends Controller
 
         return redirect()->route('manager.machine-schedule')
             ->with('success', count($schedules).' schedule(s) moved forward by 1 day. Affected farmers have been notified.');
+    }
+
+    /**
+     * Push every active (pending/approved), non-archived schedule on one or
+     * more manager-picked dates forward by one day, notifying each affected
+     * farmer. Unlike shiftDay(), which moves every upcoming schedule together
+     * (so relative spacing never changes), moving a single date's schedules
+     * can land them on a day that already has other bookings — so each move
+     * is checked for conflicts/capacity and skipped rather than overbooking.
+     */
+    public function shiftSpecificDay(Request $request)
+    {
+        $validated = $request->validate([
+            'dates' => 'required|array|min:1',
+            'dates.*' => 'date_format:Y-m-d',
+        ]);
+
+        $dates = collect($validated['dates'])->unique()->values();
+
+        $schedules = ScheduleRequest::whereIn('status', ['pending', 'approved'])
+            ->whereNull('archived_at')
+            ->whereIn('scheduled_date', $dates)
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return redirect()->route('manager.machine-schedule')
+                ->with('error', 'There are no schedules on the selected date(s) to move.');
+        }
+
+        $moved = 0;
+        $skipped = [];
+
+        DB::transaction(function () use ($schedules, &$moved, &$skipped) {
+            foreach ($schedules as $schedule) {
+                $newDate = $schedule->scheduled_date->copy()->addDay();
+                $dailyLimit = (float) ($schedule->machine?->daily_hectare_limit ?? Machine::DEFAULT_DAILY_HECTARE_LIMIT);
+
+                $conflict = ScheduleRequest::hasConflict($schedule->machine_id, $newDate->toDateString(), $schedule->start_time, $schedule->end_time, $schedule->id)
+                    || ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $newDate->toDateString(), (float) $schedule->land_size, $dailyLimit, $schedule->id);
+
+                if ($conflict) {
+                    $skipped[] = 'SCH-'.str_pad((string) $schedule->id, 3, '0', STR_PAD_LEFT);
+
+                    continue;
+                }
+
+                $oldDate = $schedule->scheduled_date->format('M d, Y');
+                $schedule->update(['scheduled_date' => $newDate->toDateString()]);
+                $moved++;
+
+                $time = Carbon::parse($schedule->start_time)->format('g:i A').' - '.Carbon::parse($schedule->end_time)->format('g:i A');
+                $message = "Your {$schedule->machinery} schedule originally set for {$oldDate} has been moved to {$newDate->format('M d, Y')}. Time ({$time}) and location ({$schedule->location}) remain the same.";
+
+                if ($schedule->user_id) {
+                    Notification::create([
+                        'user_id' => $schedule->user_id,
+                        'title' => 'Your Schedule Has Been Moved',
+                        'message' => $message,
+                        'type' => 'reminder',
+                        'is_read' => false,
+                        'created_at' => now(),
+                    ]);
+                } elseif ($schedule->contact_number) {
+                    app(SmsService::class)->send($schedule->contact_number, $message);
+                }
+            }
+        });
+
+        if ($moved === 0) {
+            return redirect()->route('manager.machine-schedule')
+                ->with('error', 'Could not move any schedules — the next day is already fully booked for '.implode(', ', $skipped).'.');
+        }
+
+        $summary = "{$moved} schedule(s) moved forward by 1 day. Affected farmers have been notified.";
+
+        if (! empty($skipped)) {
+            $summary .= ' Skipped (next day already conflicts): '.implode(', ', $skipped).'.';
+        }
+
+        return redirect()->route('manager.machine-schedule')->with('success', $summary);
     }
 
     private function validateSchedule(Request $request): array
