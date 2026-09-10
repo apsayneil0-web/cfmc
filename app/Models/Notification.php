@@ -13,6 +13,7 @@ class Notification extends Model
         'user_id',
         'announcement_id',
         'loan_id',
+        'schedule_id',
         'title',
         'message',
         'type',
@@ -41,6 +42,11 @@ class Notification extends Model
     public function loan(): BelongsTo
     {
         return $this->belongsTo(Loan::class);
+    }
+
+    public function schedule(): BelongsTo
+    {
+        return $this->belongsTo(ScheduleRequest::class, 'schedule_id');
     }
 
     /**

@@ -10,8 +10,36 @@
 @php
     $announcement = $notification->announcement;
     $loan = $notification->loan;
+    $schedule = $notification->schedule;
     $display = \App\Models\Notification::typeDisplay($notification->type);
 @endphp
+@if($schedule)
+<div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">{{ $display['icon'] }} {{ $notification->title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-6"><label class="text-muted small d-block">Schedule</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                    <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $schedule->machinery }}</p></div>
+                    <div class="col-6"><label class="text-muted small d-block">New Date</label><p class="fw-medium mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p></div>
+                    <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</p></div>
+                    <div class="col-12"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">📍 {{ $schedule->location }}</p></div>
+                    <div class="col-12"><label class="text-muted small d-block">Details</label><p class="fw-medium mb-0">{{ $notification->message }}</p></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <span class="text-muted small me-auto">{{ $notification->created_at->format('M d, Y \a\t g:i A') }}</span>
+                <a href="{{ route('farmer.schedule') }}" class="btn btn-outline-primary btn-sm">View My Schedule</a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @if($loan)
 <div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">

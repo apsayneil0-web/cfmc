@@ -30,6 +30,7 @@ class Loan extends Model
         'installment_amount',
         'collateral',
         'remaining_balance',
+        'current_period_paid',
         'next_due_date',
         'original_due_date',
         'partial_penalty_applied_at',
@@ -75,6 +76,77 @@ class Loan extends Model
         return round($minimumDue + (float) $this->installment_amount, 2);
     }
 
+    /**
+     * Which installment number next_due_date currently sits at, counting
+     * from original_due_date as #1. Null if the loan hasn't been disbursed
+     * yet. applyOverdueInterest() keeps advancing next_due_date for as long
+     * as a loan stays unpaid, with no ceiling at repayment_terms_months, so
+     * this can legitimately exceed the original term count once a farmer
+     * runs past their last scheduled month while still owing a balance.
+     */
+    public function getCurrentInstallmentNumberAttribute(): ?int
+    {
+        if (! $this->original_due_date || ! $this->next_due_date) {
+            return null;
+        }
+
+        // diffInMonths returns a float with sub-millisecond drift (e.g.
+        // 3.000000000002987 instead of 3) rather than a clean int, so round
+        // before comparing — otherwise every === below silently fails.
+        return (int) round($this->original_due_date->diffInMonths($this->next_due_date)) + 1;
+    }
+
+    /**
+     * The term this loan is effectively running on: the originally agreed
+     * repayment_terms_months, unless the farmer has run past it while still
+     * owing a balance, in which case it grows to match — automatically
+     * "extending" the loan by however many extra months it's actually
+     * taking, without overwriting the original contracted term.
+     */
+    public function getEffectiveTermMonthsAttribute(): int
+    {
+        return max($this->repayment_terms_months, $this->current_installment_number ?? 0);
+    }
+
+    /**
+     * A projected installment-by-installment repayment schedule (GCash-style
+     * "8 of 12" timeline), one row per effective_term_months, computed from
+     * original_due_date/next_due_date rather than stored — this app only
+     * tracks a single running balance and one next_due_date, not a
+     * persisted per-installment ledger. Installments before the current
+     * next_due_date are assumed settled; the one at next_due_date is
+     * "late" if the loan has gone overdue, otherwise "current"; the rest
+     * are "upcoming".
+     */
+    public function getInstallmentScheduleAttribute(): array
+    {
+        $currentNumber = $this->current_installment_number;
+
+        if ($currentNumber === null) {
+            return [];
+        }
+
+        $schedule = [];
+
+        for ($number = 1; $number <= $this->effective_term_months; $number++) {
+            $status = match (true) {
+                $number < $currentNumber => 'paid',
+                $number === $currentNumber && $this->status === 'overdue' => 'late',
+                $number === $currentNumber => 'current',
+                default => 'upcoming',
+            };
+
+            $schedule[] = (object) [
+                'number' => $number,
+                'due_date' => $this->original_due_date->copy()->addMonthsNoOverflow($number - 1),
+                'amount' => $this->monthly_due,
+                'status' => $status,
+            ];
+        }
+
+        return $schedule;
+    }
+
     public function loanRequest(): BelongsTo
     {
         return $this->belongsTo(LoanRequest::class);
@@ -106,7 +178,10 @@ class Loan extends Model
 
         $this->update([
             'status' => 'active',
-            'remaining_balance' => $this->principal_amount,
+            // Principal + total flat interest for the full term, not just
+            // principal — so "Current Balance" already IS the full amount
+            // owed (matches Total Repayable) instead of two separate figures.
+            'remaining_balance' => $this->monthly_due * $this->repayment_terms_months,
             'next_due_date' => $firstDueDate,
             // Fixed anchor for the delinquency clock — next_due_date advances
             // every time interest is applied, but this never does.
@@ -135,6 +210,9 @@ class Loan extends Model
     {
         $this->remaining_balance = max(0, round((float) $this->remaining_balance - $amount, 2));
         $this->status = $this->remaining_balance <= 0 ? 'fully_paid' : 'active';
+
+        $this->advanceDueDateForPayment($amount);
+
         $this->save();
 
         return $this->payments()->create([
@@ -145,6 +223,32 @@ class Loan extends Model
             'notes' => $notes,
             'recorded_by' => $recordedBy,
         ]);
+    }
+
+    /**
+     * Applies a payment toward the current due period's running total and
+     * advances next_due_date one month at a time for every monthly_due it
+     * fully covers — so a farmer making several partial payments (or one
+     * large prepayment covering several periods at once) moves the due date
+     * forward automatically, without a manager having to edit it by hand.
+     * Applies identically to regular and batch loans, since both are plain
+     * Loan records going through this same method.
+     */
+    private function advanceDueDateForPayment(float $amount): void
+    {
+        if ($this->remaining_balance <= 0 || ! $this->next_due_date) {
+            $this->current_period_paid = 0;
+
+            return;
+        }
+
+        $this->current_period_paid = round((float) $this->current_period_paid + $amount, 2);
+        $monthlyDue = $this->monthly_due;
+
+        while ($monthlyDue > 0 && $this->current_period_paid >= $monthlyDue) {
+            $this->current_period_paid = round($this->current_period_paid - $monthlyDue, 2);
+            $this->next_due_date = $this->next_due_date->copy()->addMonthNoOverflow();
+        }
     }
 
     /**

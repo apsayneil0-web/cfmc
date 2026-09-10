@@ -95,26 +95,43 @@ class LoanManagementController extends Controller
     /**
      * Release funds for a finalized loan. Only allowed once, from
      * pending_disbursement; this is what actually starts the repayment clock.
+     * A today-or-earlier date disburses immediately, same as before; a
+     * future date instead schedules it, to be released automatically by the
+     * loans:process-scheduled-disbursements command once that date arrives —
+     * mirroring how batch loans are scheduled at Finalize Batch time.
      */
     public function disburse(Request $request, Loan $loan)
     {
         abort_if($loan->status !== 'pending_disbursement', 422, 'Only loans awaiting disbursement can be released.');
 
         $validated = $request->validate([
-            'disbursed_at' => 'required|date|before_or_equal:today',
+            'disbursed_at' => 'required|date|after_or_equal:today',
             'disbursement_method' => 'required|string|in:cash,bank_transfer,check',
             'reference_no' => 'nullable|string|max:255',
         ]);
 
-        $loan->disburse(
-            $validated['disbursement_method'],
-            $validated['reference_no'] ?? null,
-            Auth::id(),
-            $validated['disbursed_at'],
-        );
+        if (now()->toDateString() >= $validated['disbursed_at']) {
+            $loan->disburse(
+                $validated['disbursement_method'],
+                $validated['reference_no'] ?? null,
+                Auth::id(),
+                $validated['disbursed_at'],
+            );
+
+            $message = "Loan for {$loan->farmer->full_name} has been disbursed and is now active.";
+        } else {
+            $loan->update([
+                'scheduled_disbursement_date' => $validated['disbursed_at'],
+                'scheduled_by' => Auth::id(),
+                'disbursement_method' => $validated['disbursement_method'],
+                'reference_no' => $validated['reference_no'] ?? null,
+            ]);
+
+            $message = "Loan for {$loan->farmer->full_name} is scheduled for disbursement on ".now()->parse($validated['disbursed_at'])->format('M d, Y').'.';
+        }
 
         return redirect()->route($this->redirectRouteFor($loan))
-            ->with('success', "Loan for {$loan->farmer->full_name} has been disbursed and is now active.");
+            ->with('success', $message);
     }
 
     public function archive(Loan $loan)

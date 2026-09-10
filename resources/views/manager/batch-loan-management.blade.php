@@ -125,10 +125,7 @@
                     <td class="small fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="small">{{ $loan->farmer->full_name }}</td>
                     <td class="small">{{ peso($loan->principal_amount) }}</td>
-                    <td class="small fw-medium text-dark">
-                        {{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}
-                        <div class="text-muted fw-normal" style="font-size: 0.7rem;">Total repayable: {{ peso($loan->monthly_due * $loan->repayment_terms_months) }}</div>
-                    </td>
+                    <td class="small fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
                     <td class="small text-muted">{{ peso($loan->monthly_due) }}</td>
                     <td class="small {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
                     <td class="small">
@@ -170,7 +167,7 @@
         <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $group->batch->label }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' — extended, now on month '.$loan->current_installment_number : '' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
         <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" /></div>
@@ -213,7 +210,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($loan->payments->sortByDesc('created_at') as $payment)
+                @forelse($loan->payments->sortBy('created_at') as $payment)
                 <tr>
                     <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small">

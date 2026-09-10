@@ -80,10 +80,7 @@
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $loan->farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4">{{ peso($loan->principal_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">
-                        {{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}
-                        <div class="small text-muted fw-normal">Total repayable: {{ peso($loan->monthly_due * $loan->repayment_terms_months) }}</div>
-                    </td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ peso($loan->monthly_due) }}</td>
                     <td class="px-4 px-md-6 py-4 {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">
@@ -91,6 +88,9 @@
                         <x-status-badge status="Archived" />
                         @else
                         <x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" />
+                        @endif
+                        @if($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
+                        <div class="small text-muted">Auto-disburses {{ $loan->scheduled_disbursement_date->format('M d, Y') }}</div>
                         @endif
                         @if($loan->delinquency_stage)
                         <div class="mt-1">
@@ -142,13 +142,16 @@
         <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">Regular Loan</p></div>
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' — extended, now on month '.$loan->current_installment_number : '' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
         <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" /></div>
         @if($loan->disbursed_at)
         <div class="col-6"><label class="text-muted small d-block">Disbursed</label><p class="fw-medium mb-0">{{ $loan->disbursed_at->format('M d, Y') }} &mdash; {{ ucwords(str_replace('_', ' ', $loan->disbursement_method)) }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Released By</label><p class="fw-medium mb-0">{{ $loan->disbursedBy->name ?? '—' }}</p></div>
+        @elseif($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
+        <div class="col-6"><label class="text-muted small d-block">Scheduled Disbursement</label><p class="fw-medium mb-0">{{ $loan->scheduled_disbursement_date->format('M d, Y') }} &mdash; {{ ucwords(str_replace('_', ' ', $loan->disbursement_method ?? 'cash')) }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Scheduled By</label><p class="fw-medium mb-0">{{ $loan->scheduledBy->name ?? '—' }}</p></div>
         @endif
         @if($loan->notes)
         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $loan->notes }}</p></div>
@@ -182,7 +185,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($loan->payments->sortByDesc('created_at') as $payment)
+                @forelse($loan->payments->sortBy('created_at') as $payment)
                 <tr>
                     <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small">
@@ -218,10 +221,10 @@
                 @csrf
                 @method('PATCH')
                 <div class="modal-body">
-                    <p class="text-muted small">Confirm that {{ $loan->principal_amount ? peso($loan->principal_amount) : '' }} has been released to {{ $loan->farmer->full_name }}. This starts the repayment schedule from the date below.</p>
+                    <p class="text-muted small">Confirm that {{ $loan->principal_amount ? peso($loan->principal_amount) : '' }} has been released to {{ $loan->farmer->full_name }}. Choosing today disburses immediately; choosing a future date schedules it to disburse automatically that day. Either way, the repayment schedule starts from the date below.</p>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Date Released <span class="text-danger">*</span></label>
-                        <input type="date" name="disbursed_at" class="form-control" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+                        <label class="form-label fw-semibold">Disbursement Date <span class="text-danger">*</span></label>
+                        <input type="date" name="disbursed_at" class="form-control" value="{{ now()->toDateString() }}" min="{{ now()->toDateString() }}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Disbursement Method <span class="text-danger">*</span></label>

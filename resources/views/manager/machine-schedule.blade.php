@@ -66,6 +66,9 @@
             <button type="button" id="moveOneDayBtn" class="btn btn-outline-info d-flex align-items-center gap-2">
                 <i class="fas fa-calendar-day"></i><span>Move One Day</span>
             </button>
+            <button class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shiftDayBackwardModal">
+                <i class="fas fa-backward"></i><span>Move Schedule −1 Day</span>
+            </button>
             <button class="btn btn-outline-warning d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shiftDayModal">
                 <i class="fas fa-forward"></i><span>Move Schedule +1 Day</span>
             </button>
@@ -76,11 +79,23 @@
     </div>
 
     <!-- Move One Day: selection toolbar (shown while picking dates) -->
-    <div id="moveOneDayToolbar" class="d-none align-items-center justify-content-between gap-3 px-4 px-md-6 py-3 border-top border-bottom" style="background-color: var(--brand-warning-light);">
+    <div id="moveOneDayToolbar" class="d-none align-items-center justify-content-between gap-3 px-4 px-md-6 py-3 border-top border-bottom flex-wrap" style="background-color: var(--brand-warning-light);">
         <p class="mb-0 small fw-medium"><i class="fas fa-info-circle me-1"></i>Check the days you want to move, then confirm. <span id="moveOneDayCount">0 selected</span></p>
-        <div class="d-flex gap-2">
-            <button type="button" id="moveOneDayCancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
-            <button type="button" id="moveOneDayConfirm" class="btn btn-sm btn-warning" disabled>Move Selected Day(s)</button>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 small fw-medium">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="radio" name="moveOneDayDirection" id="moveOneDayForward" value="forward" checked>
+                    <label class="form-check-label" for="moveOneDayForward">Forward</label>
+                </div>
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="radio" name="moveOneDayDirection" id="moveOneDayBackward" value="backward">
+                    <label class="form-check-label" for="moveOneDayBackward">Backward</label>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" id="moveOneDayCancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
+                <button type="button" id="moveOneDayConfirm" class="btn btn-sm btn-warning" disabled>Move Selected Day(s)</button>
+            </div>
         </div>
     </div>
 
@@ -290,16 +305,48 @@
                 <h5 class="modal-title fw-bold text-dark"><i class="fas fa-forward me-2"></i>Move Schedule +1 Day</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p class="mb-0">This will move <strong>every pending/approved schedule</strong> — every scheduled date, including any already overdue — forward by 1 day, and automatically notify each affected farmer of their new date. This action cannot be undone. Continue?</p>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="{{ route('manager.machine-schedule.shift-day') }}" method="POST">
-                    @csrf
+            <form action="{{ route('manager.machine-schedule.shift-day') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p>This will move <strong>every pending/approved schedule</strong> — every scheduled date, including any already overdue — forward by 1 day, and automatically notify each affected farmer of their new date. This action cannot be undone. Continue?</p>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Reason for moving <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="2" maxlength="500" placeholder="e.g. Fleet-wide rainout, machine breakdown, operator unavailable..." required></textarea>
+                        <small class="text-muted">Sent to every affected farmer so they know why their schedule moved.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-warning">Yes, Move Schedules</button>
-                </form>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Move Schedule -1 Day Confirmation Modal -->
+<div class="modal fade" id="shiftDayBackwardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fas fa-backward me-2"></i>Move Schedule −1 Day</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form action="{{ route('manager.machine-schedule.shift-day-backward') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p>This will move <strong>every pending/approved schedule</strong> back by 1 day, and automatically notify each affected farmer of their new date. Any schedule that would land before the {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }}-day minimum lead time is skipped instead of being backdated. This action cannot be undone. Continue?</p>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Reason for moving <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="2" maxlength="500" placeholder="e.g. Original date was scheduled in error, farmer requested earlier slot..." required></textarea>
+                        <small class="text-muted">Sent to every affected farmer so they know why their schedule moved.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-secondary">Yes, Move Schedules Back</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -309,15 +356,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-warning">
-                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-calendar-day me-2"></i>Move Selected Day(s)</h5>
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-calendar-day me-2"></i><span id="moveOneDayModalTitle">Move Selected Day(s)</span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('manager.machine-schedule.shift-specific-day') }}" method="POST">
                 @csrf
+                <input type="hidden" name="direction" id="moveOneDayDirectionInput" value="forward">
                 <div id="moveOneDayHiddenInputs"></div>
                 <div class="modal-body">
-                    <p>This will move every pending/approved schedule on the date(s) below forward by 1 day, and notify each affected farmer. Any schedule that would conflict with an existing booking on the next day is skipped instead of overbooking. Continue?</p>
+                    <p id="moveOneDaySummaryIntro">This will move every pending/approved schedule on the date(s) below forward by 1 day, and notify each affected farmer. Any schedule that would conflict with an existing booking on the next day is skipped instead of overbooking. Continue?</p>
                     <ul id="moveOneDaySummary" class="mb-0 ps-3 small"></ul>
+                    <div class="mb-0 mt-3">
+                        <label class="form-label fw-semibold">Reason for moving <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="2" maxlength="500" placeholder="e.g. Fleet-wide rainout, machine breakdown, operator unavailable..." required></textarea>
+                        <small class="text-muted">Sent to every affected farmer so they know why their schedule moved.</small>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -402,6 +455,9 @@
         var calendarGrid = document.querySelector('.calendar-grid');
         var hiddenInputs = document.getElementById('moveOneDayHiddenInputs');
         var summaryList = document.getElementById('moveOneDaySummary');
+        var directionInput = document.getElementById('moveOneDayDirectionInput');
+        var modalTitle = document.getElementById('moveOneDayModalTitle');
+        var summaryIntro = document.getElementById('moveOneDaySummaryIntro');
 
         if (!moveBtn || !calendarGrid) {
             return;
@@ -430,6 +486,7 @@
             toolbar.classList.add('d-none');
             toolbar.classList.remove('d-flex');
             moveBtn.classList.remove('d-none');
+            document.getElementById('moveOneDayForward').checked = true;
             updateSelectionState();
         }
 
@@ -455,6 +512,15 @@
             if (checked.length === 0) {
                 return;
             }
+
+            var direction = document.querySelector('input[name="moveOneDayDirection"]:checked').value;
+            var isBackward = direction === 'backward';
+
+            directionInput.value = direction;
+            modalTitle.textContent = isBackward ? 'Move Selected Day(s) Back' : 'Move Selected Day(s)';
+            summaryIntro.textContent = isBackward
+                ? 'This will move every pending/approved schedule on the date(s) below back by 1 day, and notify each affected farmer. Any schedule that would conflict with an existing booking, or fall before the minimum lead time, is skipped instead.'
+                : 'This will move every pending/approved schedule on the date(s) below forward by 1 day, and notify each affected farmer. Any schedule that would conflict with an existing booking on the next day is skipped instead of overbooking.';
 
             hiddenInputs.innerHTML = '';
             summaryList.innerHTML = '';

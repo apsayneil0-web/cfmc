@@ -20,11 +20,14 @@ class LoanController extends Controller
                 ->get()
             : collect();
 
-        $activeLoan = $loanRequests
-            ->pluck('loan')
-            ->filter()
-            ->first(fn ($loan) => $loan->status !== 'fully_paid');
+        $loans = $loanRequests->pluck('loan')->filter();
 
-        return view('farmer.loans', compact('farmer', 'loanRequests', 'activeLoan'));
+        $activeLoan = $loans->first(fn ($loan) => $loan->status !== 'fully_paid');
+
+        $paidLoans = $loans->where('status', 'fully_paid')
+            ->sortByDesc(fn ($loan) => $loan->payments->max('transaction_date'))
+            ->values();
+
+        return view('farmer.loans', compact('farmer', 'loanRequests', 'activeLoan', 'paidLoans'));
     }
 }

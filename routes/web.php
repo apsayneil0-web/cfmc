@@ -93,6 +93,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/manager/machine-schedule/{schedule}/unarchive', [MachineScheduleController::class, 'unarchive'])->name('manager.machine-schedule.unarchive');
     Route::patch('/manager/machine-schedule/{schedule}/complete', [MachineScheduleController::class, 'complete'])->name('manager.machine-schedule.complete');
     Route::post('/manager/machine-schedule/shift-day', [MachineScheduleController::class, 'shiftDay'])->name('manager.machine-schedule.shift-day');
+    Route::post('/manager/machine-schedule/shift-day-backward', [MachineScheduleController::class, 'shiftDayBackward'])->name('manager.machine-schedule.shift-day-backward');
     Route::post('/manager/machine-schedule/shift-specific-day', [MachineScheduleController::class, 'shiftSpecificDay'])->name('manager.machine-schedule.shift-specific-day');
 
     Route::get('/manager/financial', [FinancialController::class, 'index'])->name('manager.financial');

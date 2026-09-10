@@ -191,6 +191,27 @@ class MachineScheduleController extends Controller
      */
     public function shiftDay(Request $request)
     {
+        return $this->applyBulkShift($request, 1);
+    }
+
+    /**
+     * Same as shiftDay(), but pulls every active schedule back by one day
+     * instead — e.g. to undo an earlier move. Any schedule that would land
+     * before today or inside the minimum lead-time window is skipped rather
+     * than backdated, since that would put it somewhere it can't be serviced.
+     */
+    public function shiftDayBackward(Request $request)
+    {
+        return $this->applyBulkShift($request, -1);
+    }
+
+    private function applyBulkShift(Request $request, int $days)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+        $reason = $validated['reason'];
+
         $schedules = ScheduleRequest::whereIn('status', ['pending', 'approved'])
             ->whereNull('archived_at')
             ->get();
@@ -200,21 +221,34 @@ class MachineScheduleController extends Controller
                 ->with('error', 'There are no schedules to move.');
         }
 
-        DB::transaction(function () use ($schedules) {
-            ScheduleRequest::whereIn('id', $schedules->pluck('id'))
-                ->update(['scheduled_date' => DB::raw('DATE_ADD(scheduled_date, INTERVAL 1 DAY)')]);
+        $earliestAllowedDate = ScheduleRequest::earliestAllowedDate();
+        $moved = 0;
+        $skipped = [];
 
+        DB::transaction(function () use ($schedules, $days, $reason, $earliestAllowedDate, &$moved, &$skipped) {
             $rows = [];
 
             foreach ($schedules as $schedule) {
+                $newDate = $schedule->scheduled_date->copy()->addDays($days);
+
+                if ($days < 0 && $newDate->lt($earliestAllowedDate)) {
+                    $skipped[] = 'SCH-'.str_pad((string) $schedule->id, 3, '0', STR_PAD_LEFT);
+
+                    continue;
+                }
+
                 $oldDate = $schedule->scheduled_date->format('M d, Y');
-                $newDate = $schedule->scheduled_date->copy()->addDay()->format('M d, Y');
+                $schedule->update(['scheduled_date' => $newDate->toDateString()]);
+                $moved++;
+
+                $direction = $days > 0 ? 'moved to' : 'moved back to';
                 $time = Carbon::parse($schedule->start_time)->format('g:i A').' - '.Carbon::parse($schedule->end_time)->format('g:i A');
-                $message = "Your {$schedule->machinery} schedule originally set for {$oldDate} has been moved to {$newDate}. Time ({$time}) and location ({$schedule->location}) remain the same.";
+                $message = "Your {$schedule->machinery} schedule originally set for {$oldDate} has been {$direction} {$newDate->format('M d, Y')}. Time ({$time}) and location ({$schedule->location}) remain the same. Reason: {$reason}";
 
                 if ($schedule->user_id) {
                     $rows[] = [
                         'user_id' => $schedule->user_id,
+                        'schedule_id' => $schedule->id,
                         'title' => 'Your Schedule Has Been Moved',
                         'message' => $message,
                         'type' => 'reminder',
@@ -231,25 +265,42 @@ class MachineScheduleController extends Controller
             }
         });
 
-        return redirect()->route('manager.machine-schedule')
-            ->with('success', count($schedules).' schedule(s) moved forward by 1 day. Affected farmers have been notified.');
+        $verb = $days > 0 ? 'forward' : 'back';
+
+        if ($moved === 0) {
+            return redirect()->route('manager.machine-schedule')
+                ->with('error', "Could not move any schedules {$verb} — it would put ".implode(', ', $skipped).' before the minimum lead time.');
+        }
+
+        $summary = "{$moved} schedule(s) moved {$verb} by 1 day. Affected farmers have been notified.";
+
+        if (! empty($skipped)) {
+            $summary .= " Skipped (would fall before the minimum lead time): ".implode(', ', $skipped).'.';
+        }
+
+        return redirect()->route('manager.machine-schedule')->with('success', $summary);
     }
 
     /**
      * Push every active (pending/approved), non-archived schedule on one or
-     * more manager-picked dates forward by one day, notifying each affected
-     * farmer. Unlike shiftDay(), which moves every upcoming schedule together
-     * (so relative spacing never changes), moving a single date's schedules
-     * can land them on a day that already has other bookings — so each move
-     * is checked for conflicts/capacity and skipped rather than overbooking.
+     * more manager-picked dates forward (or back) by one day, notifying each
+     * affected farmer. Unlike applyBulkShift(), which moves every schedule
+     * together (so relative spacing never changes), moving a single date's
+     * schedules can land them on a day that already has other bookings — so
+     * each move is checked for conflicts/capacity and skipped rather than
+     * overbooking.
      */
     public function shiftSpecificDay(Request $request)
     {
         $validated = $request->validate([
             'dates' => 'required|array|min:1',
             'dates.*' => 'date_format:Y-m-d',
+            'direction' => ['nullable', Rule::in(['forward', 'backward'])],
+            'reason' => 'required|string|max:500',
         ]);
 
+        $days = ($validated['direction'] ?? 'forward') === 'backward' ? -1 : 1;
+        $reason = $validated['reason'];
         $dates = collect($validated['dates'])->unique()->values();
 
         $schedules = ScheduleRequest::whereIn('status', ['pending', 'approved'])
@@ -262,19 +313,29 @@ class MachineScheduleController extends Controller
                 ->with('error', 'There are no schedules on the selected date(s) to move.');
         }
 
+        $earliestAllowedDate = ScheduleRequest::earliestAllowedDate();
         $moved = 0;
-        $skipped = [];
+        $skippedLeadTime = [];
+        $skippedConflict = [];
 
-        DB::transaction(function () use ($schedules, &$moved, &$skipped) {
+        DB::transaction(function () use ($schedules, $days, $reason, $earliestAllowedDate, &$moved, &$skippedLeadTime, &$skippedConflict) {
             foreach ($schedules as $schedule) {
-                $newDate = $schedule->scheduled_date->copy()->addDay();
+                $newDate = $schedule->scheduled_date->copy()->addDays($days);
+                $code = 'SCH-'.str_pad((string) $schedule->id, 3, '0', STR_PAD_LEFT);
+
+                if ($days < 0 && $newDate->lt($earliestAllowedDate)) {
+                    $skippedLeadTime[] = $code;
+
+                    continue;
+                }
+
                 $dailyLimit = (float) ($schedule->machine?->daily_hectare_limit ?? Machine::DEFAULT_DAILY_HECTARE_LIMIT);
 
                 $conflict = ScheduleRequest::hasConflict($schedule->machine_id, $newDate->toDateString(), $schedule->start_time, $schedule->end_time, $schedule->id)
                     || ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $newDate->toDateString(), (float) $schedule->land_size, $dailyLimit, $schedule->id);
 
                 if ($conflict) {
-                    $skipped[] = 'SCH-'.str_pad((string) $schedule->id, 3, '0', STR_PAD_LEFT);
+                    $skippedConflict[] = $code;
 
                     continue;
                 }
@@ -283,12 +344,14 @@ class MachineScheduleController extends Controller
                 $schedule->update(['scheduled_date' => $newDate->toDateString()]);
                 $moved++;
 
+                $direction = $days > 0 ? 'moved to' : 'moved back to';
                 $time = Carbon::parse($schedule->start_time)->format('g:i A').' - '.Carbon::parse($schedule->end_time)->format('g:i A');
-                $message = "Your {$schedule->machinery} schedule originally set for {$oldDate} has been moved to {$newDate->format('M d, Y')}. Time ({$time}) and location ({$schedule->location}) remain the same.";
+                $message = "Your {$schedule->machinery} schedule originally set for {$oldDate} has been {$direction} {$newDate->format('M d, Y')}. Time ({$time}) and location ({$schedule->location}) remain the same. Reason: {$reason}";
 
                 if ($schedule->user_id) {
                     Notification::create([
                         'user_id' => $schedule->user_id,
+                        'schedule_id' => $schedule->id,
                         'title' => 'Your Schedule Has Been Moved',
                         'message' => $message,
                         'type' => 'reminder',
@@ -301,15 +364,26 @@ class MachineScheduleController extends Controller
             }
         });
 
-        if ($moved === 0) {
-            return redirect()->route('manager.machine-schedule')
-                ->with('error', 'Could not move any schedules — the next day is already fully booked for '.implode(', ', $skipped).'.');
+        $verb = $days > 0 ? 'forward' : 'back';
+        $reasons = [];
+
+        if (! empty($skippedConflict)) {
+            $reasons[] = 'conflicts with an existing booking on the target day: '.implode(', ', $skippedConflict);
         }
 
-        $summary = "{$moved} schedule(s) moved forward by 1 day. Affected farmers have been notified.";
+        if (! empty($skippedLeadTime)) {
+            $reasons[] = 'would fall before the '.ScheduleRequest::MIN_LEAD_DAYS.'-day minimum lead time: '.implode(', ', $skippedLeadTime);
+        }
 
-        if (! empty($skipped)) {
-            $summary .= ' Skipped (next day already conflicts): '.implode(', ', $skipped).'.';
+        if ($moved === 0) {
+            return redirect()->route('manager.machine-schedule')
+                ->with('error', "Could not move any schedules {$verb} — ".implode('; ', $reasons).'.');
+        }
+
+        $summary = "{$moved} schedule(s) moved {$verb} by 1 day. Affected farmers have been notified.";
+
+        if (! empty($reasons)) {
+            $summary .= ' Skipped — '.implode('; ', $reasons).'.';
         }
 
         return redirect()->route('manager.machine-schedule')->with('success', $summary);
