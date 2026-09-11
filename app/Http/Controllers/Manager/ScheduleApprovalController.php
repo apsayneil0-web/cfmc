@@ -29,9 +29,11 @@ class ScheduleApprovalController extends Controller
         if ($request->filled('search')) {
             $search = $request->string('search');
             $query->where(function ($q) use ($search) {
-                $q->where('farmer_name', 'like', "%{$search}%")
-                    ->orWhere('machinery', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+                $q->where('farmer_name', 'like', "{$search}%")
+                    ->orWhere('farmer_name', 'like', "% {$search}%")
+                    ->orWhere('machinery', 'like', "{$search}%")
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "{$search}%")
+                        ->orWhere('name', 'like', "% {$search}%"));
             });
         }
 
@@ -48,7 +50,7 @@ class ScheduleApprovalController extends Controller
     {
         abort_if($schedule->status !== 'pending', 422, 'Only pending requests can be approved.');
 
-        if (ScheduleRequest::hasConflict($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), $schedule->start_time, $schedule->end_time, $schedule->id)) {
+        if (ScheduleRequest::hasConflict($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), $schedule->start_time, $schedule->end_time, $schedule->id, $schedule->units_requested)) {
             return redirect()->route('manager.schedule-approval')
                 ->with('error', 'Cannot approve: this machinery is already booked for an overlapping date/time.');
         }

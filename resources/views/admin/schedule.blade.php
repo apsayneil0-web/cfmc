@@ -54,22 +54,6 @@
                         <x-icon-button icon="fa-eye" color="primary" title="View Details" data-bs-toggle="modal" data-bs-target="#viewScheduleModal{{ $schedule->id }}" />
                     </td>
                 </tr>
-
-                <x-modal id="viewScheduleModal{{ $schedule->id }}" title="Schedule Details">
-                    <div class="row g-3">
-                        <div class="col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Status</label><p class="fw-medium mb-0"><x-status-badge :status="ucfirst($schedule->status)" /></p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $schedule->display_name }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $schedule->machinery }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Land Size</label><p class="fw-medium mb-0">{{ $schedule->land_size }} ha</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">{{ $schedule->location }}</p></div>
-                        @if($schedule->remarks)
-                        <div class="col-12"><label class="text-muted small d-block">Remarks</label><p class="fw-medium mb-0">{{ $schedule->remarks }}</p></div>
-                        @endif
-                    </div>
-                </x-modal>
                 @empty
                 <tr>
                     <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No schedules recorded yet.</td>
@@ -83,6 +67,25 @@
         <p class="text-muted small mb-0">Showing {{ $schedules->count() }} of {{ $schedules->count() }} entries</p>
     </div>
 </div>
+
+{{-- Modals live outside the table: a <div> can't be a direct child of <tbody>. --}}
+@foreach($schedules as $schedule)
+<x-modal id="viewScheduleModal{{ $schedule->id }}" title="Schedule Details">
+    <div class="row g-3">
+        <div class="col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Status</label><p class="fw-medium mb-0"><x-status-badge :status="ucfirst($schedule->status)" /></p></div>
+        <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $schedule->display_name }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $schedule->machinery }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Land Size</label><p class="fw-medium mb-0">{{ $schedule->land_size }} ha</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">{{ $schedule->location }}</p></div>
+        @if($schedule->remarks)
+        <div class="col-12"><label class="text-muted small d-block">Remarks</label><p class="fw-medium mb-0">{{ $schedule->remarks }}</p></div>
+        @endif
+    </div>
+</x-modal>
+@endforeach
 
 <x-info-banner variant="info" title="Monitoring Only" class="mt-6">
     This view is for oversight of machinery usage across the cooperative. Schedule requests are created and processed by the Manager to avoid conflicts and support efficient planning.

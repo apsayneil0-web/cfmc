@@ -43,23 +43,105 @@ class LoanApprovalController extends Controller
     }
 
     /**
-     * Display every loan request the Administrator has approved.
+     * Display every loan request the Administrator has approved. Batch
+     * members are folded into one row per batch (mirroring the pending
+     * Loan Approval page) instead of flooding the table with every
+     * individual member, since a batch can hold up to 10 farmers.
      */
     public function approved(Request $request)
     {
-        $query = LoanRequest::with(['farmer', 'batch'])
-            ->where('status', 'approved');
+        $matchesSearch = function ($q) use ($request) {
+            if (! $request->filled('search')) {
+                return;
+            }
 
-        if ($request->filled('search')) {
             $search = $request->string('search');
-            $query->whereHas('farmer', function ($q) use ($search) {
-                $q->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"]);
+
+            $q->whereHas('farmer', function ($q) use ($search) {
+                $q->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"])
+                    ->orWhere('last_name', 'like', "{$search}%");
             });
-        }
+        };
 
-        $loans = $query->orderByDesc('created_at')->get();
+        // By default only show loans still "in play" (not archived); the
+        // manager explicitly filters for "Archived" to review old ones.
+        $matchesArchiveFilter = fn ($q) => $request->input('status') === 'archived'
+            ? $q->whereNotNull('archived_at')
+            : $q->whereNull('archived_at');
 
-        return view('admin.approved-loans', compact('loans'));
+        $loans = LoanRequest::with('farmer')
+            ->where('status', 'approved')
+            ->where('type', 'regular')
+            ->tap($matchesSearch)
+            ->tap($matchesArchiveFilter)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $approvedMember = fn ($q) => $q->where('status', 'approved');
+
+        $batchGroups = LoanBatch::whereHas('loanRequests', $approvedMember)
+            ->with(['loanRequests' => fn ($q) => $approvedMember($q)->with('farmer')->tap($matchesSearch)->tap($matchesArchiveFilter)->orderByDesc('created_at')])
+            ->orderByDesc('created_at')
+            ->get()
+            ->filter(fn (LoanBatch $batch) => $batch->loanRequests->isNotEmpty())
+            ->values();
+
+        return view('admin.approved-loans', compact('loans', 'batchGroups'));
+    }
+
+    /**
+     * Archive an approved loan request, hiding it from the default view
+     * without touching its approval status or any finalized loan record.
+     */
+    public function archive(LoanRequest $loan_request)
+    {
+        abort_if($loan_request->status !== 'approved', 422, 'Only approved requests can be archived.');
+
+        $loan_request->update(['archived_at' => now()]);
+
+        return redirect()->route('admin.approved-loans')
+            ->with('success', "{$loan_request->farmer->full_name}'s loan request has been archived.");
+    }
+
+    /**
+     * Restore an archived loan request back into the default view.
+     */
+    public function unarchive(LoanRequest $loan_request)
+    {
+        $loan_request->update(['archived_at' => null]);
+
+        return redirect()->route('admin.approved-loans', ['status' => 'archived'])
+            ->with('success', "{$loan_request->farmer->full_name}'s loan request has been restored.");
+    }
+
+    /**
+     * Archive every approved member of a batch at once.
+     */
+    public function archiveBatch(LoanBatch $batch)
+    {
+        $count = $batch->loanRequests()->where('status', 'approved')->whereNull('archived_at')->count();
+
+        abort_if($count === 0, 422, 'This batch has no approved members left to archive.');
+
+        $batch->loanRequests()->where('status', 'approved')->whereNull('archived_at')->update(['archived_at' => now()]);
+
+        return redirect()->route('admin.approved-loans')
+            ->with('success', "{$batch->label}'s {$count} approved loan request(s) have been archived.");
+    }
+
+    /**
+     * Restore every archived member of a batch at once.
+     */
+    public function unarchiveBatch(LoanBatch $batch)
+    {
+        $count = $batch->loanRequests()->where('status', 'approved')->whereNotNull('archived_at')->count();
+
+        abort_if($count === 0, 422, 'This batch has no archived members left to restore.');
+
+        $batch->loanRequests()->where('status', 'approved')->whereNotNull('archived_at')->update(['archived_at' => null]);
+
+        return redirect()->route('admin.approved-loans', ['status' => 'archived'])
+            ->with('success', "{$batch->label}'s {$count} approved loan request(s) have been restored.");
     }
 
     /**

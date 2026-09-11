@@ -64,7 +64,7 @@
                 <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $req->display_name }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->machinery }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->units_requested > 1 ? $req->units_requested.'× ' : '' }}{{ $req->machinery }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->scheduled_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">
                         {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}
@@ -101,7 +101,7 @@
                         </div>
                         <div class="col-6">
                             <label class="text-muted small d-block">Machine Type</label>
-                            <p class="fw-medium mb-0">{{ $req->machinery }}</p>
+                            <p class="fw-medium mb-0">{{ $req->machinery }}{{ $req->units_requested > 1 ? ' ('.$req->units_requested.' units)' : '' }}</p>
                         </div>
                         <div class="col-6">
                             <label class="text-muted small d-block mb-1">Member Status</label>

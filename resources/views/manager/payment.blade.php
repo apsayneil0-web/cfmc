@@ -93,29 +93,6 @@
                         </div>
                     </td>
                 </tr>
-
-                <x-modal id="viewPaymentModal{{ $payment->kind }}{{ $payment->id }}" title="Transaction Details">
-                    <div class="row g-3">
-                        <div class="col-6"><label class="text-muted small d-block">Transaction ID</label><p class="fw-medium mb-0">{{ $payment->transaction_code }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">{{ $payment->kind === 'loan' ? 'Loan' : 'Farmer' }}</label><p class="fw-medium mb-0">{{ $payment->reference }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Payer</label><p class="fw-medium mb-0">{{ $payment->payer }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $payment->date->format('M d, Y') }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Amount</label><p class="fw-medium mb-0">{{ peso($payment->amount) }}</p></div>
-                        @if($payment->balance_after !== null)
-                        <div class="col-6"><label class="text-muted small d-block">Balance After</label><p class="fw-medium mb-0">{{ peso($payment->balance_after) }}</p></div>
-                        @endif
-                        @if($payment->notes)
-                        <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $payment->notes }}</p></div>
-                        @endif
-                    </div>
-                    @if($payment->kind === 'loan')
-                    <div class="mt-3 text-end">
-                        <a href="{{ route('manager.payment.receipt', $payment->id) }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-receipt me-1"></i> View Receipt
-                        </a>
-                    </div>
-                    @endif
-                </x-modal>
                 @empty
                 <tr>
                     <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments recorded yet.</td>
@@ -133,6 +110,32 @@
         </div>
     </div>
 </div>
+
+{{-- Modals live outside the table: a <div> can't be a direct child of <tbody>. --}}
+@foreach($payments as $payment)
+<x-modal id="viewPaymentModal{{ $payment->kind }}{{ $payment->id }}" title="Transaction Details">
+    <div class="row g-3">
+        <div class="col-6"><label class="text-muted small d-block">Transaction ID</label><p class="fw-medium mb-0">{{ $payment->transaction_code }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">{{ $payment->kind === 'loan' ? 'Loan' : 'Farmer' }}</label><p class="fw-medium mb-0">{{ $payment->reference }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Payer</label><p class="fw-medium mb-0">{{ $payment->payer }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $payment->date->format('M d, Y') }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Amount</label><p class="fw-medium mb-0">{{ peso($payment->amount) }}</p></div>
+        @if($payment->balance_after !== null)
+        <div class="col-6"><label class="text-muted small d-block">Balance After</label><p class="fw-medium mb-0">{{ peso($payment->balance_after) }}</p></div>
+        @endif
+        @if($payment->notes)
+        <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $payment->notes }}</p></div>
+        @endif
+    </div>
+    @if($payment->kind === 'loan')
+    <div class="mt-3 text-end">
+        <a href="{{ route('manager.payment.receipt', $payment->id) }}" target="_blank" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-receipt me-1"></i> View Receipt
+        </a>
+    </div>
+    @endif
+</x-modal>
+@endforeach
 
 <!-- Auto-Update Info -->
 <x-info-banner variant="success" title="Automatic Updates" class="mt-6">
@@ -205,7 +208,8 @@
                         <select name="farmer_id" id="recordCbuFarmerSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
                             <option value="" disabled selected>Select a farmer</option>
                             @forelse($cbuFarmers as $farmer)
-                            <option value="{{ $farmer->id }}" data-balance="{{ $farmer->cbu->balance ?? 0 }}">
+                            @php $hasContributed = $farmer->cbu?->transactions->where('type', 'contribution')->isNotEmpty() ?? false; @endphp
+                            <option value="{{ $farmer->id }}" data-balance="{{ $farmer->cbu->balance ?? 0 }}" data-has-contributed="{{ $hasContributed ? '1' : '0' }}" data-first-minimum="{{ $farmer->first_cbu_contribution_minimum }}">
                                 FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }} — {{ $farmer->full_name }} (CBU Balance: {{ peso($farmer->cbu->balance ?? 0) }})
                             </option>
                             @empty
@@ -214,20 +218,11 @@
                         </select>
                     </div>
                     <p class="text-muted small" id="recordCbuBalanceHint"></p>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Entry Type <span class="text-danger">*</span></label>
-                        <select name="type" class="form-select" required>
-                            <option value="contribution">Contribution</option>
-                            <option value="expense">Expense (charged against CBU balance)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Category</label>
-                        <input type="text" name="category" class="form-control" placeholder="e.g. Monthly Contribution, Share Capital">
-                    </div>
+                    <input type="hidden" name="type" value="contribution">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Amount <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
+                        <input type="number" step="0.01" min="0.01" name="amount" id="recordCbuAmountInput" class="form-control" required>
+                        <p class="text-muted small mb-0 mt-1" id="recordCbuMinimumHint"></p>
                     </div>
                     <div>
                         <label class="form-label fw-semibold">Notes</label>
@@ -288,6 +283,30 @@
         }
     });
 
+    // Every entry recorded here is a contribution: a farmer's very first one
+    // must meet their land-area-based minimum (₱4,000-₱12,000); every one
+    // after that only needs to clear a flat ₱1,000.
+    function updateCbuMinimumHint() {
+        var farmerSelect = document.getElementById('recordCbuFarmerSelect');
+        var amountInput = document.getElementById('recordCbuAmountInput');
+        var hint = document.getElementById('recordCbuMinimumHint');
+        var option = farmerSelect.options[farmerSelect.selectedIndex];
+
+        if (!option || !option.value) {
+            amountInput.removeAttribute('min');
+            hint.textContent = '';
+            return;
+        }
+
+        var hasContributed = option.getAttribute('data-has-contributed') === '1';
+        var minimum = hasContributed ? 1000 : parseFloat(option.getAttribute('data-first-minimum'));
+
+        amountInput.min = minimum;
+        hint.textContent = hasContributed
+            ? 'Minimum contribution: ₱' + minimum.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : 'First contribution minimum: ₱' + minimum.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     document.getElementById('recordCbuFarmerSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];
         var balance = option ? option.getAttribute('data-balance') : null;
@@ -296,6 +315,8 @@
         hint.textContent = balance
             ? 'Current CBU balance: ₱' + parseFloat(balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
             : '';
+
+        updateCbuMinimumHint();
     });
 </script>
 @endsection

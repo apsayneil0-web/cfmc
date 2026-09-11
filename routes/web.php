@@ -57,6 +57,10 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/admin/loan-approval/batch/{batch}/deny', [LoanApprovalController::class, 'denyBatch'])->name('admin.loan-approval.batch-deny');
 
     Route::get('/admin/approved-loans', [LoanApprovalController::class, 'approved'])->name('admin.approved-loans');
+    Route::patch('/admin/approved-loans/{loan_request}/archive', [LoanApprovalController::class, 'archive'])->name('admin.approved-loans.archive');
+    Route::patch('/admin/approved-loans/{loan_request}/unarchive', [LoanApprovalController::class, 'unarchive'])->name('admin.approved-loans.unarchive');
+    Route::patch('/admin/approved-loans/batch/{batch}/archive', [LoanApprovalController::class, 'archiveBatch'])->name('admin.approved-loans.batch-archive');
+    Route::patch('/admin/approved-loans/batch/{batch}/unarchive', [LoanApprovalController::class, 'unarchiveBatch'])->name('admin.approved-loans.batch-unarchive');
 
     Route::get('/admin/cbu', [AdminCbuController::class, 'index'])->name('admin.cbu');
 
@@ -120,6 +124,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::get('/manager/loan-appointment', [ManagerLoanAppointmentController::class, 'index'])->name('manager.loan-appointment');
     Route::patch('/manager/loan-appointment/{loan_appointment}/approve', [ManagerLoanAppointmentController::class, 'approve'])->name('manager.loan-appointment.approve');
     Route::patch('/manager/loan-appointment/{loan_appointment}/cancel', [ManagerLoanAppointmentController::class, 'cancel'])->name('manager.loan-appointment.cancel');
+    Route::post('/manager/loan-appointment/{loan_appointment}/submit-loan-request', [LoanRequestController::class, 'storeFromAppointment'])->name('manager.loan-appointment.submit-loan-request');
 
     Route::get('/manager/payment', [PaymentController::class, 'index'])->name('manager.payment');
     Route::post('/manager/payment', [PaymentController::class, 'recordLoanPayment'])->name('manager.payment.record');

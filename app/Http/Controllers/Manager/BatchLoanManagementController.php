@@ -47,8 +47,8 @@ class BatchLoanManagementController extends Controller
         if ($request->filled('search')) {
             $search = $request->string('search');
             $query->whereHas('loanRequest.farmer', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%");
+                $q->where('first_name', 'like', "{$search}%")
+                    ->orWhere('last_name', 'like', "{$search}%");
             });
         }
 

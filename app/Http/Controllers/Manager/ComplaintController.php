@@ -24,8 +24,9 @@ class ComplaintController extends Controller
         if ($request->filled('search')) {
             $search = $request->string('search');
             $query->where(function ($q) use ($search) {
-                $q->where('subject', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+                $q->where('subject', 'like', "{$search}%")
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "{$search}%")
+                        ->orWhere('name', 'like', "% {$search}%"));
             });
         }
 

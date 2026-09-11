@@ -25,9 +25,9 @@ class MachineUsageController extends Controller
 
         if ($request->filled('search')) {
             $search = mb_strtolower($request->string('search'));
-            $machines = $machines->filter(fn (Machine $m) => str_contains(mb_strtolower($m->name), $search)
-                || str_contains(mb_strtolower((string) $m->brand), $search)
-                || str_contains(mb_strtolower((string) $m->serial_number), $search));
+            $machines = $machines->filter(fn (Machine $m) => str_starts_with(mb_strtolower($m->name), $search)
+                || str_starts_with(mb_strtolower((string) $m->brand), $search)
+                || str_starts_with(mb_strtolower((string) $m->serial_number), $search));
         }
 
         if ($request->filled('status')) {

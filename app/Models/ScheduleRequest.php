@@ -76,6 +76,7 @@ class ScheduleRequest extends Model
         'machinery',
         'machine_id',
         'land_size',
+        'units_requested',
         'crop_id',
         'scheduled_date',
         'start_time',
@@ -94,6 +95,7 @@ class ScheduleRequest extends Model
     {
         return [
             'scheduled_date' => 'date',
+            'units_requested' => 'integer',
             'is_reschedule' => 'boolean',
             'harvest_yield' => 'decimal:2',
             'archived_at' => 'datetime',
@@ -139,14 +141,18 @@ class ScheduleRequest extends Model
     }
 
     /**
-     * Whether this request overlaps with another active (pending/approved) request
-     * for the same machine and date. Used to prevent double-booking.
+     * Whether booking $unitsRequested more units of this machine for this
+     * date/time would exceed how many physical units it has (Machine::quantity).
+     * A machine record with quantity > 1 (e.g. 3 seeders) can service that many
+     * overlapping bookings at once before it's actually a conflict.
      */
-    public static function hasConflict(?int $machineId, string $date, ?string $startTime, ?string $endTime, ?int $excludeId = null): bool
+    public static function hasConflict(?int $machineId, string $date, ?string $startTime, ?string $endTime, ?int $excludeId = null, int $unitsRequested = 1): bool
     {
         if (! $machineId) {
             return false;
         }
+
+        $quantity = max(1, (int) (Machine::find($machineId)?->quantity ?? 1));
 
         $query = self::where('machine_id', $machineId)
             ->where('scheduled_date', $date)
@@ -164,7 +170,9 @@ class ScheduleRequest extends Model
             });
         }
 
-        return $query->exists();
+        $unitsAlreadyBooked = (int) $query->sum('units_requested');
+
+        return ($unitsAlreadyBooked + $unitsRequested) > $quantity;
     }
 
     /**

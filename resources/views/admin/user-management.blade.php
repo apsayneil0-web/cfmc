@@ -11,8 +11,11 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             <div class="d-flex align-items-center gap-3 flex-grow-1 flex-wrap">
                 <div class="position-relative">
-                    <input type="text" id="searchInput" placeholder="Search users..." class="form-control ps-5 py-2" style="min-width: 200px;" value="{{ request('search') }}">
-                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
+                    <input type="text" id="searchInput" placeholder="Search users..." class="form-control ps-5 pe-5 py-2" style="min-width: 220px;" value="{{ request('search') }}" autocomplete="off">
+                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" id="searchIcon" style="font-size: 14px;"></i>
+                    <button type="button" id="searchClearBtn" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y text-muted p-0 pe-3 border-0 bg-transparent {{ request('search') ? '' : 'd-none' }}" title="Clear search" aria-label="Clear search">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
                 </div>
                 <select id="roleFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
                     <option value="">All Roles</option>
@@ -1039,8 +1042,14 @@
     // Search and Filter Functionality — filters the full user list on the
     // server (not just the rows on the current page).
     var searchInput = document.getElementById('searchInput');
+    var searchIcon = document.getElementById('searchIcon');
+    var searchClearBtn = document.getElementById('searchClearBtn');
     var roleFilter = document.getElementById('roleFilter');
     var statusFilter = document.getElementById('statusFilter');
+
+    function toggleSearchClearBtn() {
+        searchClearBtn.classList.toggle('d-none', !searchInput.value);
+    }
 
     function applyUserFilters() {
         var currentUrl = new URL(window.location.href);
@@ -1064,24 +1073,47 @@
         }
 
         currentUrl.searchParams.delete('page');
+
+        // Give feedback that the search is in flight since navigation isn't instant.
+        searchIcon.className = 'fas fa-spinner fa-spin position-absolute start-3 top-50 translate-middle-y text-muted';
+        searchInput.disabled = true;
+
         window.location.href = currentUrl.toString();
     }
 
     searchInput.addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
             event.preventDefault();
+            clearTimeout(userSearchTimeout);
             applyUserFilters();
         }
     });
 
     var userSearchTimeout;
     searchInput.addEventListener('input', function() {
+        toggleSearchClearBtn();
         clearTimeout(userSearchTimeout);
         userSearchTimeout = setTimeout(applyUserFilters, 500);
     });
 
+    searchClearBtn.addEventListener('click', function() {
+        clearTimeout(userSearchTimeout);
+        searchInput.value = '';
+        toggleSearchClearBtn();
+        applyUserFilters();
+    });
+
     roleFilter.addEventListener('change', applyUserFilters);
     statusFilter.addEventListener('change', applyUserFilters);
+
+    // Restore focus (with cursor at the end) after a search reloads the page,
+    // so typing feels continuous instead of resetting to the top of the page.
+    searchInput.focus();
+    if (searchInput.value) {
+        var restoredValue = searchInput.value;
+        searchInput.value = '';
+        searchInput.value = restoredValue;
+    }
 
     // Activate / Deactivate Account Function (Manager and Farmer accounts only)
     function toggleUserStatus(userId, currentStatus) {

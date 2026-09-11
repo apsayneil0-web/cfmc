@@ -880,6 +880,21 @@ body.bg-light {
     background-color: var(--brand-warning-light);
 }
 
+/* -------------------------------------------------------------------------
+   Machinery chip picker (farmer schedule request)
+   ------------------------------------------------------------------------- */
+.machinery-chip {
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+}
+.machinery-chip .d-block {
+    font-weight: 400;
+    line-height: 1.3;
+}
+
 /* Compact rendering: forced via .is-compact (dashboard widgets), and
    automatically below the sm breakpoint for the full-size calendars too. */
 .is-compact .calendar-day-label {

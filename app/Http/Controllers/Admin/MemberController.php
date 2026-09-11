@@ -17,7 +17,10 @@ class MemberController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"]);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"])
+                    ->orWhere('last_name', 'like', "{$search}%");
+            });
         }
 
         if ($request->filled('status')) {

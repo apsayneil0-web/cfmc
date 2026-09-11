@@ -12,6 +12,12 @@ class LoanAppointment extends Model
         'appointment_date',
         'appointment_time',
         'purpose',
+        'requested_amount',
+        'loan_purpose',
+        'repayment_terms_months',
+        'collateral',
+        'documents_path',
+        'loan_request_id',
         'status',
     ];
 
@@ -25,5 +31,14 @@ class LoanAppointment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The official LoanRequest a Manager encoded from this appointment's
+     * loan pre-request, once submitted — null until then.
+     */
+    public function loanRequest(): BelongsTo
+    {
+        return $this->belongsTo(LoanRequest::class);
     }
 }

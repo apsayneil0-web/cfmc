@@ -28,10 +28,11 @@ class LoanAppointmentController extends Controller
         if ($request->filled('search')) {
             $search = $request->string('search');
             $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('name', 'like', "{$search}%")
+                    ->orWhere('name', 'like', "% {$search}%")
                     ->orWhereHas('farmer', function ($f) use ($search) {
-                        $f->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
+                        $f->where('first_name', 'like', "{$search}%")
+                            ->orWhere('last_name', 'like', "{$search}%");
                     });
             });
         }

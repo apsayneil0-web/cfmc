@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Farmer;
 use App\Models\Loan;
+use App\Models\LoanAppointment;
 use App\Models\LoanBatch;
 use App\Models\LoanRequest;
 use Illuminate\Http\Request;
@@ -41,8 +42,8 @@ class LoanRequestController extends Controller
         if ($request->filled('search')) {
             $search = $request->string('search');
             $query->whereHas('farmer', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%");
+                $q->where('first_name', 'like', "{$search}%")
+                    ->orWhere('last_name', 'like', "{$search}%");
             });
         }
 
@@ -121,6 +122,60 @@ class LoanRequestController extends Controller
 
         return redirect()->route('manager.loan-request')
             ->with('success', 'Loan request submitted successfully.');
+    }
+
+    /**
+     * One-click submission of an approved appointment's loan pre-request
+     * straight to the Administrator — no manual re-entry. Still goes through
+     * the exact same validateRequest() rules (CBU eligibility for regular
+     * loans included) as any other request, so an appointment that
+     * wouldn't otherwise qualify gets rejected with a clear reason instead
+     * of silently going through just because a manager clicked a button.
+     */
+    public function storeFromAppointment(LoanAppointment $loan_appointment)
+    {
+        abort_if($loan_appointment->status !== 'approved', 422, 'Only approved appointments can be submitted.');
+        abort_if(! $loan_appointment->requested_amount, 422, 'This appointment has no loan pre-request attached.');
+        abort_if($loan_appointment->loan_request_id, 422, 'This appointment has already been submitted.');
+
+        $farmer = $loan_appointment->user->farmer;
+
+        abort_if(! $farmer, 422, 'This account has no linked farmer membership record.');
+
+        $syntheticRequest = new Request();
+        $syntheticRequest->merge([
+            'farmer_id' => $farmer->id,
+            'type' => 'regular',
+            'requested_amount' => $loan_appointment->requested_amount,
+            'purpose' => $loan_appointment->loan_purpose,
+            'repayment_terms_months' => $loan_appointment->repayment_terms_months,
+            'collateral' => $loan_appointment->collateral,
+        ]);
+
+        try {
+            $validated = $this->validateRequest($syntheticRequest);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('manager.loan-appointment')
+                ->withErrors($e->validator);
+        }
+
+        $loanRequest = LoanRequest::create([
+            'farmer_id' => $validated['farmer_id'],
+            'requested_by' => Auth::id(),
+            'type' => 'regular',
+            'batch_id' => null,
+            'requested_amount' => $validated['requested_amount'],
+            'purpose' => $validated['purpose'],
+            'repayment_terms_months' => $validated['repayment_terms_months'],
+            'collateral' => $validated['collateral'] ?? null,
+            'documents_path' => $loan_appointment->documents_path,
+            'status' => 'pending',
+        ]);
+
+        $loan_appointment->update(['loan_request_id' => $loanRequest->id]);
+
+        return redirect()->route('manager.loan-appointment')
+            ->with('success', "Loan request for {$farmer->full_name} has been submitted to the Administrator for approval.");
     }
 
     /**
@@ -329,6 +384,28 @@ class LoanRequestController extends Controller
                 'numeric',
                 'min:1',
                 function ($attribute, $value, $fail) use ($request) {
+                    if ($request->input('type') === 'regular') {
+                        $farmer = Farmer::with('cbu')->find($request->input('farmer_id'));
+
+                        if (! $farmer) {
+                            return;
+                        }
+
+                        $eligibility = $farmer->regular_loan_eligibility;
+
+                        if (! $eligibility['eligible']) {
+                            $fail("Your CBU balance is ".peso($eligibility['cbu_balance']).". A minimum of ".peso($eligibility['min_cbu'])." is required to request a Regular Loan.");
+
+                            return;
+                        }
+
+                        if ($value > $eligibility['max_loanable']) {
+                            $fail("Your CBU balance is ".peso($eligibility['cbu_balance']).". The maximum Regular Loan you can request is ".peso($eligibility['max_loanable']).".");
+                        }
+
+                        return;
+                    }
+
                     if ($request->input('type') !== 'batch') {
                         return;
                     }

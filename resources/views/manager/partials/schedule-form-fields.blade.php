@@ -42,14 +42,21 @@
             <label class="form-label fw-semibold">Machinery <span class="text-danger">*</span></label>
             <select name="machinery" class="form-select" required>
                 @foreach($machineryList as $machine)
-                <option value="{{ $machine }}" {{ old('machinery', $schedule->machinery ?? '') == $machine ? 'selected' : '' }}>{{ $machine }}</option>
+                <option value="{{ $machine }}" data-quantity="{{ $machineQuantities[$machine] ?? 1 }}" {{ old('machinery', $schedule->machinery ?? '') == $machine ? 'selected' : '' }}>{{ $machine }}</option>
                 @endforeach
             </select>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Units Needed</label>
+            <select name="units_requested" class="form-select" data-selected="{{ old('units_requested', $schedule->units_requested ?? 1) }}">
+                <option value="1">1 unit</option>
+            </select>
+            <small class="text-muted">More than one works the land in parallel.</small>
+        </div>
+        <div class="col-md-3">
             <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
             <input type="number" step="0.1" min="0.1" name="land_size" class="form-control" value="{{ old('land_size', $schedule->land_size ?? '') }}" required>
-            <small class="text-muted">End Time is estimated at {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }} hrs/hectare and can be adjusted.</small>
+            <small class="text-muted">End Time is estimated at {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }} hrs/hectare per unit.</small>
         </div>
         <div class="col-md-6">
             <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>

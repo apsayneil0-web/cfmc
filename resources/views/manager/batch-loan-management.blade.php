@@ -112,6 +112,7 @@
                     <th class="small">Loan ID</th>
                     <th class="small">Farmer</th>
                     <th class="small">Principal</th>
+                    <th class="small">Repayment Terms</th>
                     <th class="small">Balance</th>
                     <th class="small">Monthly Due</th>
                     <th class="small">Next Due</th>
@@ -125,6 +126,7 @@
                     <td class="small fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="small">{{ $loan->farmer->full_name }}</td>
                     <td class="small">{{ peso($loan->principal_amount) }}</td>
+                    <td class="small text-muted">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' (now '.$loan->current_installment_number.')' : '' }}</td>
                     <td class="small fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
                     <td class="small text-muted">{{ peso($loan->monthly_due) }}</td>
                     <td class="small {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>

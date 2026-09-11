@@ -45,6 +45,15 @@ class Machine extends Model
     }
 
     /**
+     * Daily hectare capacity, scaled by how many physical units this record
+     * represents — daily_hectare_limit is what a single unit can service.
+     */
+    public function getEffectiveDailyLimitAttribute(): float
+    {
+        return (float) $this->daily_hectare_limit * max(1, (int) $this->quantity);
+    }
+
+    /**
      * Total hours actually worked, summed from every completed booking's
      * start/end time. Replaces manual entry so the figure can't drift from
      * what was really scheduled.

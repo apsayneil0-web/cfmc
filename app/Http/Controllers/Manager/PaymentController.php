@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\Auth;
 class PaymentController extends Controller
 {
     /**
+     * Minimum for every CBU contribution after a farmer's first. The first
+     * contribution's minimum instead depends on land area — see
+     * Farmer::first_cbu_contribution_minimum.
+     */
+    private const CBU_SUBSEQUENT_CONTRIBUTION_MINIMUM = 1000;
+
+    /**
      * Display recorded loan payments, CBU transactions, and cooperative
      * expenses (operational/replaceable parts) in one unified feed.
      */
@@ -81,7 +88,7 @@ class PaymentController extends Controller
             ->get();
 
         $cbuFarmers = Farmer::where('status', 'approved')
-            ->with('cbu')
+            ->with('cbu.transactions')
             ->orderBy('last_name')
             ->get();
 
@@ -113,6 +120,26 @@ class PaymentController extends Controller
             ['farmer_id' => $validated['farmer_id']],
             ['balance' => 0, 'status' => 'active']
         );
+
+        if ($validated['type'] === 'contribution') {
+            $hasContributed = $cbu->transactions()->where('type', 'contribution')->exists();
+
+            if ($hasContributed) {
+                abort_if(
+                    (float) $validated['amount'] < self::CBU_SUBSEQUENT_CONTRIBUTION_MINIMUM,
+                    422,
+                    'CBU contributions must be at least '.peso(self::CBU_SUBSEQUENT_CONTRIBUTION_MINIMUM).'.'
+                );
+            } else {
+                $minimum = $cbu->farmer->first_cbu_contribution_minimum;
+
+                abort_if(
+                    (float) $validated['amount'] < $minimum,
+                    422,
+                    "This farmer's first CBU contribution must be at least ".peso($minimum).'.'
+                );
+            }
+        }
 
         abort_if($validated['type'] === 'expense' && (float) $validated['amount'] > (float) $cbu->balance, 422, 'Amount exceeds the farmer\'s CBU balance.');
 

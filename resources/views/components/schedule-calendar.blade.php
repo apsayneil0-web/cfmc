@@ -50,7 +50,8 @@
                 <p class="calendar-cell-date">{{ $day }}</p>
                 @forelse($calendarDays[$day] as $booking)
                 @php
-                    $label = $showNames ? $booking->display_name.' - '.$booking->machinery : $booking->machinery;
+                    $machineryLabel = ($booking->units_requested > 1 ? $booking->units_requested.'× ' : '').$booking->machinery;
+                    $label = $showNames ? $booking->display_name.' - '.$machineryLabel : $machineryLabel;
                     $timeRange = \Carbon\Carbon::parse($booking->start_time)->format('g:iA').'-'.\Carbon\Carbon::parse($booking->end_time)->format('g:iA');
                 @endphp
                 <div class="calendar-booking {{ $statusClass }}" title="{{ $label }} ({{ $timeRange }})">

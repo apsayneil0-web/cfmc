@@ -130,4 +130,36 @@ class Farmer extends Model
     {
         return $this->hasOne(Cbu::class);
     }
+
+    /**
+     * Minimum size required for every farmer's very first CBU contribution:
+     * a flat ₱4,000, regardless of land area. Every contribution after the
+     * first only needs to clear a flat ₱1,000 minimum, enforced separately
+     * where contributions are recorded.
+     */
+    public function getFirstCbuContributionMinimumAttribute(): int
+    {
+        return 4000;
+    }
+
+    /**
+     * Regular Loan CBU eligibility: a farmer needs at least ₱4,000 in their
+     * CBU fund to request a Regular Loan at all, and may borrow at most
+     * twice their actual CBU balance. Single source of truth shared by the
+     * Manager's Loan Request form and the farmer's own Loan Appointment
+     * pre-request, so both enforce the identical rule instead of two copies
+     * that could drift apart.
+     */
+    public function getRegularLoanEligibilityAttribute(): array
+    {
+        $minCbu = 4000;
+        $balance = (float) ($this->cbu->balance ?? 0);
+
+        return [
+            'cbu_balance' => $balance,
+            'min_cbu' => $minCbu,
+            'eligible' => $balance >= $minCbu,
+            'max_loanable' => $balance * 2,
+        ];
+    }
 }

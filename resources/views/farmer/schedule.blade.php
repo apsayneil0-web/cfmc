@@ -98,25 +98,31 @@
                 <div class="modal-body">
                     <p class="text-muted small mb-3 d-none" id="scheduleRequestSelectedDateHint"></p>
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-12">
                             <label class="form-label fw-semibold">Machinery Type <span class="text-danger">*</span></label>
-                            <div class="d-flex flex-column gap-2">
+                            <div class="d-flex flex-wrap gap-2">
                                 @foreach($machinery as $machine)
-                                <div class="form-check border rounded-lg p-2 {{ $machine['status'] == 'Unavailable' ? 'opacity-50' : '' }}">
-                                    <input class="form-check-input" type="radio" name="machinery" id="machinery{{ $loop->index }}"
-                                        value="{{ $machine['name'] }}" {{ $machine['status'] == 'Unavailable' ? 'disabled' : '' }}
-                                        {{ old('machinery') == $machine['name'] ? 'checked' : '' }} required>
-                                    <label class="form-check-label" for="machinery{{ $loop->index }}">
-                                        {{ $machine['name'] }}
-                                    </label>
-                                </div>
+                                <input type="radio" class="btn-check" name="machinery" id="machinery{{ $loop->index }}"
+                                    value="{{ $machine['name'] }}" data-quantity="{{ $machine['quantity'] }}" {{ $machine['status'] == 'Unavailable' ? 'disabled' : '' }}
+                                    {{ old('machinery') == $machine['name'] ? 'checked' : '' }} autocomplete="off" required>
+                                <label class="btn btn-outline-success machinery-chip" for="machinery{{ $loop->index }}">
+                                    <i class="fas fa-tractor me-1"></i>{{ $machine['name'] }}
+                                    @if($machine['status'] == 'Unavailable')<span class="d-block small text-muted">Unavailable</span>@endif
+                                </label>
                                 @endforeach
                             </div>
                         </div>
                         <div class="col-md-4">
+                            <label class="form-label fw-semibold">Units Needed</label>
+                            <select name="units_requested" id="scheduleRequestUnits" class="form-select">
+                                <option value="1">1 unit</option>
+                            </select>
+                            <small class="text-muted">Request more than one to work your land in parallel and finish faster.</small>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
                             <input type="number" step="0.1" min="0.1" id="scheduleRequestLandSize" name="land_size" class="form-control" value="{{ old('land_size') }}" required>
-                            <small class="text-muted">End Time is estimated at {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }} hrs/hectare and can be adjusted.</small>
+                            <small class="text-muted">End Time is estimated at {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }} hrs/hectare per unit and can be adjusted.</small>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
@@ -140,7 +146,7 @@
                             <label class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
                             <input type="time" id="scheduleRequestEndTime" name="end_time" class="form-control" value="{{ old('end_time') }}" required>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">Farm Location <span class="text-danger">*</span></label>
                             <input type="text" name="location" class="form-control" value="{{ old('location') }}" placeholder="e.g. Brgy. San Jose" required>
                         </div>
@@ -163,18 +169,40 @@
     function estimateScheduleRequestEndTime() {
         var landSize = parseFloat(document.getElementById('scheduleRequestLandSize').value);
         var startTime = document.getElementById('scheduleRequestStartTime').value;
+        var units = parseInt(document.getElementById('scheduleRequestUnits').value, 10) || 1;
 
         if (!landSize || landSize <= 0 || !startTime) {
             return;
         }
 
-        var totalMinutes = Math.round(landSize * SCHEDULE_HOURS_PER_HECTARE * 60 / 5) * 5;
+        var totalMinutes = Math.round((landSize / units) * SCHEDULE_HOURS_PER_HECTARE * 60 / 5) * 5;
         var parts = startTime.split(':');
         var end = new Date(0, 0, 0, parseInt(parts[0], 10), parseInt(parts[1], 10));
         end.setMinutes(end.getMinutes() + totalMinutes);
 
         document.getElementById('scheduleRequestEndTime').value =
             String(end.getHours()).padStart(2, '0') + ':' + String(end.getMinutes()).padStart(2, '0');
+    }
+
+    function refreshScheduleRequestUnits() {
+        var checked = document.querySelector('input[name="machinery"]:checked');
+        var quantity = checked ? parseInt(checked.dataset.quantity, 10) || 1 : 1;
+        var select = document.getElementById('scheduleRequestUnits');
+        var oldUnits = parseInt(@json(old('units_requested', 1)), 10) || 1;
+        var previousValue = parseInt(select.value, 10) || 1;
+        var desired = select.dataset.initialized ? previousValue : oldUnits;
+
+        select.innerHTML = '';
+        for (var i = 1; i <= quantity; i++) {
+            var option = document.createElement('option');
+            option.value = i;
+            option.textContent = i === 1 ? '1 unit' : (i + ' units (parallel)');
+            select.appendChild(option);
+        }
+        select.value = Math.min(desired, quantity);
+        select.dataset.initialized = '1';
+
+        estimateScheduleRequestEndTime();
     }
 
     function openScheduleRequestModal(date) {
@@ -214,6 +242,11 @@
 
         document.getElementById('scheduleRequestLandSize').addEventListener('input', estimateScheduleRequestEndTime);
         document.getElementById('scheduleRequestStartTime').addEventListener('input', estimateScheduleRequestEndTime);
+        document.getElementById('scheduleRequestUnits').addEventListener('change', estimateScheduleRequestEndTime);
+        document.querySelectorAll('input[name="machinery"]').forEach(function (radio) {
+            radio.addEventListener('change', refreshScheduleRequestUnits);
+        });
+        refreshScheduleRequestUnits();
     });
 </script>
 
@@ -239,7 +272,7 @@
                 @forelse($requests as $req)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-dark fw-medium" data-label="Machinery">
-                        {{ $req->machinery }}
+                        {{ $req->units_requested > 1 ? $req->units_requested.'× ' : '' }}{{ $req->machinery }}
                         @if($req->is_reschedule)<span class="badge bg-info-subtle text-info border border-info-subtle ms-1">Reschedule</span>@endif
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Land Size">{{ $req->land_size }} ha</td>

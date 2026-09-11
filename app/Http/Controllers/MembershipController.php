@@ -27,15 +27,7 @@ class MembershipController extends Controller
         // Search functionality
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('first_name', 'like', '%' . $search . '%')
-                  ->orWhere('middle_initial', 'like', '%' . $search . '%')
-                  ->orWhere('last_name', 'like', '%' . $search . '%')
-                  ->orWhere('suffix', 'like', '%' . $search . '%')
-                  ->orWhere('contact_number', 'like', '%' . $search . '%')
-                  ->orWhere('municipality', 'like', '%' . $search . '%')
-                  ->orWhere('province', 'like', '%' . $search . '%');
-            });
+            $query->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"]);
         }
 
         // Filter by status

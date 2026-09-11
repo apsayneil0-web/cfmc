@@ -19,6 +19,7 @@ class ScheduleController extends Controller
         $machinery = $machines->map(fn (Machine $m) => [
             'name' => $m->name,
             'status' => $m->status === 'maintenance' ? 'Unavailable' : 'Available',
+            'quantity' => max(1, (int) $m->quantity),
         ])->all();
         $machineryList = $machines->pluck('name')->all();
         $crops = Crop::orderBy('name')->get();
@@ -49,12 +50,13 @@ class ScheduleController extends Controller
     {
         $validated = $this->validateRequest($request);
         $machine = Machine::whereNull('archived_at')->where('name', $validated['machinery'])->firstOrFail();
+        $unitsRequested = min(max(1, (int) ($validated['units_requested'] ?? 1)), max(1, (int) $machine->quantity));
 
-        if (ScheduleRequest::hasConflict($machine->id, $validated['scheduled_date'], $validated['start_time'], $validated['end_time'])) {
-            return back()->withErrors(['machinery' => 'This machinery is already booked for an overlapping date/time. Please choose another slot.'])->withInput();
+        if (ScheduleRequest::hasConflict($machine->id, $validated['scheduled_date'], $validated['start_time'], $validated['end_time'], null, $unitsRequested)) {
+            return back()->withErrors(['machinery' => "Not enough {$machine->name} units are free for that date/time. Please request fewer units or choose another slot."])->withInput();
         }
 
-        $dailyLimit = (float) $machine->daily_hectare_limit;
+        $dailyLimit = $machine->effective_daily_limit;
 
         if (ScheduleRequest::wouldExceedDailyCapacity($machine->id, $validated['scheduled_date'], (float) $validated['land_size'], $dailyLimit)) {
             $remaining = ScheduleRequest::remainingCapacity($machine->id, $validated['scheduled_date'], $dailyLimit);
@@ -70,6 +72,7 @@ class ScheduleController extends Controller
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
             'land_size' => $validated['land_size'],
+            'units_requested' => $unitsRequested,
             'crop_id' => $validated['crop_id'],
             'scheduled_date' => $validated['scheduled_date'],
             'start_time' => $validated['start_time'],
@@ -101,11 +104,11 @@ class ScheduleController extends Controller
             'scheduled_date.after_or_equal' => 'The schedule date must be at least '.ScheduleRequest::MIN_LEAD_DAYS.' days from today.',
         ]);
 
-        if (ScheduleRequest::hasConflict($schedule->machine_id, $validated['scheduled_date'], $validated['start_time'], $validated['end_time'], $schedule->id)) {
+        if (ScheduleRequest::hasConflict($schedule->machine_id, $validated['scheduled_date'], $validated['start_time'], $validated['end_time'], $schedule->id, $schedule->units_requested)) {
             return back()->withErrors(['scheduled_date' => 'This machinery is already booked for an overlapping date/time. Please choose another slot.'])->withInput();
         }
 
-        $dailyLimit = (float) ($schedule->machine?->daily_hectare_limit ?? Machine::DEFAULT_DAILY_HECTARE_LIMIT);
+        $dailyLimit = $schedule->machine?->effective_daily_limit ?? Machine::DEFAULT_DAILY_HECTARE_LIMIT;
 
         if (ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $validated['scheduled_date'], (float) $schedule->land_size, $dailyLimit, $schedule->id)) {
             $remaining = ScheduleRequest::remainingCapacity($schedule->machine_id, $validated['scheduled_date'], $dailyLimit, $schedule->id);
@@ -119,6 +122,7 @@ class ScheduleController extends Controller
             'machinery' => $schedule->machinery,
             'machine_id' => $schedule->machine_id,
             'land_size' => $schedule->land_size,
+            'units_requested' => $schedule->units_requested,
             'crop_id' => $schedule->crop_id,
             'scheduled_date' => $validated['scheduled_date'],
             'start_time' => $validated['start_time'],
@@ -140,6 +144,7 @@ class ScheduleController extends Controller
         return $request->validate([
             'machinery' => ['required', 'string', Rule::in($machineryNames)],
             'land_size' => 'required|numeric|min:0.1',
+            'units_requested' => 'nullable|integer|min:1',
             'crop_id' => 'required|exists:crops,id',
             'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',

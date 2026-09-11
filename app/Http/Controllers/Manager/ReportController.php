@@ -24,6 +24,7 @@ class ReportController extends Controller
         $memberId = $request->get('member_id');
 
         $farmers = Farmer::where('status', 'approved')->orderBy('last_name')->get();
+        $selectedFarmer = $memberId ? $farmers->firstWhere('id', $memberId) : null;
 
         $rows = match ($reportType) {
             'harvesting' => $this->harvestingRows($dateFrom, $dateTo, $memberId),
@@ -37,7 +38,7 @@ class ReportController extends Controller
             'maintenance' => $this->maintenanceTierBreakdown($rows),
         };
 
-        return view('manager.reporting', compact('reportType', 'dateFrom', 'dateTo', 'memberId', 'farmers', 'rows', 'breakdown'));
+        return view('manager.reporting', compact('reportType', 'dateFrom', 'dateTo', 'memberId', 'farmers', 'selectedFarmer', 'rows', 'breakdown'));
     }
 
     public function export(Request $request): StreamedResponse

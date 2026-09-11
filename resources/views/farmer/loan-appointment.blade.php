@@ -44,6 +44,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Time</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Purpose</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan Requested</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
@@ -54,6 +55,14 @@
                     <td class="px-4 px-md-6 py-4 text-dark fw-medium" data-label="Date">{{ $appointment->appointment_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Time">{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Purpose">{{ $appointment->purpose }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Loan Requested">
+                        @if($appointment->requested_amount)
+                        {{ peso($appointment->requested_amount) }}
+                        <div class="small text-muted">{{ $appointment->loan_purpose }} &bull; {{ $appointment->repayment_terms_months }} mo.</div>
+                        @else
+                        —
+                        @endif
+                    </td>
                     <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucfirst($appointment->status)" /></td>
                     <td class="px-4 px-md-6 py-4" data-label="Actions">
                         @if($appointment->status == 'pending')
@@ -75,7 +84,7 @@
                                 <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Reschedule Appointment</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <form action="{{ route('farmer.loan-appointment.update', $appointment->id) }}" method="POST">
+                            <form action="{{ route('farmer.loan-appointment.update', $appointment->id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 <div class="modal-body">
@@ -88,8 +97,57 @@
                                         <input type="time" name="appointment_time" class="form-control" value="{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('H:i') }}" required>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label fw-semibold">Purpose</label>
+                                        <label class="form-label fw-semibold">Appointment Notes</label>
                                         <input type="text" name="purpose" class="form-control" value="{{ $appointment->purpose }}" required>
+                                    </div>
+                                    <hr>
+                                    <h6 class="fw-semibold mb-3">Loan Details</h6>
+                                    @if($loanEligibility)
+                                    <div class="alert {{ $loanEligibility['eligible'] ? 'alert-info' : 'alert-warning' }} py-2 px-3 small mb-3">
+                                        @if($loanEligibility['eligible'])
+                                        Your CBU balance is {{ peso($loanEligibility['cbu_balance']) }} — maximum loan you can request: <strong>{{ peso($loanEligibility['max_loanable']) }}</strong>.
+                                        @else
+                                        Your CBU balance is {{ peso($loanEligibility['cbu_balance']) }}. A minimum of {{ peso($loanEligibility['min_cbu']) }} is required before you can request a loan.
+                                        @endif
+                                    </div>
+                                    @endif
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3 mb-md-0">
+                                            <label class="form-label fw-semibold">Loan Amount <span class="text-danger">*</span></label>
+                                            <input type="number" step="0.01" min="1" @if($loanEligibility) max="{{ $loanEligibility['max_loanable'] }}" @endif name="requested_amount" class="form-control" value="{{ $appointment->requested_amount }}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Purpose <span class="text-danger">*</span></label>
+                                            <select name="loan_purpose" class="form-select" required>
+                                                <option value="">Select Purpose</option>
+                                                @foreach($loanPurposes as $purpose)
+                                                <option value="{{ $purpose }}" {{ $appointment->loan_purpose === $purpose ? 'selected' : '' }}>{{ $purpose }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3 mb-md-0">
+                                            <label class="form-label fw-semibold">Repayment Terms <span class="text-danger">*</span></label>
+                                            <select name="repayment_terms_months" class="form-select" required>
+                                                <option value="">Select Terms</option>
+                                                @foreach($loanTerms as $term)
+                                                <option value="{{ $term }}" {{ (int) $appointment->repayment_terms_months === $term ? 'selected' : '' }}>{{ $term }} months</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Collateral</label>
+                                            <input type="text" name="collateral" class="form-control" value="{{ $appointment->collateral }}" placeholder="Describe collateral">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="form-label fw-semibold">Collateral Proof</label>
+                                        <x-collateral-proof-input
+                                            id="documentsEdit{{ $appointment->id }}"
+                                            :existing-label="$appointment->documents_path ? 'Current file on record — choose a new one only to replace it.' : null"
+                                            parent-modal-id="editModal{{ $appointment->id }}"
+                                        />
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-light">
@@ -125,7 +183,7 @@
                 </div>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">No loan appointments yet.</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No loan appointments yet.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -141,7 +199,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-calendar-plus me-2"></i>New Loan Appointment</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('farmer.loan-appointment.store') }}" method="POST">
+            <form action="{{ route('farmer.loan-appointment.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -153,8 +211,54 @@
                         <input type="time" name="appointment_time" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Purpose <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Appointment Notes <span class="text-danger">*</span></label>
                         <input type="text" name="purpose" class="form-control" placeholder="e.g. Discuss loan application requirements" required>
+                    </div>
+                    <hr>
+                    <h6 class="fw-semibold mb-3">Loan Details</h6>
+                    <p class="text-muted small mb-3">Tell us what you're looking for so the Manager can review it before your appointment. This is a pre-request — your Manager will confirm it and encode the official loan request when you meet.</p>
+                    @if($loanEligibility)
+                    <div class="alert {{ $loanEligibility['eligible'] ? 'alert-info' : 'alert-warning' }} py-2 px-3 small mb-3">
+                        @if($loanEligibility['eligible'])
+                        Your CBU balance is {{ peso($loanEligibility['cbu_balance']) }} — maximum loan you can request: <strong>{{ peso($loanEligibility['max_loanable']) }}</strong>.
+                        @else
+                        Your CBU balance is {{ peso($loanEligibility['cbu_balance']) }}. A minimum of {{ peso($loanEligibility['min_cbu']) }} is required before you can request a loan.
+                        @endif
+                    </div>
+                    @endif
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Loan Amount <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="1" @if($loanEligibility) max="{{ $loanEligibility['max_loanable'] }}" @endif name="requested_amount" class="form-control" placeholder="&#8369;0.00" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Purpose <span class="text-danger">*</span></label>
+                            <select name="loan_purpose" class="form-select" required>
+                                <option value="">Select Purpose</option>
+                                @foreach($loanPurposes as $purpose)
+                                <option value="{{ $purpose }}">{{ $purpose }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Repayment Terms <span class="text-danger">*</span></label>
+                            <select name="repayment_terms_months" class="form-select" required>
+                                <option value="">Select Terms</option>
+                                @foreach($loanTerms as $term)
+                                <option value="{{ $term }}">{{ $term }} months</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Collateral</label>
+                            <input type="text" name="collateral" class="form-control" placeholder="Describe collateral">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold">Collateral Proof</label>
+                        <x-collateral-proof-input id="documentsCreate" />
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

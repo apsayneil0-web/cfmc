@@ -62,17 +62,19 @@
             <a href="{{ route('manager.machine-schedule', request()->except('status')) }}" class="btn btn-link btn-sm">Clear Status</a>
             @endif
         </form>
-        <div class="d-flex align-items-center gap-2">
-            <button type="button" id="moveOneDayBtn" class="btn btn-outline-info d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" id="moveOneDayBtn" class="btn btn-outline-info btn-sm d-inline-flex align-items-center gap-1 text-nowrap" title="Pick specific date(s) to move">
                 <i class="fas fa-calendar-day"></i><span>Move One Day</span>
             </button>
-            <button class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shiftDayBackwardModal">
-                <i class="fas fa-backward"></i><span>Move Schedule −1 Day</span>
-            </button>
-            <button class="btn btn-outline-warning d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#shiftDayModal">
-                <i class="fas fa-forward"></i><span>Move Schedule +1 Day</span>
-            </button>
-            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Move every schedule">
+                <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 text-nowrap" data-bs-toggle="modal" data-bs-target="#shiftDayBackwardModal" title="Move every schedule back 1 day">
+                    <i class="fas fa-backward"></i><span>−1 Day</span>
+                </button>
+                <button type="button" class="btn btn-outline-warning d-inline-flex align-items-center gap-1 text-nowrap" data-bs-toggle="modal" data-bs-target="#shiftDayModal" title="Move every schedule forward 1 day">
+                    <i class="fas fa-forward"></i><span>+1 Day</span>
+                </button>
+            </div>
+            <button class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 text-nowrap" data-bs-toggle="modal" data-bs-target="#createModal">
                 <i class="fas fa-plus"></i><span>Add Schedule</span>
             </button>
         </div>
@@ -138,7 +140,7 @@
                 <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $req->display_name }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->machinery }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->units_requested > 1 ? $req->units_requested.'× ' : '' }}{{ $req->machinery }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->scheduled_date->format('M d, Y') }} - {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$req->member_type === 'member' ? 'Member' : 'Non-member'" /></td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
@@ -163,7 +165,7 @@
                     <div class="row g-3">
                         <div class="col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $req->display_name }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $req->machinery }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $req->machinery }}{{ $req->units_requested > 1 ? ' ('.$req->units_requested.' units)' : '' }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-1">Member Status</label><x-status-badge :status="$req->member_type === 'member' ? 'Member' : 'Non-member'" /></div>
                         @if($req->member_type === 'non-member' && $req->contact_number)
                         <div class="col-6"><label class="text-muted small d-block">Contact Number</label><p class="fw-medium mb-0">{{ $req->contact_number }}</p></div>
@@ -425,16 +427,19 @@
         var landSizeInput = form.querySelector('input[name="land_size"]');
         var startTimeInput = form.querySelector('input[name="start_time"]');
         var endTimeInput = form.querySelector('input[name="end_time"]');
+        var machinerySelect = form.querySelector('select[name="machinery"]');
+        var unitsSelect = form.querySelector('select[name="units_requested"]');
 
         function estimateEndTime() {
             var landSize = parseFloat(landSizeInput.value);
             var startTime = startTimeInput.value;
+            var units = parseInt(unitsSelect.value, 10) || 1;
 
             if (!landSize || landSize <= 0 || !startTime) {
                 return;
             }
 
-            var totalMinutes = Math.round(landSize * SCHEDULE_HOURS_PER_HECTARE * 60 / 5) * 5;
+            var totalMinutes = Math.round((landSize / units) * SCHEDULE_HOURS_PER_HECTARE * 60 / 5) * 5;
             var parts = startTime.split(':');
             var end = new Date(0, 0, 0, parseInt(parts[0], 10), parseInt(parts[1], 10));
             end.setMinutes(end.getMinutes() + totalMinutes);
@@ -442,8 +447,29 @@
             endTimeInput.value = String(end.getHours()).padStart(2, '0') + ':' + String(end.getMinutes()).padStart(2, '0');
         }
 
+        function refreshUnitsOptions() {
+            var selectedOption = machinerySelect.options[machinerySelect.selectedIndex];
+            var quantity = selectedOption ? (parseInt(selectedOption.dataset.quantity, 10) || 1) : 1;
+            var desired = unitsSelect.dataset.initialized ? (parseInt(unitsSelect.value, 10) || 1) : (parseInt(unitsSelect.dataset.selected, 10) || 1);
+
+            unitsSelect.innerHTML = '';
+            for (var i = 1; i <= quantity; i++) {
+                var option = document.createElement('option');
+                option.value = i;
+                option.textContent = i === 1 ? '1 unit' : (i + ' units (parallel)');
+                unitsSelect.appendChild(option);
+            }
+            unitsSelect.value = Math.min(desired, quantity);
+            unitsSelect.dataset.initialized = '1';
+
+            estimateEndTime();
+        }
+
         landSizeInput.addEventListener('input', estimateEndTime);
         startTimeInput.addEventListener('input', estimateEndTime);
+        unitsSelect.addEventListener('change', estimateEndTime);
+        machinerySelect.addEventListener('change', refreshUnitsOptions);
+        refreshUnitsOptions();
     });
 
     (function () {

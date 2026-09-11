@@ -58,7 +58,7 @@
             </div>
             <div>
                 <label class="form-label fw-semibold">Filter by Member</label>
-                <select name="member_id" class="form-select" {{ $reportType === 'maintenance' ? 'disabled' : '' }}>
+                <select name="member_id" id="reportMemberSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." {{ $reportType === 'maintenance' ? 'disabled' : '' }}>
                     <option value="">All Members</option>
                     @foreach($farmers as $farmer)
                     <option value="{{ $farmer->id }}" @selected((string) $memberId === (string) $farmer->id)>{{ $farmer->full_name }}</option>
@@ -86,6 +86,9 @@
     <div class="table-toolbar">
         <h3 class="text-lg font-semibold text-gray-900 mb-0">
             {{ match($reportType) { 'harvesting' => 'Harvesting Report', 'loan' => 'Loan Report', 'maintenance' => 'Maintenance Report' } }}
+            @if($selectedFarmer && $reportType !== 'maintenance')
+            <span class="text-muted fw-normal">&mdash; {{ $selectedFarmer->full_name }}</span>
+            @endif
         </h3>
     </div>
 
@@ -209,4 +212,24 @@
         .no-print, .app-sidebar, .app-topbar { display: none !important; }
     }
 </style>
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+    // Upgrades the "Filter by Member" <select> into a searchable dropdown so
+    // managers can find a farmer by typing instead of scrolling a long list.
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('select.searchable-select').forEach(function (select) {
+            if (select.tomselect) {
+                return;
+            }
+
+            new TomSelect(select, {
+                placeholder: select.dataset.placeholder || 'Search...',
+                sortField: { field: 'text', direction: 'asc' },
+            });
+        });
+    });
+</script>
 @endsection
