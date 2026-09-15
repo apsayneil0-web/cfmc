@@ -11,6 +11,7 @@
     'clickable' => false,
     'bookedClass' => null,
     'selectionMode' => false,
+    'highlightOwn' => false,
 ])
 
 @php
@@ -53,8 +54,11 @@
                     $machineryLabel = ($booking->units_requested > 1 ? $booking->units_requested.'× ' : '').$booking->machinery;
                     $label = $showNames ? $booking->display_name.' - '.$machineryLabel : $machineryLabel;
                     $timeRange = \Carbon\Carbon::parse($booking->start_time)->format('g:iA').'-'.\Carbon\Carbon::parse($booking->end_time)->format('g:iA');
+                    $bookingClass = $highlightOwn
+                        ? ($booking->user_id === auth()->id() ? 'calendar-booking-approved' : 'calendar-booking-booked')
+                        : $statusClass;
                 @endphp
-                <div class="calendar-booking {{ $statusClass }}" title="{{ $label }} ({{ $timeRange }})">
+                <div class="calendar-booking {{ $bookingClass }}" title="{{ $label }} ({{ $timeRange }})">
                     <span class="calendar-booking-dot"></span>
                     <span class="calendar-booking-text">
                         <p class="calendar-booking-title">{{ $label }}</p>

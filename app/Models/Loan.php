@@ -203,6 +203,66 @@ class Loan extends Model
     }
 
     /**
+     * Total farmer payments recorded against this loan — excludes the
+     * system-applied interest/penalty charges, which are their own ledger
+     * entries (type 'interest').
+     */
+    public function getAmountPaidAttribute(): float
+    {
+        return round((float) $this->payments->where('type', 'payment')->sum('amount'), 2);
+    }
+
+    /**
+     * The delinquency penalty charged so far. Distinguished from regular
+     * interest by notes text since both share the 'interest' ledger type —
+     * applyPenaltyCharge()'s grace-expiry charge is the only source of a
+     * "penalty applied" note.
+     */
+    public function getPenaltyChargedAttribute(): float
+    {
+        return round((float) $this->payments->where('type', 'interest')
+            ->filter(fn (LoanPayment $payment) => str_contains($payment->notes ?? '', 'penalty applied'))
+            ->sum('amount'), 2);
+    }
+
+    /**
+     * Total interest: the contractual interest already folded into
+     * remaining_balance at disbursement (monthly_due * term - principal),
+     * plus any extra overdue/grace interest charged since. Excludes the
+     * delinquency penalty (see penalty_charged).
+     */
+    public function getInterestChargedAttribute(): float
+    {
+        $contractual = ($this->monthly_due * $this->effective_term_months) - (float) $this->principal_amount;
+
+        $extra = (float) $this->payments->where('type', 'interest')
+            ->reject(fn (LoanPayment $payment) => str_contains($payment->notes ?? '', 'penalty applied'))
+            ->sum('amount');
+
+        return round($contractual + $extra, 2);
+    }
+
+    public function getTotalAmountAttribute(): float
+    {
+        return round((float) $this->principal_amount + $this->interest_charged + $this->penalty_charged, 2);
+    }
+
+    /**
+     * A single, report-friendly status folding both the loan's lifecycle
+     * status and its payment progress into the four buckets managers think
+     * in: Active / Overdue / Partial / Paid.
+     */
+    public function getDisplayStatusAttribute(): string
+    {
+        return match (true) {
+            $this->status === 'fully_paid' => 'Paid',
+            $this->status === 'overdue' => 'Overdue',
+            $this->amount_paid > 0 => 'Partial',
+            default => 'Active',
+        };
+    }
+
+    /**
      * Record a farmer payment against this loan, reducing the balance and
      * closing the loan out once it reaches zero.
      */

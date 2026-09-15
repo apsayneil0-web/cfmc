@@ -22,13 +22,16 @@ class ReportController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
         $memberId = $request->get('member_id');
+        $loanType = $request->get('loan_type');
+        $loanStatus = $request->get('loan_status');
+        $paymentStatus = $request->get('payment_status');
 
         $farmers = Farmer::where('status', 'approved')->orderBy('last_name')->get();
         $selectedFarmer = $memberId ? $farmers->firstWhere('id', $memberId) : null;
 
         $rows = match ($reportType) {
             'harvesting' => $this->harvestingRows($dateFrom, $dateTo, $memberId),
-            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId),
+            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus),
             'maintenance' => $this->maintenanceRows($dateFrom, $dateTo),
         };
 
@@ -38,7 +41,12 @@ class ReportController extends Controller
             'maintenance' => $this->maintenanceTierBreakdown($rows),
         };
 
-        return view('manager.reporting', compact('reportType', 'dateFrom', 'dateTo', 'memberId', 'farmers', 'selectedFarmer', 'rows', 'breakdown'));
+        $summary = $reportType === 'loan' ? $this->loanSummary($rows) : null;
+
+        return view('manager.reporting', compact(
+            'reportType', 'dateFrom', 'dateTo', 'memberId', 'loanType', 'loanStatus', 'paymentStatus',
+            'farmers', 'selectedFarmer', 'rows', 'breakdown', 'summary'
+        ));
     }
 
     public function export(Request $request): StreamedResponse
@@ -50,10 +58,13 @@ class ReportController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
         $memberId = $request->get('member_id');
+        $loanType = $request->get('loan_type');
+        $loanStatus = $request->get('loan_status');
+        $paymentStatus = $request->get('payment_status');
 
         $rows = match ($reportType) {
             'harvesting' => $this->harvestingRows($dateFrom, $dateTo, $memberId),
-            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId),
+            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus),
             'maintenance' => $this->maintenanceRows($dateFrom, $dateTo),
         };
 
@@ -102,11 +113,20 @@ class ReportController extends Controller
     }
 
     /**
-     * Finalized loans, filtered by disbursement date.
+     * Finalized, disbursed loans, filtered by disbursement date. Loans still
+     * awaiting disbursement are excluded outright (not just by date range) —
+     * their remaining_balance/next_due_date aren't set yet, so principal,
+     * interest, and balance figures wouldn't mean anything for them.
+     * loan_type filters against loan_requests.purpose (free text — the app
+     * has no dedicated loan-product-type field yet); payment_status is
+     * derived from amount_paid/remaining_balance, so it's applied to the
+     * collection after the DB query rather than in SQL.
      */
-    private function loanRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
+    private function loanRows(?string $dateFrom, ?string $dateTo, ?string $memberId, ?string $loanType = null, ?string $loanStatus = null, ?string $paymentStatus = null)
     {
-        $query = Loan::with('loanRequest.farmer')->whereNull('archived_at');
+        $query = Loan::with(['loanRequest.farmer', 'payments'])
+            ->whereNull('archived_at')
+            ->whereNotNull('disbursed_at');
 
         if ($dateFrom) {
             $query->whereDate('disbursed_at', '>=', $dateFrom);
@@ -117,8 +137,25 @@ class ReportController extends Controller
         if ($memberId) {
             $query->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $memberId));
         }
+        if ($loanType) {
+            $query->whereHas('loanRequest', fn ($q) => $q->where('purpose', 'like', "%{$loanType}%"));
+        }
+        if ($loanStatus) {
+            $query->where('status', $loanStatus);
+        }
 
-        return $query->orderByDesc('created_at')->get();
+        $rows = $query->orderByDesc('created_at')->get();
+
+        if ($paymentStatus) {
+            $rows = $rows->filter(fn (Loan $loan) => match ($paymentStatus) {
+                'paid' => (float) $loan->remaining_balance <= 0,
+                'partial' => (float) $loan->remaining_balance > 0 && $loan->amount_paid > 0,
+                'unpaid' => (float) $loan->remaining_balance > 0 && $loan->amount_paid <= 0,
+                default => true,
+            })->values();
+        }
+
+        return $rows;
     }
 
     /**
@@ -160,14 +197,34 @@ class ReportController extends Controller
             ->values();
     }
 
+    /**
+     * Grouped by display_status (Active/Overdue/Partial/Paid) rather than the
+     * raw lifecycle status, so it lines up with the Status column shown in
+     * the loan report table.
+     */
     private function loanStatusBreakdown($rows)
     {
-        $labels = ['active' => 'Active', 'fully_paid' => 'Fully Paid', 'overdue' => 'Overdue', 'pending_disbursement' => 'Pending Disbursement'];
+        $order = ['Active', 'Overdue', 'Partial', 'Paid'];
 
-        return $rows->groupBy('status')
-            ->map(fn ($group, $status) => (object) ['label' => $labels[$status] ?? ucfirst($status), 'value' => $group->count()])
-            ->sortByDesc('value')
+        return $rows->groupBy('display_status')
+            ->map(fn ($group, $status) => (object) ['label' => $status, 'value' => $group->count()])
+            ->sortBy(fn ($item) => array_search($item->label, $order))
             ->values();
+    }
+
+    /**
+     * Totals for the loan report's Report Summary panel.
+     */
+    private function loanSummary($rows)
+    {
+        return (object) [
+            'total_loans' => $rows->count(),
+            'total_principal' => round((float) $rows->sum('principal_amount'), 2),
+            'total_interest' => round((float) $rows->sum('interest_charged'), 2),
+            'total_penalties' => round((float) $rows->sum('penalty_charged'), 2),
+            'total_paid' => round((float) $rows->sum('amount_paid'), 2),
+            'total_outstanding' => round((float) $rows->sum('remaining_balance'), 2),
+        ];
     }
 
     private function maintenanceTierBreakdown($rows)
@@ -197,15 +254,20 @@ class ReportController extends Controller
 
     private function writeLoanCsv($handle, $rows): void
     {
-        fputcsv($handle, ['Loan', 'Farmer', 'Principal', 'Remaining Balance', 'Status', 'Disbursed At']);
+        fputcsv($handle, ['Loan', 'Farmer', 'Loan Type', 'Principal', 'Interest', 'Penalty', 'Total Amount', 'Amount Paid', 'Remaining Balance', 'Next Due Date', 'Status']);
         foreach ($rows as $row) {
             fputcsv($handle, [
                 'LN-'.str_pad((string) $row->id, 3, '0', STR_PAD_LEFT),
                 $row->farmer?->full_name,
+                $row->loanRequest?->purpose,
                 $row->principal_amount,
+                $row->interest_charged,
+                $row->penalty_charged,
+                $row->total_amount,
+                $row->amount_paid,
                 $row->remaining_balance,
-                $row->status,
-                $row->disbursed_at?->format('Y-m-d'),
+                $row->remaining_balance > 0 ? $row->next_due_date?->format('Y-m-d') : null,
+                $row->display_status,
             ]);
         }
     }
