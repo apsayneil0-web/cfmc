@@ -146,6 +146,7 @@
                                         <x-collateral-proof-input
                                             id="documentsEdit{{ $appointment->id }}"
                                             :existing-label="$appointment->documents_path ? 'Current file on record — choose a new one only to replace it.' : null"
+                                            :existing-url="$appointment->documents_path ? asset('storage/'.$appointment->documents_path) : null"
                                             parent-modal-id="editModal{{ $appointment->id }}"
                                         />
                                     </div>
@@ -269,4 +270,8 @@
         </div>
     </div>
 </div>
+
+{{-- Camera capture modals from x-collateral-proof-input, pushed here so
+     they're siblings of the other modals rather than nested descendants. --}}
+@stack('modals')
 @endsection

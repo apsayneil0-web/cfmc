@@ -1,4 +1,4 @@
-@props(['id', 'existingLabel' => null, 'parentModalId' => null])
+@props(['id', 'existingLabel' => null, 'parentModalId' => null, 'existingUrl' => null])
 
 @once
 <style>
@@ -139,9 +139,35 @@
         target.files = dt.files;
         label.textContent = file.name;
         label.classList.add('text-success');
+        collateralShowPreview(id, file);
 
+        collateralCloseCamera(id);
+    }
+
+    // Points the small "View Photo" link at whatever file is currently
+    // selected (camera capture or plain file choice) and reveals it.
+    function collateralShowPreview(id, file) {
+        var viewLink = document.getElementById(id + '_viewLink');
+        viewLink.href = URL.createObjectURL(file);
+        viewLink.classList.remove('d-none');
+    }
+
+    // Closes the camera modal and, if it was opened from another modal (the
+    // New Appointment / Reschedule form), brings that form back into view
+    // instead of leaving the farmer with nothing open — the form's fields
+    // were never actually removed, just hidden, so everything they'd
+    // already typed is still there when it reappears.
+    function collateralCloseCamera(id) {
         collateralStopCamera(id);
-        bootstrap.Modal.getInstance(document.getElementById(id + '_cameraModal')).hide();
+
+        var modalEl = document.getElementById(id + '_cameraModal');
+        var parentModalId = modalEl.dataset.parentModalId;
+
+        if (parentModalId) {
+            switchModal(id + '_cameraModal', parentModalId);
+        } else {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
     }
 
     function collateralStopCamera(id) {
@@ -158,11 +184,13 @@
         var label = document.getElementById(labelId);
 
         if (source.files.length > 0) {
+            var file = source.files[0];
             var dt = new DataTransfer();
-            dt.items.add(source.files[0]);
+            dt.items.add(file);
             target.files = dt.files;
-            label.textContent = source.files[0].name;
+            label.textContent = file.name;
             label.classList.add('text-success');
+            collateralShowPreview(targetId, file);
         }
     }
 
@@ -232,19 +260,32 @@
         <i class="fas fa-folder-open me-1"></i> Choose File
     </button>
 </div>
-<p class="small text-muted mb-0" id="{{ $id }}_label">{{ $existingLabel ?? 'No file chosen' }}</p>
+<div class="d-flex align-items-center gap-2">
+    <p class="small text-muted mb-0" id="{{ $id }}_label">{{ $existingLabel ?? 'No file chosen' }}</p>
+    <a href="{{ $existingUrl }}" target="_blank" id="{{ $id }}_viewLink" class="btn btn-link btn-sm p-0 {{ $existingUrl ? '' : 'd-none' }}">View Photo</a>
+</div>
 
 <input type="file" name="documents" id="{{ $id }}" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
 <input type="file" id="{{ $id }}_file" class="d-none" accept=".pdf,.jpg,.jpeg,.png" onchange="syncCollateralProofFile('{{ $id }}_file', '{{ $id }}', '{{ $id }}_label')">
 
+{{--
+    Pushed to a stack rendered at the bottom of the page (outside this
+    component's call site) instead of left inline here. This component is
+    often used inside another modal (e.g. New Appointment/Reschedule), and a
+    modal nested inside another modal's DOM is invisible once its parent
+    gets display:none on close — Bootstrap's own .show class on the nested
+    modal can't override a hidden ancestor. Pushing it to the page's own
+    top-level stack keeps it a sibling of every other modal instead.
+--}}
+@push('modals')
 <!-- Camera Capture Modal: styled like a native document scanner — full-bleed
      viewfinder with corner alignment guides and one big shutter button,
      instead of a typical dialog with a header bar and a row of buttons. -->
-<div class="modal fade" id="{{ $id }}_cameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+<div class="modal fade" id="{{ $id }}_cameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-parent-modal-id="{{ $parentModalId }}">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 overflow-hidden">
             <div class="collateral-viewfinder">
-                <button type="button" class="collateral-close-btn" data-bs-dismiss="modal" aria-label="Close" onclick="collateralStopCamera('{{ $id }}')">
+                <button type="button" class="collateral-close-btn" aria-label="Close" onclick="collateralCloseCamera('{{ $id }}')">
                     <i class="fas fa-times"></i>
                 </button>
                 <p class="text-danger small m-3 d-none position-relative" style="z-index: 2;" id="{{ $id }}_error"></p>
@@ -270,3 +311,4 @@
         </div>
     </div>
 </div>
+@endpush
