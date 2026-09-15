@@ -5,32 +5,68 @@
 
 @section('content')
 <!-- Report Type Selection -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 no-print">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 no-print">
     <a href="{{ route('manager.reporting', ['report_type' => 'harvesting']) }}"
-        class="bg-white rounded-xl shadow-sm border p-6 text-left text-decoration-none transition {{ $reportType === 'harvesting' ? 'border-primary ring-2 ring-primary-subtle' : 'border-gray-200' }}">
-        <div class="stat-icon text-success mb-4">
-            <i class="fas fa-seedling"></i>
+        class="report-type-card {{ $reportType === 'harvesting' ? 'active' : '' }}" title="Track harvest yields, crop types, and production data">
+        <div class="report-type-icon bg-success-subtle text-success"><i class="fas fa-seedling"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Harvesting</div>
+            <div class="report-type-desc">Yields &amp; production data</div>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-1">Harvesting Reports</h3>
-        <p class="text-sm text-gray-500 mb-0">Track harvest yields, crop types, and production data</p>
     </a>
 
     <a href="{{ route('manager.reporting', ['report_type' => 'loan']) }}"
-        class="bg-white rounded-xl shadow-sm border p-6 text-left text-decoration-none transition {{ $reportType === 'loan' ? 'border-primary ring-2 ring-primary-subtle' : 'border-gray-200' }}">
-        <div class="stat-icon text-primary mb-4">
-            <i class="fas fa-hand-holding-usd"></i>
+        class="report-type-card {{ $reportType === 'loan' ? 'active' : '' }}" title="Loan disbursements, repayments, and outstanding balances">
+        <div class="report-type-icon bg-primary-subtle text-primary"><i class="fas fa-hand-holding-usd"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Loan</div>
+            <div class="report-type-desc">Disbursements &amp; balances</div>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-1">Loan Reports</h3>
-        <p class="text-sm text-gray-500 mb-0">Loan disbursements, repayments, and outstanding balances</p>
     </a>
 
     <a href="{{ route('manager.reporting', ['report_type' => 'maintenance']) }}"
-        class="bg-white rounded-xl shadow-sm border p-6 text-left text-decoration-none transition {{ $reportType === 'maintenance' ? 'border-primary ring-2 ring-primary-subtle' : 'border-gray-200' }}">
-        <div class="stat-icon text-warning mb-4">
-            <i class="fas fa-wrench"></i>
+        class="report-type-card {{ $reportType === 'maintenance' ? 'active' : '' }}" title="Machinery maintenance history and usage tracking">
+        <div class="report-type-icon bg-warning-subtle text-warning"><i class="fas fa-wrench"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Maintenance</div>
+            <div class="report-type-desc">Machinery usage &amp; tiers</div>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-1">Maintenance Reports</h3>
-        <p class="text-sm text-gray-500 mb-0">Machinery maintenance history and usage tracking</p>
+    </a>
+
+    <a href="{{ route('manager.reporting', ['report_type' => 'schedule']) }}"
+        class="report-type-card {{ $reportType === 'schedule' ? 'active' : '' }}" title="Members vs non-members who scheduled machinery in a month">
+        <div class="report-type-icon bg-info-subtle text-info"><i class="fas fa-calendar-check"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Schedule</div>
+            <div class="report-type-desc">Members vs non-members</div>
+        </div>
+    </a>
+
+    <a href="{{ route('manager.reporting', ['report_type' => 'cbu']) }}"
+        class="report-type-card {{ $reportType === 'cbu' ? 'active' : '' }}" title="Member savings, capital contributions, and CBU activity">
+        <div class="report-type-icon bg-success-subtle text-success"><i class="fas fa-piggy-bank"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Capital Build-Up</div>
+            <div class="report-type-desc">Savings &amp; contributions</div>
+        </div>
+    </a>
+
+    <a href="{{ route('manager.reporting', ['report_type' => 'complaint']) }}"
+        class="report-type-card {{ $reportType === 'complaint' ? 'active' : '' }}" title="Farmer complaints, resolution status, and common problems">
+        <div class="report-type-icon bg-danger-subtle text-danger"><i class="fas fa-comment-dots"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Complaint</div>
+            <div class="report-type-desc">Status &amp; common problems</div>
+        </div>
+    </a>
+
+    <a href="{{ route('manager.reporting', ['report_type' => 'expense']) }}"
+        class="report-type-card {{ $reportType === 'expense' ? 'active' : '' }}" title="Machine-related operational expenses and maintenance costs">
+        <div class="report-type-icon bg-warning-subtle text-warning"><i class="fas fa-receipt"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Expense</div>
+            <div class="report-type-desc">Operational &amp; machine costs</div>
+        </div>
     </a>
 </div>
 
@@ -46,6 +82,10 @@
                     <option value="harvesting" @selected($reportType === 'harvesting')>Harvesting Report</option>
                     <option value="loan" @selected($reportType === 'loan')>Loan Report</option>
                     <option value="maintenance" @selected($reportType === 'maintenance')>Maintenance Report</option>
+                    <option value="schedule" @selected($reportType === 'schedule')>Schedule Report</option>
+                    <option value="cbu" @selected($reportType === 'cbu')>Capital Build-Up Report</option>
+                    <option value="complaint" @selected($reportType === 'complaint')>Complaint Report</option>
+                    <option value="expense" @selected($reportType === 'expense')>Expense Report</option>
                 </select>
             </div>
             <div>
@@ -58,7 +98,7 @@
             </div>
             <div>
                 <label class="form-label fw-semibold">Filter by Member</label>
-                <select name="member_id" id="reportMemberSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." {{ $reportType === 'maintenance' ? 'disabled' : '' }}>
+                <select name="member_id" id="reportMemberSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." {{ in_array($reportType, ['maintenance', 'expense']) ? 'disabled' : '' }}>
                     <option value="">All Members</option>
                     @foreach($farmers as $farmer)
                     <option value="{{ $farmer->id }}" @selected((string) $memberId === (string) $farmer->id)>{{ $farmer->full_name }}</option>
@@ -94,6 +134,20 @@
         </div>
         @endif
 
+        @if($reportType === 'expense')
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div>
+                <label class="form-label fw-semibold">Category</label>
+                <select name="category" class="form-select">
+                    <option value="" @selected(! $category)>All Categories</option>
+                    <option value="operational" @selected($category === 'operational')>Operational</option>
+                    <option value="machinery" @selected($category === 'machinery')>Machinery</option>
+                    <option value="replaceable_parts" @selected($category === 'replaceable_parts')>Replaceable Parts</option>
+                </select>
+            </div>
+        </div>
+        @endif
+
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
                 <i class="fas fa-filter"></i><span>Generate</span>
@@ -108,6 +162,18 @@
     </form>
 </div>
 
+@php
+    $reportTitle = match($reportType) {
+        'harvesting' => 'Harvesting Report',
+        'loan' => 'Loan Report',
+        'maintenance' => 'Maintenance Report',
+        'schedule' => 'Schedule Report',
+        'cbu' => 'Capital Build-Up Report',
+        'complaint' => 'Complaint Report',
+        'expense' => 'Expense Report',
+    };
+@endphp
+
 <!-- Print Letterhead (screen-hidden, shown only when printing/exporting to PDF) -->
 <div class="print-only print-letterhead">
     <div class="d-flex align-items-center gap-3 mb-3">
@@ -120,7 +186,7 @@
 
     <hr style="border-top: 2px solid #1f5c3a; margin: 1rem 0;">
 
-    <h1 class="text-center fw-bold mb-1">{{ match($reportType) { 'harvesting' => 'HARVESTING REPORT', 'loan' => 'LOAN REPORT', 'maintenance' => 'MAINTENANCE REPORT' } }}</h1>
+    <h1 class="text-center fw-bold mb-1">{{ strtoupper($reportTitle) }}</h1>
     <p class="text-center text-muted mb-4">
         <em>Report Generated: {{ now()->format('F j, Y') }}</em> &nbsp;|&nbsp; <em>Generated by: <strong>{{ auth()->user()->name }}</strong></em>
     </p>
@@ -129,9 +195,14 @@
         <div class="row">
             <div class="col-6">
                 <p class="mb-1"><strong>Date Range</strong> &nbsp; From: {{ $dateFrom ?: '—' }} &nbsp; To: {{ $dateTo ?: '—' }}</p>
+                @if($reportType !== 'expense')
                 <p class="mb-1"><strong>Farmer</strong> &nbsp; {{ $selectedFarmer?->full_name ?? 'All Farmers' }}</p>
+                @endif
                 @if($reportType === 'loan')
                 <p class="mb-0"><strong>Loan Type</strong> &nbsp; {{ $loanType ?: 'All Types' }}</p>
+                @endif
+                @if($reportType === 'expense')
+                <p class="mb-0"><strong>Category</strong> &nbsp; {{ $category ? ucfirst(str_replace('_', ' ', $category)) : 'All Categories' }}</p>
                 @endif
             </div>
             @if($reportType === 'loan')
@@ -148,8 +219,8 @@
 <div class="section-card mt-6">
     <div class="table-toolbar">
         <h3 class="text-lg font-semibold text-gray-900 mb-0">
-            {{ match($reportType) { 'harvesting' => 'Harvesting Report', 'loan' => 'Loan Report', 'maintenance' => 'Maintenance Report' } }}
-            @if($selectedFarmer && $reportType !== 'maintenance')
+            {{ $reportTitle }}
+            @if($selectedFarmer && ! in_array($reportType, ['maintenance', 'expense']))
             <span class="text-muted fw-normal">&mdash; {{ $selectedFarmer->full_name }}</span>
             @endif
         </h3>
@@ -232,7 +303,7 @@
             </tbody>
         </table>
     </div>
-    @else
+    @elseif($reportType === 'maintenance')
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-light">
@@ -259,27 +330,149 @@
             </tbody>
         </table>
     </div>
+    @elseif($reportType === 'schedule')
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Requester</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member Type</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Land Size</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($rows as $row)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->scheduled_date->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $row->display_name }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$row->member_type === 'member' ? 'Member' : 'Non-Member'" /></td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->machine?->name ?? $row->machinery }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->land_size }} ha</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($row->status)" /></td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No schedules match these filters.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @elseif($reportType === 'cbu')
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Type</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Category</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Balance After</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($rows as $row)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->transaction_date->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $row->cbu?->farmer?->full_name }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$row->type === 'contribution' ? 'CBU Contribution' : 'CBU Expense'" /></td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->category ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($row->amount) }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ peso($row->balance_after) }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No CBU transactions match these filters.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @elseif($reportType === 'complaint')
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Subject</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Manager Response</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($rows as $row)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->created_at->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $row->user?->farmer?->full_name ?? $row->user?->name }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $row->subject }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst(str_replace('_', ' ', $row->status))" /></td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->manager_response ?? '—' }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">No complaints match these filters.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @elseif($reportType === 'expense')
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Category</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Description</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Recorded By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($rows as $row)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->expense_date->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ ucfirst(str_replace('_', ' ', $row->category)) }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->description }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($row->amount) }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($row->status)" /></td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->recordedBy?->name ?? '—' }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No expenses match these filters.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
     @endif
 </div>
 
-@if($reportType === 'loan')
-<!-- Report Summary + Loan Status Breakdown -->
+@if($summary)
+<!-- Report Summary + Breakdown -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Report Summary</h3>
         <table class="table table-sm mb-0">
             <tbody>
-                <tr><td class="text-muted">Total Loans</td><td class="text-end fw-semibold">{{ $summary->total_loans }}</td></tr>
-                <tr><td class="text-muted">Total Principal</td><td class="text-end fw-semibold">{{ peso($summary->total_principal) }}</td></tr>
-                <tr><td class="text-muted">Total Interest</td><td class="text-end fw-semibold">{{ peso($summary->total_interest) }}</td></tr>
-                <tr><td class="text-muted">Total Penalties</td><td class="text-end fw-semibold">{{ peso($summary->total_penalties) }}</td></tr>
-                <tr><td class="text-muted">Total Amount Paid</td><td class="text-end fw-semibold">{{ peso($summary->total_paid) }}</td></tr>
-                <tr><td class="text-muted">Total Outstanding Balance</td><td class="text-end fw-semibold text-danger">{{ peso($summary->total_outstanding) }}</td></tr>
+                @foreach($summary->rows as $row)
+                <tr>
+                    <td class="text-muted">{{ $row['label'] }}</td>
+                    <td class="text-end fw-semibold {{ ! empty($row['emphasis']) ? 'text-danger' : '' }}">{{ $row['value'] }}</td>
+                </tr>
+                @endforeach
             </tbody>
         </table>
     </div>
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Loan Status Breakdown</h3>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ $breakdownTitle }}</h3>
         @php $breakdownTotal = $breakdown->sum('value'); @endphp
         <div class="space-y-4">
             @forelse($breakdown as $item)
@@ -308,9 +501,7 @@
 @else
 <!-- Breakdown -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">
-        {{ match($reportType) { 'harvesting' => 'Top Yield by Farmer', 'maintenance' => 'Maintenance Tier Breakdown' } }}
-    </h3>
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ $breakdownTitle }}</h3>
     @php $breakdownTotal = $breakdown->sum('value'); @endphp
     <div class="space-y-4">
         @forelse($breakdown as $item)
@@ -332,6 +523,64 @@
 
 <style>
     .print-only { display: none; }
+
+    .report-type-card {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.65rem;
+        padding: 0.6rem 0.75rem;
+        text-decoration: none;
+        transition: border-color .15s ease, box-shadow .15s ease;
+        min-width: 0;
+    }
+
+    .report-type-card:hover {
+        border-color: #9ec5fe;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, .06);
+    }
+
+    .report-type-card.active {
+        border-color: var(--bs-primary, #0d6efd);
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, .15);
+    }
+
+    .report-type-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .report-type-text {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .report-type-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #111827;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .report-type-desc {
+        font-size: 0.7rem;
+        color: #6b7280;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
     .print-logo-circle {
         width: 64px;

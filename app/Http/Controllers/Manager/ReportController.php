@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cbu;
+use App\Models\CbuTransaction;
+use App\Models\Complaint;
+use App\Models\Expense;
 use App\Models\Farmer;
 use App\Models\Loan;
 use App\Models\Machine;
@@ -13,9 +17,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    private const REPORT_TYPES = ['harvesting', 'loan', 'maintenance', 'schedule', 'cbu', 'complaint', 'expense'];
+
     public function index(Request $request)
     {
-        $reportType = in_array($request->get('report_type'), ['harvesting', 'loan', 'maintenance'])
+        $reportType = in_array($request->get('report_type'), self::REPORT_TYPES, true)
             ? $request->get('report_type')
             : 'harvesting';
 
@@ -25,33 +31,51 @@ class ReportController extends Controller
         $loanType = $request->get('loan_type');
         $loanStatus = $request->get('loan_status');
         $paymentStatus = $request->get('payment_status');
+        $category = $request->get('category');
 
         $farmers = Farmer::where('status', 'approved')->orderBy('last_name')->get();
         $selectedFarmer = $memberId ? $farmers->firstWhere('id', $memberId) : null;
 
-        $rows = match ($reportType) {
-            'harvesting' => $this->harvestingRows($dateFrom, $dateTo, $memberId),
-            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus),
-            'maintenance' => $this->maintenanceRows($dateFrom, $dateTo),
-        };
+        $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus, $category);
 
         $breakdown = match ($reportType) {
             'harvesting' => $this->yieldByFarmer($rows),
             'loan' => $this->loanStatusBreakdown($rows),
             'maintenance' => $this->maintenanceTierBreakdown($rows),
+            'schedule' => $this->scheduleMemberBreakdown($rows),
+            'cbu' => $this->cbuCategoryBreakdown($rows),
+            'complaint' => $this->complaintCommonProblems($rows),
+            'expense' => $this->expenseCategoryBreakdown($rows),
         };
 
-        $summary = $reportType === 'loan' ? $this->loanSummary($rows) : null;
+        $breakdownTitle = match ($reportType) {
+            'harvesting' => 'Top Yield by Farmer',
+            'loan' => 'Loan Status Breakdown',
+            'maintenance' => 'Maintenance Tier Breakdown',
+            'schedule' => 'Members vs Non-Members',
+            'cbu' => 'CBU Category Breakdown',
+            'complaint' => 'Common Problems',
+            'expense' => 'Expense Category Breakdown',
+        };
+
+        $summary = match ($reportType) {
+            'loan' => $this->loanSummary($rows),
+            'schedule' => $this->scheduleSummary($rows),
+            'cbu' => $this->cbuSummary($rows),
+            'complaint' => $this->complaintSummary($rows),
+            'expense' => $this->expenseSummary($rows),
+            default => null,
+        };
 
         return view('manager.reporting', compact(
-            'reportType', 'dateFrom', 'dateTo', 'memberId', 'loanType', 'loanStatus', 'paymentStatus',
-            'farmers', 'selectedFarmer', 'rows', 'breakdown', 'summary'
+            'reportType', 'dateFrom', 'dateTo', 'memberId', 'loanType', 'loanStatus', 'paymentStatus', 'category',
+            'farmers', 'selectedFarmer', 'rows', 'breakdown', 'breakdownTitle', 'summary'
         ));
     }
 
     public function export(Request $request): StreamedResponse
     {
-        $reportType = in_array($request->get('report_type'), ['harvesting', 'loan', 'maintenance'])
+        $reportType = in_array($request->get('report_type'), self::REPORT_TYPES, true)
             ? $request->get('report_type')
             : 'harvesting';
 
@@ -61,12 +85,9 @@ class ReportController extends Controller
         $loanType = $request->get('loan_type');
         $loanStatus = $request->get('loan_status');
         $paymentStatus = $request->get('payment_status');
+        $category = $request->get('category');
 
-        $rows = match ($reportType) {
-            'harvesting' => $this->harvestingRows($dateFrom, $dateTo, $memberId),
-            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus),
-            'maintenance' => $this->maintenanceRows($dateFrom, $dateTo),
-        };
+        $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus, $category);
 
         $filename = "{$reportType}-report-".now()->format('Y-m-d').'.csv';
 
@@ -82,12 +103,33 @@ class ReportController extends Controller
                 'harvesting' => $this->writeHarvestingCsv($handle, $rows),
                 'loan' => $this->writeLoanCsv($handle, $rows),
                 'maintenance' => $this->writeMaintenanceCsv($handle, $rows),
+                'schedule' => $this->writeScheduleCsv($handle, $rows),
+                'cbu' => $this->writeCbuCsv($handle, $rows),
+                'complaint' => $this->writeComplaintCsv($handle, $rows),
+                'expense' => $this->writeExpenseCsv($handle, $rows),
             };
 
             fclose($handle);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Single dispatch point shared by index() and export() so the two never
+     * drift out of sync on which filters apply to which report type.
+     */
+    private function rowsFor(string $reportType, ?string $dateFrom, ?string $dateTo, ?string $memberId, ?string $loanType, ?string $loanStatus, ?string $paymentStatus, ?string $category)
+    {
+        return match ($reportType) {
+            'harvesting' => $this->harvestingRows($dateFrom, $dateTo, $memberId),
+            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus),
+            'maintenance' => $this->maintenanceRows($dateFrom, $dateTo),
+            'schedule' => $this->scheduleRows($dateFrom, $dateTo, $memberId),
+            'cbu' => $this->cbuRows($dateFrom, $dateTo, $memberId),
+            'complaint' => $this->complaintRows($dateFrom, $dateTo, $memberId),
+            'expense' => $this->expenseRows($dateFrom, $dateTo, $category),
+        };
     }
 
     /**
@@ -188,6 +230,95 @@ class ReportController extends Controller
         });
     }
 
+    /**
+     * Machinery bookings that actually occupied capacity (approved or
+     * completed — denied/cancelled requests never used a machine), for
+     * tallying member vs non-member usage within the date range.
+     */
+    private function scheduleRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
+    {
+        $query = ScheduleRequest::with(['user.farmer', 'machine'])
+            ->whereNull('archived_at')
+            ->whereIn('status', ['approved', 'completed']);
+
+        if ($dateFrom) {
+            $query->whereDate('scheduled_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('scheduled_date', '<=', $dateTo);
+        }
+        if ($memberId) {
+            $query->whereHas('user.farmer', fn ($q) => $q->where('id', $memberId));
+        }
+
+        return $query->orderByDesc('scheduled_date')->get();
+    }
+
+    /**
+     * CBU ledger entries (contributions and expenses/withdrawals) within the
+     * date range. The schema has no separate "dividend"/"savings" transaction
+     * type — those are recorded as contributions with a free-text category,
+     * which is what the category breakdown groups by.
+     */
+    private function cbuRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
+    {
+        $query = CbuTransaction::with(['cbu.farmer', 'recordedBy']);
+
+        if ($dateFrom) {
+            $query->whereDate('transaction_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('transaction_date', '<=', $dateTo);
+        }
+        if ($memberId) {
+            $query->whereHas('cbu', fn ($q) => $q->where('farmer_id', $memberId));
+        }
+
+        return $query->orderByDesc('transaction_date')->orderByDesc('created_at')->get();
+    }
+
+    /**
+     * Farmer complaints submitted for manager review (drafts stay private to
+     * the farmer, mirroring ComplaintController@index), within the date range.
+     */
+    private function complaintRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
+    {
+        $query = Complaint::with('user.farmer')->where('status', '!=', 'draft');
+
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+        if ($memberId) {
+            $query->whereHas('user.farmer', fn ($q) => $q->where('id', $memberId));
+        }
+
+        return $query->orderByDesc('created_at')->get();
+    }
+
+    /**
+     * Cooperative operating expenses within the date range, optionally
+     * narrowed to one category (operational/machinery/replaceable_parts).
+     */
+    private function expenseRows(?string $dateFrom, ?string $dateTo, ?string $category)
+    {
+        $query = Expense::with('recordedBy');
+
+        if ($dateFrom) {
+            $query->whereDate('expense_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('expense_date', '<=', $dateTo);
+        }
+        if ($category) {
+            $query->where('category', $category);
+        }
+
+        return $query->orderByDesc('expense_date')->orderByDesc('created_at')->get();
+    }
+
     private function yieldByFarmer($rows)
     {
         return $rows->groupBy(fn ($r) => $r->display_name)
@@ -212,21 +343,6 @@ class ReportController extends Controller
             ->values();
     }
 
-    /**
-     * Totals for the loan report's Report Summary panel.
-     */
-    private function loanSummary($rows)
-    {
-        return (object) [
-            'total_loans' => $rows->count(),
-            'total_principal' => round((float) $rows->sum('principal_amount'), 2),
-            'total_interest' => round((float) $rows->sum('interest_charged'), 2),
-            'total_penalties' => round((float) $rows->sum('penalty_charged'), 2),
-            'total_paid' => round((float) $rows->sum('amount_paid'), 2),
-            'total_outstanding' => round((float) $rows->sum('remaining_balance'), 2),
-        ];
-    }
-
     private function maintenanceTierBreakdown($rows)
     {
         $labels = ['none' => 'Not Yet Used', 'routine' => 'Routine', 'basic' => 'Basic', 'full' => 'Full', 'comprehensive' => 'Comprehensive'];
@@ -235,6 +351,110 @@ class ReportController extends Controller
             ->map(fn ($group, $level) => (object) ['label' => $labels[$level] ?? ucfirst($level), 'value' => $group->count()])
             ->sortByDesc('value')
             ->values();
+    }
+
+    private function scheduleMemberBreakdown($rows)
+    {
+        $labels = ['member' => 'Member', 'non-member' => 'Non-Member'];
+
+        return $rows->groupBy('member_type')
+            ->map(fn ($group, $type) => (object) ['label' => $labels[$type] ?? ucfirst($type), 'value' => $group->count()])
+            ->sortByDesc('value')
+            ->values();
+    }
+
+    private function cbuCategoryBreakdown($rows)
+    {
+        return $rows->groupBy(fn ($r) => $r->category ?: 'Uncategorized')
+            ->map(fn ($group, $category) => (object) ['label' => $category, 'value' => $group->count()])
+            ->sortByDesc('value')
+            ->take(6)
+            ->values();
+    }
+
+    /**
+     * Most frequently reported issues, by complaint subject — the closest
+     * thing to a "common problems" category the schema supports, since
+     * subject is free text farmers type themselves rather than a fixed list.
+     */
+    private function complaintCommonProblems($rows)
+    {
+        return $rows->groupBy('subject')
+            ->map(fn ($group, $subject) => (object) ['label' => $subject, 'value' => $group->count()])
+            ->sortByDesc('value')
+            ->take(5)
+            ->values();
+    }
+
+    private function expenseCategoryBreakdown($rows)
+    {
+        $labels = ['operational' => 'Operational', 'machinery' => 'Machinery', 'replaceable_parts' => 'Replaceable Parts'];
+
+        return $rows->groupBy('category')
+            ->map(fn ($group, $cat) => (object) ['label' => $labels[$cat] ?? ucfirst($cat), 'value' => $group->count()])
+            ->sortByDesc('value')
+            ->values();
+    }
+
+    /**
+     * Totals for the loan report's Report Summary panel.
+     */
+    private function loanSummary($rows)
+    {
+        return (object) ['rows' => [
+            ['label' => 'Total Loans', 'value' => (string) $rows->count()],
+            ['label' => 'Total Principal', 'value' => peso($rows->sum('principal_amount'))],
+            ['label' => 'Total Interest', 'value' => peso($rows->sum('interest_charged'))],
+            ['label' => 'Total Penalties', 'value' => peso($rows->sum('penalty_charged'))],
+            ['label' => 'Total Amount Paid', 'value' => peso($rows->sum('amount_paid'))],
+            ['label' => 'Total Outstanding Balance', 'value' => peso($rows->sum('remaining_balance')), 'emphasis' => true],
+        ]];
+    }
+
+    private function scheduleSummary($rows)
+    {
+        return (object) ['rows' => [
+            ['label' => 'Total Bookings', 'value' => (string) $rows->count()],
+            ['label' => 'Total Land Size Serviced', 'value' => number_format((float) $rows->sum('land_size'), 2).' ha'],
+            ['label' => 'Members', 'value' => (string) $rows->where('member_type', 'member')->count()],
+            ['label' => 'Non-Members', 'value' => (string) $rows->where('member_type', 'non-member')->count()],
+        ]];
+    }
+
+    private function cbuSummary($rows)
+    {
+        $contributions = (float) $rows->where('type', 'contribution')->sum('amount');
+        $expenses = (float) $rows->where('type', 'expense')->sum('amount');
+
+        return (object) ['rows' => [
+            ['label' => 'Total Transactions', 'value' => (string) $rows->count()],
+            ['label' => 'Total Contributions', 'value' => peso($contributions)],
+            ['label' => 'Total Withdrawals/Expenses', 'value' => peso($expenses)],
+            ['label' => 'Net Change', 'value' => peso($contributions - $expenses), 'emphasis' => true],
+            ['label' => 'Current Balance, All Members', 'value' => peso(Cbu::sum('balance'))],
+        ]];
+    }
+
+    private function complaintSummary($rows)
+    {
+        $resolved = $rows->where('status', 'resolved')->count();
+
+        return (object) ['rows' => [
+            ['label' => 'Total Complaints', 'value' => (string) $rows->count()],
+            ['label' => 'Resolved', 'value' => (string) $resolved],
+            ['label' => 'Pending', 'value' => (string) ($rows->count() - $resolved), 'emphasis' => true],
+        ]];
+    }
+
+    private function expenseSummary($rows)
+    {
+        return (object) ['rows' => [
+            ['label' => 'Total Records', 'value' => (string) $rows->count()],
+            ['label' => 'Operational', 'value' => peso($rows->where('category', 'operational')->sum('amount'))],
+            ['label' => 'Machinery', 'value' => peso($rows->where('category', 'machinery')->sum('amount'))],
+            ['label' => 'Replaceable Parts', 'value' => peso($rows->where('category', 'replaceable_parts')->sum('amount'))],
+            ['label' => 'Total Amount', 'value' => peso($rows->sum('amount')), 'emphasis' => true],
+        ]];
     }
 
     private function writeHarvestingCsv($handle, $rows): void
@@ -281,6 +501,65 @@ class ReportController extends Controller
                 $row->times_used,
                 $row->usage_hours,
                 $row->machine->maintenance_label,
+            ]);
+        }
+    }
+
+    private function writeScheduleCsv($handle, $rows): void
+    {
+        fputcsv($handle, ['Date', 'Requester', 'Member Type', 'Machine', 'Land Size (ha)', 'Status']);
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row->scheduled_date->format('Y-m-d'),
+                $row->display_name,
+                $row->member_type === 'member' ? 'Member' : 'Non-Member',
+                $row->machine?->name ?? $row->machinery,
+                $row->land_size,
+                ucfirst($row->status),
+            ]);
+        }
+    }
+
+    private function writeCbuCsv($handle, $rows): void
+    {
+        fputcsv($handle, ['Date', 'Farmer', 'Type', 'Category', 'Amount', 'Balance After']);
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row->transaction_date->format('Y-m-d'),
+                $row->cbu?->farmer?->full_name,
+                ucfirst($row->type),
+                $row->category ?? '—',
+                $row->amount,
+                $row->balance_after,
+            ]);
+        }
+    }
+
+    private function writeComplaintCsv($handle, $rows): void
+    {
+        fputcsv($handle, ['Date', 'Farmer', 'Subject', 'Status', 'Manager Response']);
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row->created_at->format('Y-m-d'),
+                $row->user?->farmer?->full_name ?? $row->user?->name,
+                $row->subject,
+                ucfirst(str_replace('_', ' ', $row->status)),
+                $row->manager_response,
+            ]);
+        }
+    }
+
+    private function writeExpenseCsv($handle, $rows): void
+    {
+        fputcsv($handle, ['Date', 'Category', 'Description', 'Amount', 'Status', 'Recorded By']);
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row->expense_date->format('Y-m-d'),
+                ucfirst(str_replace('_', ' ', $row->category)),
+                $row->description,
+                $row->amount,
+                ucfirst($row->status),
+                $row->recordedBy?->name,
             ]);
         }
     }
