@@ -258,7 +258,7 @@
                     </div>
                     <div>
                         <label class="form-label fw-semibold">Collateral Proof</label>
-                        <x-collateral-proof-input id="documentsCreate" />
+                        <x-collateral-proof-input id="documentsCreate" parent-modal-id="createModal" />
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
