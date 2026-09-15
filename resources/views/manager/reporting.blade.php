@@ -190,18 +190,7 @@
     <div class="table-responsive">
         <table class="table table-hover mb-0 loan-report-table">
             <colgroup>
-                <col style="width:4%">
-                <col style="width:6%">
-                <col style="width:14%">
-                <col style="width:10%">
-                <col style="width:8%">
-                <col style="width:8%">
-                <col style="width:7%">
-                <col style="width:10%">
-                <col style="width:8%">
-                <col style="width:11%">
-                <col style="width:8%">
-                <col style="width:6%">
+                <col><col><col><col><col><col><col><col><col><col><col><col>
             </colgroup>
             <thead class="table-light">
                 <tr>
@@ -364,16 +353,23 @@
         padding: 1rem 1.25rem;
     }
 
+    /* Comfortable, content-sized column spacing on screen. */
+    .loan-report-table th,
+    .loan-report-table td {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
     @media print {
         .no-print, .app-sidebar, .app-topbar { display: none !important; }
         .print-only { display: block; }
 
         @page { margin: 8mm; }
 
-        /* The loan table has 12 columns — force it to the page's printable
-           width (via the colgroup widths above) instead of letting it run
-           past the paper edge, where content is silently clipped rather
-           than wrapped. */
+        /* The loan table has 12 columns — only pin it to fixed percentage
+           widths for print, where it must fit the page instead of running
+           past the paper edge and getting silently clipped. On screen it
+           stays auto-sized (with .table-responsive scroll as a fallback). */
         .table-responsive { overflow: visible !important; }
 
         .loan-report-table {
@@ -382,12 +378,33 @@
             font-size: 8.5px;
         }
 
+        .loan-report-table col:nth-child(1)  { width: 3%; }
+        .loan-report-table col:nth-child(2)  { width: 6%; }
+        .loan-report-table col:nth-child(3)  { width: 12%; }
+        .loan-report-table col:nth-child(4)  { width: 8%; }
+        .loan-report-table col:nth-child(5)  { width: 10%; }
+        .loan-report-table col:nth-child(6)  { width: 9%; }
+        .loan-report-table col:nth-child(7)  { width: 9%; }
+        .loan-report-table col:nth-child(8)  { width: 9%; }
+        .loan-report-table col:nth-child(9)  { width: 8%; }
+        .loan-report-table col:nth-child(10) { width: 9%; }
+        .loan-report-table col:nth-child(11) { width: 8%; }
+        .loan-report-table col:nth-child(12) { width: 9%; }
+
         .loan-report-table th,
         .loan-report-table td {
-            padding: 3px 4px !important;
+            padding: 3px 5px !important;
             white-space: normal !important;
-            overflow-wrap: break-word;
+            word-break: keep-all;
             line-height: 1.15;
+            overflow: hidden;
+        }
+
+        /* Header words (Principal, Interest, Penalty, Status) have no space
+           to wrap at, so they need a smaller type size than the data rows
+           to reliably fit their column without spilling into the next one. */
+        .loan-report-table thead th {
+            font-size: 7.5px;
         }
 
         .loan-report-table tr {
