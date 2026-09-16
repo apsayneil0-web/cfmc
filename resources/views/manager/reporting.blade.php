@@ -97,22 +97,28 @@
                 <input type="date" name="date_to" class="form-control" value="{{ $dateTo }}">
             </div>
             <div>
+                @if($reportType === 'maintenance')
+                <label class="form-label fw-semibold">Filter by Machine</label>
+                <select name="machine_id" class="form-select">
+                    <option value="">All Machines</option>
+                    @foreach($machines as $machine)
+                    <option value="{{ $machine->id }}" @selected((string) $machineId === (string) $machine->id)>{{ $machine->name }}</option>
+                    @endforeach
+                </select>
+                @else
                 <label class="form-label fw-semibold">Filter by Member</label>
-                <select name="member_id" id="reportMemberSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." {{ in_array($reportType, ['maintenance', 'expense']) ? 'disabled' : '' }}>
+                <select name="member_id" id="reportMemberSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." {{ $reportType === 'expense' ? 'disabled' : '' }}>
                     <option value="">All Members</option>
                     @foreach($farmers as $farmer)
                     <option value="{{ $farmer->id }}" @selected((string) $memberId === (string) $farmer->id)>{{ $farmer->full_name }}</option>
                     @endforeach
                 </select>
+                @endif
             </div>
         </div>
 
         @if($reportType === 'loan')
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div>
-                <label class="form-label fw-semibold">Loan Type</label>
-                <input type="text" name="loan_type" class="form-control" placeholder="e.g. Production, Machinery..." value="{{ $loanType }}">
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
                 <label class="form-label fw-semibold">Loan Status</label>
                 <select name="loan_status" class="form-select">
@@ -195,11 +201,10 @@
         <div class="row">
             <div class="col-6">
                 <p class="mb-1"><strong>Date Range</strong> &nbsp; From: {{ $dateFrom ?: '—' }} &nbsp; To: {{ $dateTo ?: '—' }}</p>
-                @if($reportType !== 'expense')
+                @if($reportType === 'maintenance')
+                <p class="mb-1"><strong>Machine</strong> &nbsp; {{ $selectedMachine?->name ?? 'All Machines' }}</p>
+                @elseif($reportType !== 'expense')
                 <p class="mb-1"><strong>Farmer</strong> &nbsp; {{ $selectedFarmer?->full_name ?? 'All Farmers' }}</p>
-                @endif
-                @if($reportType === 'loan')
-                <p class="mb-0"><strong>Loan Type</strong> &nbsp; {{ $loanType ?: 'All Types' }}</p>
                 @endif
                 @if($reportType === 'expense')
                 <p class="mb-0"><strong>Category</strong> &nbsp; {{ $category ? ucfirst(str_replace('_', ' ', $category)) : 'All Categories' }}</p>
@@ -220,7 +225,9 @@
     <div class="table-toolbar">
         <h3 class="text-lg font-semibold text-gray-900 mb-0">
             {{ $reportTitle }}
-            @if($selectedFarmer && ! in_array($reportType, ['maintenance', 'expense']))
+            @if($reportType === 'maintenance' && $selectedMachine)
+            <span class="text-muted fw-normal">&mdash; {{ $selectedMachine->name }}</span>
+            @elseif($selectedFarmer && ! in_array($reportType, ['maintenance', 'expense']))
             <span class="text-muted fw-normal">&mdash; {{ $selectedFarmer->full_name }}</span>
             @endif
         </h3>
@@ -430,7 +437,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Category</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Description</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Reason</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Recorded By</th>
                 </tr>
             </thead>

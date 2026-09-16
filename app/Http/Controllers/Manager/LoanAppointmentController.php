@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\LoanAppointment;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class LoanAppointmentController extends Controller
@@ -66,17 +67,38 @@ class LoanAppointmentController extends Controller
     }
 
     /**
-     * Cancel an appointment on the cooperative's behalf (e.g. unavailable slot).
+     * Reschedule an appointment on the cooperative's behalf (e.g. slot
+     * conflict, farmer called in asking to move it).
      */
-    public function cancel(LoanAppointment $loan_appointment)
+    public function reschedule(Request $request, LoanAppointment $loan_appointment)
     {
-        abort_if($loan_appointment->status === 'cancelled', 422, 'This appointment is already cancelled.');
+        abort_if($loan_appointment->status === 'cancelled', 422, 'Cancelled appointments cannot be rescheduled.');
+        abort_if($loan_appointment->loan_request_id, 422, 'This appointment has already been submitted to the Administrator and can no longer be rescheduled.');
 
-        $loan_appointment->update(['status' => 'cancelled']);
+        $oldDate = $loan_appointment->appointment_date->format('M d, Y');
+        $oldTime = \Carbon\Carbon::parse($loan_appointment->appointment_time)->format('g:i A');
+
+        $validated = $request->validate([
+            'appointment_date' => 'required|date|after_or_equal:today',
+            'appointment_time' => 'required',
+        ]);
+
+        $loan_appointment->update($validated);
 
         $name = $loan_appointment->user->farmer?->full_name ?? $loan_appointment->user->name;
+        $newDate = $loan_appointment->appointment_date->format('M d, Y');
+        $newTime = \Carbon\Carbon::parse($loan_appointment->appointment_time)->format('g:i A');
+
+        Notification::create([
+            'user_id' => $loan_appointment->user_id,
+            'title' => 'Your Loan Appointment Has Been Rescheduled',
+            'message' => "Your appointment originally set for {$oldDate} at {$oldTime} has been moved to {$newDate} at {$newTime}.",
+            'type' => 'reminder',
+            'is_read' => false,
+            'created_at' => now(),
+        ]);
 
         return redirect()->route('manager.loan-appointment')
-            ->with('success', "Appointment for {$name} has been cancelled.");
+            ->with('success', "Appointment for {$name} has been rescheduled.");
     }
 }

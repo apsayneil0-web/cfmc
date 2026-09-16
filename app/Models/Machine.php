@@ -20,8 +20,60 @@ class Machine extends Model
      */
     public const DEFAULT_DAILY_HECTARE_LIMIT = 6.00;
 
+    /**
+     * Known machine-type abbreviations for CFMC-[code]-[year]-[number] serial
+     * numbers. Keyed lowercase; typeCode() falls back to an initials-based
+     * guess for any type not listed here.
+     */
+    public const TYPE_CODES = [
+        'rice seeder' => 'RS',
+        'seeder' => 'SD',
+        'harvester' => 'HV',
+        'rotavator' => 'RT',
+        'tractor' => 'TR',
+        'cargo truck' => 'CT',
+        'truck' => 'CT',
+        'pump boat' => 'PB',
+    ];
+
+    /**
+     * The 2-letter code used in generated serial numbers for a machine type.
+     * Known types use the curated CFMC abbreviation (e.g. Harvester -> HV);
+     * anything else falls back to a best-effort guess from its initials.
+     */
+    public static function typeCode(string $type): string
+    {
+        $key = mb_strtolower(trim($type));
+
+        if (isset(self::TYPE_CODES[$key])) {
+            return self::TYPE_CODES[$key];
+        }
+
+        $words = preg_split('/\s+/', trim($type), -1, PREG_SPLIT_NO_EMPTY);
+
+        if (count($words) >= 2) {
+            return mb_strtoupper(mb_substr($words[0], 0, 1).mb_substr($words[1], 0, 1));
+        }
+
+        return mb_strtoupper(mb_substr($type, 0, 2));
+    }
+
+    /**
+     * Next CFMC-[code]-[year]-[number] serial number for a machine type,
+     * e.g. CFMC-HV-2026-002. Counts every machine (including archived) whose
+     * serial matches this code/year prefix, so a number is never reused.
+     */
+    public static function generateSerialNumber(string $type, ?int $year = null): string
+    {
+        $prefix = 'CFMC-'.self::typeCode($type).'-'.($year ?? now()->year).'-';
+        $next = self::where('serial_number', 'like', $prefix.'%')->count() + 1;
+
+        return $prefix.str_pad((string) $next, 3, '0', STR_PAD_LEFT);
+    }
+
     protected $fillable = [
         'name',
+        'type',
         'brand',
         'serial_number',
         'quantity',

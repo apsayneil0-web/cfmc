@@ -5,21 +5,18 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Cbu;
 use App\Models\CbuTransaction;
-use App\Models\Farmer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class CbuController extends Controller
 {
     /**
-     * Display every member's CBU account alongside the full contribution/expense ledger.
+     * Display every member's CBU account alongside the full contribution/expense
+     * ledger. New entries are recorded from the Payment page (see
+     * Manager\PaymentController::recordCbuPayment) — this page only lets the
+     * Manager correct an existing entry, not create new ones.
      */
     public function index()
     {
-        $farmers = Farmer::where('status', 'approved')
-            ->orderBy('last_name')
-            ->get();
-
         $transactions = CbuTransaction::with('cbu.farmer', 'recordedBy')
             ->orderByDesc('created_at')
             ->get();
@@ -34,39 +31,28 @@ class CbuController extends Controller
                 ->sum('amount'),
         ];
 
-        return view('manager.cbu', compact('farmers', 'transactions', 'stats'));
+        return view('manager.cbu', compact('transactions', 'stats'));
     }
 
     /**
-     * Record a contribution or expense entry against a farmer's CBU account,
-     * opening the account on first use.
+     * Correct an existing transaction's details, then replay the farmer's
+     * whole ledger so every balance_after downstream (and the account's
+     * current balance) stays consistent with the edit.
      */
-    public function store(Request $request)
+    public function update(Request $request, CbuTransaction $cbu_transaction)
     {
         $validated = $request->validate([
-            'farmer_id' => 'required|exists:farmers,id',
             'type' => 'required|in:contribution,expense',
             'category' => 'nullable|string|max:100',
             'amount' => 'required|numeric|min:0.01',
+            'transaction_date' => 'required|date',
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $cbu = Cbu::firstOrCreate(
-            ['farmer_id' => $validated['farmer_id']],
-            ['balance' => 0, 'status' => 'active']
-        );
-
-        abort_if($validated['type'] === 'expense' && (float) $validated['amount'] > (float) $cbu->balance, 422, 'Amount exceeds the farmer\'s CBU balance.');
-
-        $cbu->recordTransaction(
-            $validated['type'],
-            $validated['category'] ?? null,
-            (float) $validated['amount'],
-            $validated['notes'] ?? null,
-            Auth::id()
-        );
+        $cbu_transaction->update($validated);
+        $cbu_transaction->cbu->recalculateBalances();
 
         return redirect()->route('manager.cbu')
-            ->with('success', 'CBU entry recorded successfully.');
+            ->with('success', 'CBU entry updated successfully.');
     }
 }

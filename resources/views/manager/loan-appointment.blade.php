@@ -103,8 +103,8 @@
                                 <span class="icon-btn text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle"></i></span>
                                 @endif
                             @endif
-                            @if($appt->status !== 'cancelled')
-                            <x-icon-button icon="fa-times" color="danger" title="Cancel" data-bs-toggle="modal" data-bs-target="#cancelModal{{ $appt->id }}" />
+                            @if($appt->status !== 'cancelled' && ! $appt->loan_request_id)
+                            <x-icon-button icon="fa-calendar-alt" color="warning" title="Reschedule" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $appt->id }}" />
                             @endif
                         </div>
                     </td>
@@ -220,26 +220,34 @@
                 </div>
                 @endif
 
-                @if($appt->status !== 'cancelled')
-                <!-- Cancel Modal -->
-                <div class="modal fade" id="cancelModal{{ $appt->id }}" tabindex="-1" aria-hidden="true">
+                @if($appt->status !== 'cancelled' && ! $appt->loan_request_id)
+                <!-- Reschedule Modal -->
+                <div class="modal fade" id="rescheduleModal{{ $appt->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
-                            <div class="modal-header bg-danger text-white">
-                                <h5 class="modal-title fw-bold"><i class="fas fa-times-circle me-2"></i>Cancel Appointment</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-calendar-alt me-2"></i>Reschedule Appointment</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <div class="modal-body">
-                                <p class="mb-0">Cancel the appointment for <strong>{{ $farmerName }}</strong> on {{ $appt->appointment_date->format('M d, Y') }} at {{ \Carbon\Carbon::parse($appt->appointment_time)->format('g:i A') }}? The farmer will need to submit a new request if they still need one.</p>
-                            </div>
-                            <div class="modal-footer bg-light">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                                <form action="{{ route('manager.loan-appointment.cancel', $appt) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-danger">Cancel Appointment</button>
-                                </form>
-                            </div>
+                            <form action="{{ route('manager.loan-appointment.reschedule', $appt) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                <div class="modal-body">
+                                    <p class="text-muted small">Move <strong>{{ $farmerName }}</strong>'s appointment (currently {{ $appt->appointment_date->format('M d, Y') }} at {{ \Carbon\Carbon::parse($appt->appointment_time)->format('g:i A') }}) to a new date/time.</p>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+                                        <input type="date" name="appointment_date" class="form-control" min="{{ date('Y-m-d') }}" value="{{ $appt->appointment_date->format('Y-m-d') }}" required>
+                                    </div>
+                                    <div>
+                                        <label class="form-label fw-semibold">Time <span class="text-danger">*</span></label>
+                                        <input type="time" name="appointment_time" class="form-control" value="{{ \Carbon\Carbon::parse($appt->appointment_time)->format('H:i') }}" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-warning">Save New Schedule</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -255,7 +263,7 @@
 </div>
 
 <x-info-banner variant="info" title="Loan Appointment Requests" class="mt-6">
-    Farmers submit appointment requests to discuss loan applications. Approving confirms the slot; cancelling frees it up and the farmer will need to submit a new request if they still need one.
+    Farmers submit appointment requests to discuss loan applications. Approving confirms the slot; use Reschedule if the date/time no longer works. Once an appointment's loan pre-request has been submitted to the Administrator, it can no longer be rescheduled from here.
 </x-info-banner>
 
 <script>

@@ -171,10 +171,10 @@
                         <span>This form creates a <strong id="accountTypeLabel">Farmer</strong> account.</span>
                     </div>
 
-                    <!-- Row 0: Account Type -->
+                    <!-- Row 0: Role -->
                     <div class="row mb-3">
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Account Type <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
                             <div class="row g-2">
                                 <div class="col-4">
                                     <input type="radio" class="btn-check" name="roleID" id="roleFarmer" value="3" autocomplete="off" checked>
@@ -201,19 +201,140 @@
                         </div>
                     </div>
 
-                    <!-- Row 1: Full Name (Farmer only) -->
-                    <div class="row mb-3" id="farmerNameGroup">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="nameInput" list="approvedFarmersList" autocomplete="off">
-                            <datalist id="approvedFarmersList">
-                                @foreach($availableFarmers as $availableFarmer)
-                                    <option value="{{ $availableFarmer->full_name }}">
-                                @endforeach
-                            </datalist>
-                            <div class="form-text" id="nameHint">Start typing to pick from approved membership requests, or enter a name manually.</div>
-                            <div class="invalid-feedback">Please enter full name.</div>
-                            <input type="hidden" name="farmer_id" id="farmerIdInput">
+                    <!-- Row 1: Farmer Registration (Farmer only) -->
+                    <div id="farmerRegistrationGroup">
+                        <div class="alert alert-light border d-flex align-items-center gap-2 mb-3">
+                            <i class="fas fa-info-circle text-primary"></i>
+                            <span>This creates the membership record <strong>and</strong> its login account immediately — no separate review step. Use this for a farmer you're registering in person.</span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                                <input type="text" name="first_name" class="form-control form-control-lg" placeholder="First name" id="farmerFirstNameInput" required>
+                                <div class="invalid-feedback">Please enter first name.</div>
+                            </div>
+                            <div class="col-md-2 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">M.I.</label>
+                                <input type="text" name="middle_initial" class="form-control form-control-lg" placeholder="M.I." maxlength="2" id="farmerMiddleInitialInput">
+                            </div>
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" name="last_name" class="form-control form-control-lg" placeholder="Last name" id="farmerLastNameInput" required>
+                                <div class="invalid-feedback">Please enter last name.</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Suffix</label>
+                                <select name="suffix" class="form-select form-select-lg" id="farmerSuffixInput">
+                                    <option value="" selected>None</option>
+                                    <option value="Jr.">Jr.</option>
+                                    <option value="Sr.">Sr.</option>
+                                    <option value="III">III</option>
+                                    <option value="IV">IV</option>
+                                    <option value="V">V</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
+                                <input type="tel" name="contact_number" class="form-control form-control-lg ph-contact-input" placeholder="09123456789" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" id="farmerContactInput" required>
+                                <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
+                            </div>
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg" value="South Cotabato" readonly>
+                                <input type="hidden" name="province" value="South Cotabato">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-lg" id="municipalitySelect" name="municipality" required>
+                                    <option value="" selected disabled>Select Municipality</option>
+                                </select>
+                                <div class="invalid-feedback">Please select municipality.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Barangay</label>
+                                <select class="form-select form-select-lg d-none" id="barangayNameSelect" name="barangay" disabled>
+                                    <option value="" selected>Select Barangay</option>
+                                </select>
+                                <input type="text" class="form-control form-control-lg" id="barangayNameInput" name="barangay" placeholder="Enter barangay">
+                                <div class="form-text">A barangay list is only available for Surallah and Banga; other municipalities can be typed in.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">Crop Type <span class="text-danger">*</span></label>
+                                <div class="border rounded-3 p-2" id="cropCheckboxGroup">
+                                    @foreach($crops as $crop)
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" name="crop_ids[]" value="{{ $crop->id }}" id="newCrop{{ $crop->id }}">
+                                            <label class="form-check-label" for="newCrop{{ $crop->id }}">{{ $crop->name }}</label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-danger small mt-1" id="cropCheckboxError" style="display:none;">Please select at least one crop type.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
+                                <input type="number" name="land_area" step="0.1" min="0" class="form-control form-control-lg" placeholder="0.0" id="farmerLandAreaInput" required>
+                                <div class="invalid-feedback">Please enter land area.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">Upload Valid ID <span class="text-danger">*</span></label>
+                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="documentDropZone">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                    <input type="file" name="documents" id="documentsInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
+                                    <div id="documentFileName" class="mt-2 text-success fw-medium"></div>
+                                </div>
+                                <div class="invalid-feedback">Please upload required documents.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Upload Certificate of Title <span class="text-danger">*</span></label>
+                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="certificateDropZone">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                    <input type="file" name="certificate_of_title" id="certificateInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
+                                    <div id="certificateFileName" class="mt-2 text-success fw-medium"></div>
+                                </div>
+                                <div class="invalid-feedback">Please upload the certificate of title.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">Upload Barangay Certification of Land Possession <span class="text-danger">*</span></label>
+                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="barangayDropZone">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                    <input type="file" name="barangay_certification" id="barangayInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
+                                    <div id="barangayFileName" class="mt-2 text-success fw-medium"></div>
+                                </div>
+                                <div class="invalid-feedback">Please upload the barangay certification of land possession.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Upload RSBSA Number/ID <span class="text-danger">*</span></label>
+                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="rsbsaDropZone">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                    <input type="file" name="rsbsa" id="rsbsaInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
+                                    <div id="rsbsaFileName" class="mt-2 text-success fw-medium"></div>
+                                </div>
+                                <div class="invalid-feedback">Please upload the RSBSA number/ID.</div>
+                            </div>
                         </div>
                     </div>
 
@@ -221,7 +342,7 @@
                     <div class="row mb-3 d-none" id="staffFieldsGroup">
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="firstNameInput" autocomplete="off">
+                            <input type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="firstNameInput" autocomplete="off" required>
                             <div class="invalid-feedback">Please enter first name.</div>
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
@@ -230,7 +351,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="lastNameInput" autocomplete="off">
+                            <input type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="lastNameInput" autocomplete="off" required>
                             <div class="invalid-feedback">Please enter last name.</div>
                         </div>
                         <div class="col-md-4 mt-3">
@@ -251,42 +372,42 @@
                         </div>
                     </div>
 
-                    <!-- Row 2: Username & Email -->
-                    <div class="row mb-3">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text">@</span>
-                                <input type="text" class="form-control" placeholder="username" name="username" id="usernameInput" required>
+                    <!-- Row 2-4: Username, Email, Phone, Password (Admin/Manager only — Farmer credentials are auto-generated) -->
+                    <div id="staffCredentialsGroup" class="d-none">
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">@</span>
+                                    <input type="text" class="form-control" placeholder="username" name="username" id="usernameInput" required>
+                                    <div class="invalid-feedback">Please enter username.</div>
+                                </div>
                             </div>
-                            <div class="invalid-feedback">Please enter username.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email <span id="emailRequiredMark" class="text-muted">(optional)</span></label>
-                            <input type="email" class="form-control form-control-lg" placeholder="email@example.com" name="email" id="emailInput">
-                            <div class="invalid-feedback">Please enter a valid email.</div>
-                        </div>
-                    </div>
-
-                    <!-- Row 3: Phone -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Phone Number</label>
-                            <input type="tel" class="form-control form-control-lg" placeholder="0912-345-6789" name="Phonenumber" id="phoneInput">
-                        </div>
-                    </div>
-
-                    <!-- Row 4: Password -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
-                            <div class="input-group input-group-lg">
-                                <input type="password" class="form-control" placeholder="Enter password" name="password" required>
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control form-control-lg" placeholder="email@example.com" name="email" id="emailInput" required>
+                                <div class="invalid-feedback">Please enter a valid email.</div>
                             </div>
-                            <div class="invalid-feedback">Please enter password.</div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Phone Number</label>
+                                <input type="tel" class="form-control form-control-lg" placeholder="0912-345-6789" name="Phonenumber" id="phoneInput">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg">
+                                    <input type="password" class="form-control" placeholder="Enter password" name="password" id="staffPasswordInput" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">Please enter password.</div>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -323,34 +444,58 @@
 
                 <div class="confirm-account-summary border rounded-3 px-3">
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-id-badge text-primary me-2 fa-fw"></i>Account Type</span>
+                        <span class="text-muted small"><i class="fas fa-id-badge text-primary me-2 fa-fw"></i>Role</span>
                         <span class="fw-semibold text-end" id="confirmAccRole">-</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
                         <span class="text-muted small"><i class="fas fa-user text-primary me-2 fa-fw"></i>Full Name</span>
                         <span class="fw-semibold text-end" id="confirmAccName">-</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-at text-primary me-2 fa-fw"></i>Username</span>
-                        <span class="fw-semibold text-end" id="confirmAccUsername">-</span>
+
+                    <!-- Admin/Manager rows -->
+                    <div id="confirmStaffRows">
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <span class="text-muted small"><i class="fas fa-at text-primary me-2 fa-fw"></i>Username</span>
+                            <span class="fw-semibold text-end" id="confirmAccUsername">-</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <span class="text-muted small"><i class="fas fa-envelope text-primary me-2 fa-fw"></i>Email</span>
+                            <span class="fw-semibold text-end" id="confirmAccEmail">-</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <span class="text-muted small"><i class="fas fa-phone text-primary me-2 fa-fw"></i>Phone</span>
+                            <span class="fw-semibold text-end" id="confirmAccPhone">-</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span class="text-muted small"><i class="fas fa-toggle-on text-primary me-2 fa-fw"></i>Status</span>
+                            <span class="fw-semibold text-end">Inactive until first login</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-envelope text-primary me-2 fa-fw"></i>Email</span>
-                        <span class="fw-semibold text-end" id="confirmAccEmail">-</span>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-phone text-primary me-2 fa-fw"></i>Phone</span>
-                        <span class="fw-semibold text-end" id="confirmAccPhone">-</span>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between py-2">
-                        <span class="text-muted small"><i class="fas fa-toggle-on text-primary me-2 fa-fw"></i>Status</span>
-                        <span class="fw-semibold text-end">Inactive until first login</span>
+
+                    <!-- Farmer rows -->
+                    <div id="confirmFarmerRows" class="d-none">
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <span class="text-muted small"><i class="fas fa-seedling text-primary me-2 fa-fw"></i>Crop Type</span>
+                            <span class="fw-semibold text-end" id="confirmAccCropType">-</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <span class="text-muted small"><i class="fas fa-ruler-combined text-primary me-2 fa-fw"></i>Land Area</span>
+                            <span class="fw-semibold text-end" id="confirmAccLandArea">-</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <span class="text-muted small"><i class="fas fa-phone text-primary me-2 fa-fw"></i>Contact</span>
+                            <span class="fw-semibold text-end" id="confirmAccContact">-</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between py-2">
+                            <span class="text-muted small"><i class="fas fa-map-marker-alt text-primary me-2 fa-fw"></i>Location</span>
+                            <span class="fw-semibold text-end" id="confirmAccLocation">-</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="info-banner variant-info mt-3 mb-4" id="confirmAccLinkNote" style="display: none;">
-                    <i class="fas fa-link mt-1"></i>
-                    <p class="small mb-0">This account will be linked to the matching approved membership record.</p>
+                <div class="info-banner variant-info mt-3 mb-4" id="confirmAutoAccountNote" style="display: none;">
+                    <i class="fas fa-bolt mt-1"></i>
+                    <p class="small mb-0">This account is created and approved immediately — a username and temporary password will be generated automatically for you to share with the farmer.</p>
                 </div>
 
                 <div class="d-flex gap-2">
@@ -361,6 +506,36 @@
                         <i class="fas fa-check-circle me-2"></i>Confirm &amp; Create
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Created Result Modal (Farmer accounts only) -->
+<div class="modal fade" id="accountCreatedModal" tabindex="-1" aria-labelledby="accountCreatedModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-body px-4 pb-4 pt-4 text-center">
+                <div class="notify-icon-badge success d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h5 class="fw-bold mb-1" id="accountCreatedModalLabel">Farmer Account Created</h5>
+                <p class="text-muted small mb-4">Share these login details with <strong id="createdAccountName">-</strong> directly.</p>
+
+                <div class="confirm-account-summary border rounded-3 px-3 text-start mb-4">
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <span class="text-muted small"><i class="fas fa-at text-primary me-2 fa-fw"></i>Username</span>
+                        <span class="fw-semibold text-end" id="createdAccountUsername">-</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2">
+                        <span class="text-muted small"><i class="fas fa-key text-primary me-2 fa-fw"></i>Temporary Password</span>
+                        <span class="fw-semibold text-end" id="createdAccountPassword">-</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary w-100 py-2" id="accountCreatedDoneBtn">
+                    <i class="fas fa-check me-2"></i>Done
+                </button>
             </div>
         </div>
     </div>
@@ -458,10 +633,10 @@
                 <form id="editUserForm" class="needs-validation" novalidate>
                     <input type="hidden" id="editUserId" name="userId">
 
-                    <!-- Row 0: Account Type -->
+                    <!-- Row 0: Role -->
                     <div class="row mb-3">
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Account Type <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
                             <div class="row g-2">
                                 <div class="col-4">
                                     <input type="radio" class="btn-check" name="roleID" id="editRoleFarmer" value="3" autocomplete="off">
@@ -663,6 +838,9 @@
     .hover-border-primary:hover {
         border-color: var(--brand-primary) !important;
     }
+    .borderdashed {
+        border-style: dashed !important;
+    }
     .form-control-lg, .form-select-lg {
         padding: 0.75rem 1rem;
         font-size: 1rem;
@@ -740,34 +918,13 @@
         });
     })();
 
-    // Map approved farmer full names to their membership record, so picking a
-    // suggested name from the datalist links the account to that record and
-    // auto-fills the details already captured during registration.
-    var approvedFarmersByName = {};
-    @foreach($availableFarmers as $availableFarmer)
-        approvedFarmersByName[@json($availableFarmer->full_name).toLowerCase()] = {
-            id: {{ $availableFarmer->id }},
-            phone: @json($availableFarmer->contact_number),
-            firstName: @json($availableFarmer->first_name),
-            lastName: @json($availableFarmer->last_name)
-        };
-    @endforeach
-
-    // Builds a lowercase, no-punctuation username suggestion from a farmer's name.
-    function suggestUsername(firstName, lastName) {
-        return (firstName + lastName).toLowerCase().replace(/[^a-z0-9]/g, '');
-    }
-
-    var nameInput = document.getElementById('nameInput');
-    var farmerIdInput = document.getElementById('farmerIdInput');
     var phoneInput = document.getElementById('phoneInput');
     var usernameInput = document.getElementById('usernameInput');
     var emailInput = document.getElementById('emailInput');
-    var emailRequiredMark = document.getElementById('emailRequiredMark');
     var accountTypeLabel = document.getElementById('accountTypeLabel');
-    var nameHint = document.getElementById('nameHint');
-    var farmerNameGroup = document.getElementById('farmerNameGroup');
+    var farmerRegistrationGroup = document.getElementById('farmerRegistrationGroup');
     var staffFieldsGroup = document.getElementById('staffFieldsGroup');
+    var staffCredentialsGroup = document.getElementById('staffCredentialsGroup');
     var firstNameInput = document.getElementById('firstNameInput');
     var lastNameInput = document.getElementById('lastNameInput');
 
@@ -776,34 +933,30 @@
         return checked ? checked.value : '3';
     }
 
-    // The Full Name field only suggests/links approved farmer records when
-    // creating a Farmer account; Admin/Manager fill in a Staff profile instead,
-    // and email is only required for those two roles.
+    // Disabled fields are skipped by both form submission (FormData) and
+    // constraint validation (checkValidity), so hiding a group's fields and
+    // disabling them together is enough to fully exclude it — including
+    // avoiding name collisions with the other group's identically-named
+    // fields (both use first_name/last_name, for instance).
+    function setGroupEnabled(groupEl, enabled) {
+        groupEl.classList.toggle('d-none', !enabled);
+        groupEl.querySelectorAll('input, select, textarea').forEach(function(field) {
+            field.disabled = !enabled;
+        });
+    }
+
+    // Farmer accounts fill in the full registration form (like Membership
+    // Registration) and get their login auto-provisioned; Admin/Manager fill
+    // in a Staff profile plus manually-chosen username/email/password instead.
     function applyRoleRules() {
         var role = getSelectedRole();
         var isFarmer = role === '3';
 
         accountTypeLabel.textContent = ROLE_LABELS[role];
 
-        emailInput.required = !isFarmer;
-        emailRequiredMark.textContent = isFarmer ? '(optional)' : '*';
-        emailRequiredMark.className = isFarmer ? 'text-muted' : 'text-danger';
-
-        farmerNameGroup.classList.toggle('d-none', !isFarmer);
-        staffFieldsGroup.classList.toggle('d-none', isFarmer);
-        nameInput.required = isFarmer;
-        firstNameInput.required = !isFarmer;
-        lastNameInput.required = !isFarmer;
-
-        if (isFarmer) {
-            nameInput.setAttribute('list', 'approvedFarmersList');
-            nameHint.style.display = '';
-            farmerIdInput.value = '';
-        } else {
-            nameInput.removeAttribute('list');
-            nameHint.style.display = 'none';
-            farmerIdInput.value = '';
-        }
+        setGroupEnabled(farmerRegistrationGroup, isFarmer);
+        setGroupEnabled(staffFieldsGroup, !isFarmer);
+        setGroupEnabled(staffCredentialsGroup, !isFarmer);
     }
 
     document.querySelectorAll('#userForm input[name="roleID"]').forEach(function(input) {
@@ -811,28 +964,8 @@
     });
     applyRoleRules();
 
-    nameInput.addEventListener('input', function() {
-        if (getSelectedRole() !== '3') {
-            farmerIdInput.value = '';
-            return;
-        }
-
-        var match = approvedFarmersByName[nameInput.value.trim().toLowerCase()];
-        if (match) {
-            farmerIdInput.value = match.id;
-            phoneInput.value = match.phone || '';
-            usernameInput.value = suggestUsername(match.firstName, match.lastName);
-        } else {
-            farmerIdInput.value = '';
-        }
-    });
-
     document.getElementById('createModal').addEventListener('hidden.bs.modal', function() {
-        var form = document.getElementById('userForm');
-        form.reset();
-        form.classList.remove('was-validated');
-        farmerIdInput.value = '';
-        applyRoleRules();
+        resetCreateForm();
     });
 
     // Reveal/hide a farmer's system-generated temporary password in the table.
@@ -954,26 +1087,203 @@
         });
     }
 
-    // Validates the create-account form and, if valid, shows a review
-    // step before the account is actually created.
+    // Mindanao Provinces and Municipalities Data (mirrors Membership Registration)
+    const municipalitiesData = {
+        'South Cotabato': [
+            'Banga', 'Bangian', 'Bagumpasig', 'Banon', 'Buayan', 'Buli', 'Caloocan', 'Datu Saliao', 'General Santos City', 'Koronadal City', 'Lake Sebu', 'Lambayong', 'Mabini', 'Magsaysay', 'Maiha', 'Malapatan', 'Malungon', 'Norala', 'Polomolok', 'Santo Nino', 'Surallah', 'T\'Boli', 'Tampakan', 'Tantangan', 'Tupi'
+        ]
+    };
+
+    // Barangay lists — only populated for Surallah and Banga (South Cotabato) for now.
+    const barangaysData = {
+        'Surallah': [
+            'Buenavista', 'Canahay', 'Centrala', 'Colongulo', 'Dajay', 'Duengas', 'Lambontong', 'Lamian', 'Lamsugod', 'Libertad (Poblacion)', 'Little Baguio', 'Moloy', 'Naci', 'Talahik', 'Tubiala', 'Upper Sepaka', 'Veterans'
+        ],
+        'Banga': [
+            'Benitez (Poblacion)', 'Cabudian', 'Cabuling', 'Cinco', 'Derilon', 'El Nonok', 'Improgo Village (Poblacion)', 'Kusan', 'Lam-apos', 'Lamba', 'Lambingi', 'Lampari', 'Liwanay', 'Malaya', 'Punong Grande', 'Rang-ay', 'Reyes (Poblacion)', 'Rizal', 'Rizal Poblacion', 'San Jose', 'San Vicente', 'Yangco Poblacion'
+        ]
+    };
+
+    (function() {
+        const municipalitySelect = document.getElementById('municipalitySelect');
+        municipalitiesData['South Cotabato'].forEach(function(municipality) {
+            const option = document.createElement('option');
+            option.value = municipality;
+            option.textContent = municipality;
+            municipalitySelect.appendChild(option);
+        });
+    })();
+
+    document.getElementById('municipalitySelect').addEventListener('change', function() {
+        const selectedMunicipality = this.value;
+        const barangaySelect = document.getElementById('barangayNameSelect');
+        const barangayInput = document.getElementById('barangayNameInput');
+
+        barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
+        barangayInput.value = '';
+
+        if (selectedMunicipality && barangaysData[selectedMunicipality]) {
+            barangaysData[selectedMunicipality].forEach(function(barangay) {
+                const option = document.createElement('option');
+                option.value = barangay;
+                option.textContent = barangay;
+                barangaySelect.appendChild(option);
+            });
+
+            barangaySelect.classList.remove('d-none');
+            barangaySelect.disabled = false;
+            barangayInput.classList.add('d-none');
+            barangayInput.disabled = true;
+        } else {
+            barangaySelect.classList.add('d-none');
+            barangaySelect.disabled = true;
+            barangayInput.classList.remove('d-none');
+            barangayInput.disabled = false;
+        }
+    });
+
+    function wireDocumentDropZone(dropZoneId, inputId, fileNameId) {
+        const dropZone = document.getElementById(dropZoneId);
+        const input = document.getElementById(inputId);
+        const fileNameDisplay = document.getElementById(fileNameId);
+
+        dropZone.addEventListener('click', function() {
+            input.click();
+        });
+
+        input.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            fileNameDisplay.innerHTML = file ? '<i class="fas fa-file"></i> ' + file.name : '';
+        });
+
+        dropZone.addEventListener('dragover', function(event) {
+            event.preventDefault();
+            dropZone.classList.add('bg-white', 'border-success');
+        });
+
+        dropZone.addEventListener('dragleave', function(event) {
+            event.preventDefault();
+            dropZone.classList.remove('bg-white', 'border-success');
+        });
+
+        dropZone.addEventListener('drop', function(event) {
+            event.preventDefault();
+            dropZone.classList.remove('bg-white', 'border-success');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                input.files = files;
+                fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + files[0].name;
+            }
+        });
+    }
+
+    wireDocumentDropZone('documentDropZone', 'documentsInput', 'documentFileName');
+    wireDocumentDropZone('certificateDropZone', 'certificateInput', 'certificateFileName');
+    wireDocumentDropZone('barangayDropZone', 'barangayInput', 'barangayFileName');
+    wireDocumentDropZone('rsbsaDropZone', 'rsbsaInput', 'rsbsaFileName');
+
+    document.querySelectorAll('.ph-contact-input').forEach(function(input) {
+        input.addEventListener('input', function() {
+            let value = input.value.replace(/[^\d+]/g, '');
+            if (value.indexOf('+') > 0) {
+                value = value.replace(/\+/g, '');
+            }
+            input.value = value;
+        });
+    });
+
+    function resetCreateForm() {
+        var form = document.getElementById('userForm');
+        form.reset();
+        form.classList.remove('was-validated');
+        document.getElementById('cropCheckboxError').style.display = 'none';
+        ['documentFileName', 'certificateFileName', 'barangayFileName', 'rsbsaFileName'].forEach(function(id) {
+            document.getElementById(id).textContent = '';
+        });
+
+        const municipalitySelect = document.getElementById('municipalitySelect');
+        municipalitySelect.innerHTML = '<option value="" selected disabled>Select Municipality</option>';
+        municipalitiesData['South Cotabato'].forEach(function(municipality) {
+            const option = document.createElement('option');
+            option.value = municipality;
+            option.textContent = municipality;
+            municipalitySelect.appendChild(option);
+        });
+
+        const barangaySelect = document.getElementById('barangayNameSelect');
+        const barangayInput = document.getElementById('barangayNameInput');
+        barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
+        barangaySelect.classList.add('d-none');
+        barangaySelect.disabled = true;
+        barangayInput.classList.remove('d-none');
+        barangayInput.disabled = false;
+
+        applyRoleRules();
+    }
+
+    // Validates the create-account form and, if valid, shows a review step
+    // before the account is actually created. Farmer accounts get a review
+    // of the registration details; Admin/Manager get the existing summary.
     function openCreateAccountConfirm() {
         var form = document.getElementById('userForm');
-        if (!form.checkValidity()) {
-            form.classList.add('was-validated');
-            return;
+        var role = getSelectedRole();
+        var isFarmer = role === '3';
+
+        document.getElementById('confirmAccRole').textContent = ROLE_LABELS[role];
+
+        if (isFarmer) {
+            var checkedCrops = form.querySelectorAll('input[name="crop_ids[]"]:checked');
+            var cropError = document.getElementById('cropCheckboxError');
+
+            if (!form.checkValidity() || checkedCrops.length === 0) {
+                form.classList.add('was-validated');
+                cropError.style.display = checkedCrops.length === 0 ? 'block' : 'none';
+                return;
+            }
+            cropError.style.display = 'none';
+
+            var firstName = document.getElementById('farmerFirstNameInput').value.trim();
+            var middleInitial = document.getElementById('farmerMiddleInitialInput').value.trim();
+            var lastName = document.getElementById('farmerLastNameInput').value.trim();
+            var suffix = document.getElementById('farmerSuffixInput').value;
+            var contactNumber = document.getElementById('farmerContactInput').value.trim();
+            var landArea = document.getElementById('farmerLandAreaInput').value;
+            var municipality = document.getElementById('municipalitySelect').value;
+            var cropNames = Array.prototype.map.call(checkedCrops, function(checkbox) {
+                return checkbox.nextElementSibling.textContent;
+            }).join(', ');
+
+            var fullName = firstName;
+            if (middleInitial) fullName += ' ' + middleInitial;
+            fullName += ' ' + lastName;
+            if (suffix) fullName += ' ' + suffix;
+
+            document.getElementById('confirmAccName').textContent = fullName;
+            document.getElementById('confirmAccCropType').textContent = cropNames;
+            document.getElementById('confirmAccLandArea').textContent = landArea + ' hectares';
+            document.getElementById('confirmAccContact').textContent = contactNumber;
+            document.getElementById('confirmAccLocation').textContent = municipality + ', South Cotabato';
+
+            document.getElementById('confirmStaffRows').classList.add('d-none');
+            document.getElementById('confirmFarmerRows').classList.remove('d-none');
+            document.getElementById('confirmAutoAccountNote').style.display = 'flex';
+        } else {
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            var displayName = [firstNameInput.value, document.getElementById('middleNameInput').value, lastNameInput.value].filter(Boolean).join(' ').trim();
+
+            document.getElementById('confirmAccName').textContent = displayName;
+            document.getElementById('confirmAccUsername').textContent = '@' + usernameInput.value.trim();
+            document.getElementById('confirmAccEmail').textContent = emailInput.value.trim();
+            document.getElementById('confirmAccPhone').textContent = phoneInput.value.trim() || 'Not provided';
+
+            document.getElementById('confirmStaffRows').classList.remove('d-none');
+            document.getElementById('confirmFarmerRows').classList.add('d-none');
+            document.getElementById('confirmAutoAccountNote').style.display = 'none';
         }
-
-        var isFarmer = getSelectedRole() === '3';
-        var displayName = isFarmer
-            ? nameInput.value.trim()
-            : [firstNameInput.value, document.getElementById('middleNameInput').value, lastNameInput.value].filter(Boolean).join(' ').trim();
-
-        document.getElementById('confirmAccRole').textContent = ROLE_LABELS[getSelectedRole()];
-        document.getElementById('confirmAccName').textContent = displayName;
-        document.getElementById('confirmAccUsername').textContent = '@' + usernameInput.value.trim();
-        document.getElementById('confirmAccEmail').textContent = emailInput.value.trim() || 'Not provided';
-        document.getElementById('confirmAccPhone').textContent = phoneInput.value.trim() || 'Not provided';
-        document.getElementById('confirmAccLinkNote').style.display = farmerIdInput.value ? 'flex' : 'none';
 
         new bootstrap.Modal(document.getElementById('confirmCreateModal')).show();
     }
@@ -983,7 +1293,8 @@
         submitUserForm();
     });
 
-    // Form submission function
+    // Form submission function — for Farmer this also provisions the login
+    // account automatically, so the response carries a generated username/password.
     function submitUserForm() {
         var form = document.getElementById('userForm');
 
@@ -1016,9 +1327,17 @@
 
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
-                showAlert(data.message, 'success', function() {
-                    window.location.reload();
-                });
+
+                if (data.username && data.password) {
+                    document.getElementById('createdAccountName').textContent = data.name;
+                    document.getElementById('createdAccountUsername').textContent = data.username;
+                    document.getElementById('createdAccountPassword').textContent = data.password;
+                    new bootstrap.Modal(document.getElementById('accountCreatedModal')).show();
+                } else {
+                    showAlert(data.message, 'success', function() {
+                        window.location.reload();
+                    });
+                }
             } else {
                 var errorMsg = data.message || 'Validation failed';
                 if (data.errors) {
@@ -1038,6 +1357,10 @@
             showAlert(error.message, 'danger');
         });
     }
+
+    document.getElementById('accountCreatedDoneBtn').addEventListener('click', function() {
+        window.location.reload();
+    });
 
     // Search and Filter Functionality — filters the full user list on the
     // server (not just the rows on the current page).

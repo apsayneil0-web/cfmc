@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Crop;
 use App\Models\Farmer;
 use App\Models\Staff;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -34,11 +37,19 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $roleID = (int) $request->input('roleID');
+
+        // Farmer accounts go through the same "register now, approve
+        // immediately" flow as the manager's version of this screen — a
+        // full membership record plus an auto-provisioned login account.
+        // Admin/Manager accounts keep the existing Staff-profile flow below.
+        if ($roleID === 3) {
+            return $this->storeFarmer($request);
+        }
+
         $isStaffRole = in_array($roleID, self::STAFF_ROLES, true);
 
         $validator = Validator::make($request->all(), [
-            'roleID' => 'required|in:1,2,3',
-            'name' => [Rule::requiredIf(! $isStaffRole), 'nullable', 'string', 'max:255'],
+            'roleID' => 'required|in:1,2',
             'first_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255'],
             'middle_name' => 'nullable|string|max:255',
             'last_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255'],
@@ -46,16 +57,9 @@ class UserController extends Controller
             'gender' => 'nullable|in:Male,Female',
             'profile_picture' => 'nullable|image|max:2048',
             'username' => 'required|string|max:255|unique:users,username',
-            'email' => [
-                Rule::requiredIf(in_array($roleID, self::EMAIL_REQUIRED_ROLES, true)),
-                'nullable',
-                'email',
-                'max:255',
-                'unique:users,email',
-            ],
+            'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
             'Phonenumber' => 'nullable|string|max:20',
-            'farmer_id' => 'nullable|integer|exists:farmers,id',
         ]);
 
         if ($validator->fails()) {
@@ -65,23 +69,15 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Farmer accounts may omit an email; keep the column populated with a placeholder
-        $email = $request->email;
-        if (empty($email)) {
-            $email = $request->username . '@farm.local';
-        }
-
-        // For Admin/Manager, the Staff record is the single source of truth for the
-        // person's name; the account's display name is derived from it, not re-typed.
-        $name = $isStaffRole
-            ? implode(' ', array_filter([$request->first_name, $request->middle_name, $request->last_name], fn ($part) => filled($part)))
-            : $request->name;
+        // The Staff record is the single source of truth for the person's
+        // name; the account's display name is derived from it, not re-typed.
+        $name = implode(' ', array_filter([$request->first_name, $request->middle_name, $request->last_name], fn ($part) => filled($part)));
 
         try {
             $user = User::create([
                 'name' => $name,
                 'username' => $request->username,
-                'email' => $email,
+                'email' => $request->email,
                 'password' => Hash::make($request->password),
                 // The system marks accounts active automatically once they actually log in.
                 'status' => 'inactive',
@@ -92,26 +88,16 @@ class UserController extends Controller
                 'FailedLoginAttemps' => 0,
             ]);
 
-            // Link the account to its approved membership record, if one was selected
-            if ($roleID === 3 && $request->filled('farmer_id')) {
-                Farmer::where('id', $request->farmer_id)
-                    ->where('status', 'approved')
-                    ->whereNull('account_user_id')
-                    ->update(['account_user_id' => $user->id]);
-            }
-
-            if ($isStaffRole) {
-                Staff::create([
-                    'first_name' => $request->first_name,
-                    'middle_name' => $request->middle_name,
-                    'last_name' => $request->last_name,
-                    'date_of_birth' => $request->date_of_birth,
-                    'age' => $request->date_of_birth ? Carbon::parse($request->date_of_birth)->age : null,
-                    'gender' => $request->gender,
-                    'profile_picture' => $this->storeProfilePicture($request),
-                    'user_id' => $user->id,
-                ]);
-            }
+            Staff::create([
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_name,
+                'last_name' => $request->last_name,
+                'date_of_birth' => $request->date_of_birth,
+                'age' => $request->date_of_birth ? Carbon::parse($request->date_of_birth)->age : null,
+                'gender' => $request->gender,
+                'profile_picture' => $this->storeProfilePicture($request),
+                'user_id' => $user->id,
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -123,6 +109,139 @@ class UserController extends Controller
                 'message' => 'Failed to create user: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Register a new farmer and immediately provision their login account,
+     * in one step — identical in behavior to the manager's version of this
+     * form. The record goes straight to "approved" (no separate pending/
+     * review step), since whoever is filling this out has already verified
+     * the person and their documents in person.
+     */
+    private function storeFarmer(Request $request)
+    {
+        $request->merge([
+            'contact_number' => preg_replace('/[\s\-]+/', '', (string) $request->input('contact_number')),
+        ]);
+
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:255',
+            'middle_initial' => 'nullable|string|max:5',
+            'last_name' => 'required|string|max:255',
+            'suffix' => 'nullable|string|max:50',
+            'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
+            'crop_ids' => 'required|array|min:1',
+            'crop_ids.*' => 'exists:crops,id',
+            'land_area' => 'required|numeric|min:0',
+            'documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'certificate_of_title' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'barangay_certification' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'rsbsa' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'province' => 'required|string|max:255',
+            'municipality' => 'required|string|max:255',
+            'barangay' => 'nullable|string|max:255',
+        ], [
+            'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            $result = DB::transaction(function () use ($request, $validated) {
+                $farmer = Farmer::create([
+                    'first_name' => $validated['first_name'],
+                    'middle_initial' => $validated['middle_initial'] ?? null,
+                    'last_name' => $validated['last_name'],
+                    'suffix' => $validated['suffix'] ?? null,
+                    'contact_number' => $validated['contact_number'],
+                    'land_area' => $validated['land_area'],
+                    'documents_path' => $this->storeFarmerDocument($request, 'documents'),
+                    'certificate_of_title_path' => $this->storeFarmerDocument($request, 'certificate_of_title'),
+                    'barangay_certification_path' => $this->storeFarmerDocument($request, 'barangay_certification'),
+                    'rsbsa_path' => $this->storeFarmerDocument($request, 'rsbsa'),
+                    'province' => $validated['province'],
+                    'municipality' => $validated['municipality'],
+                    'barangay' => $validated['barangay'] ?? null,
+                    'status' => 'approved',
+                ]);
+
+                $farmer->crops()->sync($validated['crop_ids']);
+
+                $username = $this->generateFarmerUsername($farmer);
+                $password = Str::password(10);
+
+                $user = User::create([
+                    'name' => $farmer->full_name,
+                    'username' => $username,
+                    'email' => $username.'@farm.local',
+                    'password' => Hash::make($password),
+                    'temp_password' => $password,
+                    'status' => 'inactive',
+                    'roleID' => 3,
+                    'Phonenumber' => $farmer->contact_number,
+                    'firstTimelogin' => true,
+                    'isloggedin' => false,
+                    'FailedLoginAttemps' => 0,
+                ]);
+
+                $farmer->update(['account_user_id' => $user->id]);
+
+                return ['name' => $farmer->full_name, 'username' => $username, 'password' => $password];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$result['name']}'s account was created. Username: {$result['username']}, temporary password: {$result['password']}. Please share these with them directly.",
+                'name' => $result['name'],
+                'username' => $result['username'],
+                'password' => $result['password'],
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create farmer account: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Build a unique username from the farmer's name (e.g. "juan.delacruz",
+     * "juan.delacruz2" on collision).
+     */
+    private function generateFarmerUsername(Farmer $farmer): string
+    {
+        $base = Str::slug($farmer->first_name.' '.$farmer->last_name, '.');
+        $username = $base;
+        $suffix = 1;
+
+        while (User::where('username', $username)->exists()) {
+            $suffix++;
+            $username = $base.$suffix;
+        }
+
+        return $username;
+    }
+
+    /**
+     * Store an uploaded farmer document under the given form field.
+     */
+    private function storeFarmerDocument(Request $request, string $field): ?string
+    {
+        if (! $request->hasFile($field)) {
+            return null;
+        }
+
+        $document = $request->file($field);
+        $documentName = time().'_'.$document->getClientOriginalName();
+
+        return $document->storeAs('farmer_documents', $documentName, 'public');
     }
 
     /**
@@ -172,13 +291,10 @@ class UserController extends Controller
 
         $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
-        // Approved membership records without an account yet, for the "Create Account" name picker
-        $availableFarmers = Farmer::where('status', 'approved')
-            ->whereNull('account_user_id')
-            ->orderBy('created_at', 'desc')
-            ->get(['id', 'first_name', 'middle_initial', 'last_name', 'suffix', 'contact_number', 'created_at']);
+        // Crop options for the "Create Account" form's Farmer crop-type checkboxes
+        $crops = Crop::all();
 
-        return view('admin.user-management', compact('users', 'availableFarmers'));
+        return view('admin.user-management', compact('users', 'crops'));
     }
 
     /**

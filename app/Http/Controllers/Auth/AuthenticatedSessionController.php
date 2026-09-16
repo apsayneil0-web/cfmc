@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -58,6 +59,12 @@ class AuthenticatedSessionController extends Controller
             ])->onlyInput('username');
         }
 
+        if ($user && $this->hasActiveSessionElsewhere($user, $request)) {
+            return back()->withErrors([
+                'username' => 'This account is already logged in on another device or browser. Please logout there first before logging in again.',
+            ])->onlyInput('username');
+        }
+
         if (Auth::attempt([$loginField => $credentials['username'], 'password' => $credentials['password']], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
@@ -105,6 +112,30 @@ class AuthenticatedSessionController extends Controller
         return back()->withErrors([
             'username' => 'The provided credentials do not match our records.',
         ])->onlyInput('username');
+    }
+
+    /**
+     * Whether this user already has a live session on a different
+     * browser/device — i.e. a row in the `sessions` table for them, other
+     * than the current (still-unauthenticated) one, that hasn't gone idle
+     * past the configured session lifetime yet. Using the sessions table
+     * itself (rather than a DB flag on the user) means a session that was
+     * never explicitly logged out still self-expires normally instead of
+     * permanently locking the account out of logging in anywhere.
+     */
+    private function hasActiveSessionElsewhere(User $user, Request $request): bool
+    {
+        if (config('session.driver') !== 'database') {
+            return false;
+        }
+
+        $cutoff = now()->subMinutes((int) config('session.lifetime'))->timestamp;
+
+        return DB::table(config('session.table', 'sessions'))
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $request->session()->getId())
+            ->where('last_activity', '>=', $cutoff)
+            ->exists();
     }
 
     /**

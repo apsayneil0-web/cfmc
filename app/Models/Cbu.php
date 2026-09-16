@@ -45,4 +45,30 @@ class Cbu extends Model
             'recorded_by' => $recordedBy,
         ]);
     }
+
+    /**
+     * Replay every transaction in chronological order to recompute each
+     * one's balance_after and this account's current balance. Needed after
+     * editing a transaction, since changing its amount/type shifts the
+     * running balance for everything recorded after it.
+     */
+    public function recalculateBalances(): void
+    {
+        $balance = 0.0;
+
+        $transactions = $this->transactions()
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($transactions as $transaction) {
+            $balance = $transaction->type === 'expense'
+                ? max(0, round($balance - (float) $transaction->amount, 2))
+                : round($balance + (float) $transaction->amount, 2);
+
+            $transaction->update(['balance_after' => $balance]);
+        }
+
+        $this->update(['balance' => $balance]);
+    }
 }

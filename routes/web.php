@@ -42,6 +42,7 @@ Route::get('/', function () {
 // Dashboard routes
 Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     // Admin Routes
+    Route::middleware('role:1')->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::get('/admin/members', [MemberController::class, 'index'])->name('admin.members');
@@ -74,8 +75,10 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/admin/user-management/{user}/change-password', [AdminUserController::class, 'changePassword'])->name('admin.user.change-password');
     Route::get('/admin/user-management/{user}', [AdminUserController::class, 'show'])->name('admin.user.show');
     Route::put('/admin/user-management/{user}', [AdminUserController::class, 'update'])->name('admin.user.update');
+    }); // end role:1 (Admin)
 
     // Manager Routes
+    Route::middleware('role:2')->group(function () {
     Route::get('/manager/dashboard', [ManagerDashboardController::class, 'index'])->name('manager.dashboard');
 
     Route::get('/manager/membership', [MembershipController::class, 'index'])->name('manager.membership');
@@ -104,7 +107,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::post('/manager/financial', [FinancialController::class, 'store'])->name('manager.financial.store');
 
     Route::get('/manager/cbu', [CbuController::class, 'index'])->name('manager.cbu');
-    Route::post('/manager/cbu', [CbuController::class, 'store'])->name('manager.cbu.store');
+    Route::put('/manager/cbu/{cbu_transaction}', [CbuController::class, 'update'])->name('manager.cbu.update');
 
     Route::get('/manager/loan-request', [LoanRequestController::class, 'index'])->name('manager.loan-request');
     Route::post('/manager/loan-request', [LoanRequestController::class, 'store'])->name('manager.loan-request.store');
@@ -123,7 +126,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
 
     Route::get('/manager/loan-appointment', [ManagerLoanAppointmentController::class, 'index'])->name('manager.loan-appointment');
     Route::patch('/manager/loan-appointment/{loan_appointment}/approve', [ManagerLoanAppointmentController::class, 'approve'])->name('manager.loan-appointment.approve');
-    Route::patch('/manager/loan-appointment/{loan_appointment}/cancel', [ManagerLoanAppointmentController::class, 'cancel'])->name('manager.loan-appointment.cancel');
+    Route::patch('/manager/loan-appointment/{loan_appointment}/reschedule', [ManagerLoanAppointmentController::class, 'reschedule'])->name('manager.loan-appointment.reschedule');
     Route::post('/manager/loan-appointment/{loan_appointment}/submit-loan-request', [LoanRequestController::class, 'storeFromAppointment'])->name('manager.loan-appointment.submit-loan-request');
 
     Route::get('/manager/payment', [PaymentController::class, 'index'])->name('manager.payment');
@@ -159,8 +162,10 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::patch('/manager/user-management/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('user.toggle-status');
     Route::get('/manager/user-management/{user}', [UserController::class, 'show'])->name('user.show');
     Route::put('/manager/user-management/{user}', [UserController::class, 'update'])->name('user.update');
+    }); // end role:2 (Manager)
 
     // Farmer Routes
+    Route::middleware('role:3')->group(function () {
     Route::get('/farmer/dashboard', [FarmerDashboardController::class, 'index'])->name('farmer.dashboard');
 
     Route::get('/farmer/loans', [FarmerLoanController::class, 'index'])->name('farmer.loans');
@@ -181,6 +186,7 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::put('/farmer/complaints/{complaint}', [ComplaintController::class, 'update'])->name('farmer.complaints.update');
     Route::delete('/farmer/complaints/{complaint}', [ComplaintController::class, 'destroy'])->name('farmer.complaints.destroy');
     Route::patch('/farmer/complaints/{complaint}/reopen', [ComplaintController::class, 'reopen'])->name('farmer.complaints.reopen');
+    }); // end role:3 (Farmer)
 
     // Shared Routes
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');

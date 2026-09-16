@@ -158,6 +158,16 @@
 
             <!-- Page Content -->
             <div class="app-main-content p-4 p-md-8">
+                @if(session('login_blocked'))
+                <x-info-banner variant="warning" title="Already logged in" class="mb-4">
+                    {{ session('login_blocked') }}
+                </x-info-banner>
+                @endif
+                @if(session('role_denied'))
+                <x-info-banner variant="danger" title="Access denied" class="mb-4">
+                    {{ session('role_denied') }}
+                </x-info-banner>
+                @endif
                 @yield('content')
             </div>
         </main>

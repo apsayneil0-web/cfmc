@@ -1,7 +1,7 @@
 @extends('manager.layout')
 
-@section('title', 'CBU Management')
-@section('header', 'CBU Management')
+@section('title', 'Capital Build-Up')
+@section('header', 'Capital Build-Up')
 
 @section('content')
 @if(session('success'))
@@ -47,11 +47,6 @@
                 <option>Inactive</option>
             </select>
         </x-slot:filters>
-        <x-slot:actions>
-            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addCbuEntryModal">
-                <i class="fas fa-plus"></i><span>Add Entry</span>
-            </button>
-        </x-slot:actions>
     </x-table-toolbar>
 
     <div class="table-responsive">
@@ -65,6 +60,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Running Balance</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -79,10 +75,13 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $transaction->transaction_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($transaction->balance_after) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$transaction->cbu->status" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <x-icon-button icon="fa-edit" color="warning" title="Edit Entry" data-bs-toggle="modal" data-bs-target="#editCbuEntryModal{{ $transaction->id }}" />
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">No CBU entries recorded yet.</td>
+                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No CBU entries recorded yet.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -90,52 +89,44 @@
     </div>
 </div>
 
-<!-- Add Entry Modal -->
-<div class="modal fade" id="addCbuEntryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="fas fa-piggy-bank me-2"></i>Add CBU Entry</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('manager.cbu.store') }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
-                        <select name="farmer_id" class="form-select" required>
-                            <option value="" disabled selected>Select a farmer</option>
-                            @foreach($farmers as $farmer)
-                            <option value="{{ $farmer->id }}">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }} — {{ $farmer->full_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Entry Type <span class="text-danger">*</span></label>
-                        <select name="type" class="form-select" required>
-                            <option value="contribution">Contribution</option>
-                            <option value="expense">Expense (charged against CBU balance)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Category</label>
-                        <input type="text" name="category" class="form-control" placeholder="e.g. Monthly Contribution, Share Capital, Fertilizer Subsidy">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Amount <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
-                    </div>
-                    <div>
-                        <label class="form-label fw-semibold">Notes</label>
-                        <textarea name="notes" rows="2" class="form-control" placeholder="Optional remarks"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Entry</button>
-                </div>
-            </form>
+{{-- Modals live outside the table: a <div> can't be a direct child of <tbody>. --}}
+@foreach($transactions as $transaction)
+<x-modal id="editCbuEntryModal{{ $transaction->id }}" title="Edit CBU Entry">
+    <form action="{{ route('manager.cbu.update', $transaction) }}" method="POST">
+        @csrf
+        @method('PUT')
+        <div class="mb-3">
+            <label class="text-muted small d-block mb-1">Farmer</label>
+            <p class="fw-medium mb-0">FM-{{ str_pad($transaction->cbu->farmer_id, 3, '0', STR_PAD_LEFT) }} — {{ $transaction->cbu->farmer->full_name }}</p>
         </div>
-    </div>
-</div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Entry Type <span class="text-danger">*</span></label>
+            <select name="type" class="form-select" required>
+                <option value="contribution" @selected($transaction->type === 'contribution')>Contribution</option>
+                <option value="expense" @selected($transaction->type === 'expense')>Expense (charged against CBU balance)</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Category</label>
+            <input type="text" name="category" class="form-control" value="{{ $transaction->category }}" placeholder="e.g. Monthly Contribution, Share Capital, Fertilizer Subsidy">
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Amount <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" min="0.01" name="amount" class="form-control" value="{{ $transaction->amount }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+            <input type="date" name="transaction_date" class="form-control" value="{{ $transaction->transaction_date->toDateString() }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Notes</label>
+            <textarea name="notes" rows="2" class="form-control" placeholder="Optional remarks">{{ $transaction->notes }}</textarea>
+        </div>
+        <div class="text-end">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</x-modal>
+@endforeach
 @endsection

@@ -28,15 +28,17 @@ class ReportController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
         $memberId = $request->get('member_id');
-        $loanType = $request->get('loan_type');
+        $machineId = $request->get('machine_id');
         $loanStatus = $request->get('loan_status');
         $paymentStatus = $request->get('payment_status');
         $category = $request->get('category');
 
         $farmers = Farmer::where('status', 'approved')->orderBy('last_name')->get();
         $selectedFarmer = $memberId ? $farmers->firstWhere('id', $memberId) : null;
+        $machines = Machine::whereNull('archived_at')->orderBy('name')->get();
+        $selectedMachine = $machineId ? $machines->firstWhere('id', $machineId) : null;
 
-        $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus, $category);
+        $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $machineId, $loanStatus, $paymentStatus, $category);
 
         $breakdown = match ($reportType) {
             'harvesting' => $this->yieldByFarmer($rows),
@@ -68,8 +70,8 @@ class ReportController extends Controller
         };
 
         return view('manager.reporting', compact(
-            'reportType', 'dateFrom', 'dateTo', 'memberId', 'loanType', 'loanStatus', 'paymentStatus', 'category',
-            'farmers', 'selectedFarmer', 'rows', 'breakdown', 'breakdownTitle', 'summary'
+            'reportType', 'dateFrom', 'dateTo', 'memberId', 'machineId', 'loanStatus', 'paymentStatus', 'category',
+            'farmers', 'selectedFarmer', 'machines', 'selectedMachine', 'rows', 'breakdown', 'breakdownTitle', 'summary'
         ));
     }
 
@@ -82,12 +84,12 @@ class ReportController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
         $memberId = $request->get('member_id');
-        $loanType = $request->get('loan_type');
+        $machineId = $request->get('machine_id');
         $loanStatus = $request->get('loan_status');
         $paymentStatus = $request->get('payment_status');
         $category = $request->get('category');
 
-        $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus, $category);
+        $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $machineId, $loanStatus, $paymentStatus, $category);
 
         $filename = "{$reportType}-report-".now()->format('Y-m-d').'.csv';
 
@@ -119,12 +121,12 @@ class ReportController extends Controller
      * Single dispatch point shared by index() and export() so the two never
      * drift out of sync on which filters apply to which report type.
      */
-    private function rowsFor(string $reportType, ?string $dateFrom, ?string $dateTo, ?string $memberId, ?string $loanType, ?string $loanStatus, ?string $paymentStatus, ?string $category)
+    private function rowsFor(string $reportType, ?string $dateFrom, ?string $dateTo, ?string $memberId, ?string $machineId, ?string $loanStatus, ?string $paymentStatus, ?string $category)
     {
         return match ($reportType) {
             'harvesting' => $this->harvestingRows($dateFrom, $dateTo, $memberId),
-            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId, $loanType, $loanStatus, $paymentStatus),
-            'maintenance' => $this->maintenanceRows($dateFrom, $dateTo),
+            'loan' => $this->loanRows($dateFrom, $dateTo, $memberId, $loanStatus, $paymentStatus),
+            'maintenance' => $this->maintenanceRows($dateFrom, $dateTo, $machineId),
             'schedule' => $this->scheduleRows($dateFrom, $dateTo, $memberId),
             'cbu' => $this->cbuRows($dateFrom, $dateTo, $memberId),
             'complaint' => $this->complaintRows($dateFrom, $dateTo, $memberId),
@@ -159,12 +161,10 @@ class ReportController extends Controller
      * awaiting disbursement are excluded outright (not just by date range) —
      * their remaining_balance/next_due_date aren't set yet, so principal,
      * interest, and balance figures wouldn't mean anything for them.
-     * loan_type filters against loan_requests.purpose (free text — the app
-     * has no dedicated loan-product-type field yet); payment_status is
-     * derived from amount_paid/remaining_balance, so it's applied to the
-     * collection after the DB query rather than in SQL.
+     * payment_status is derived from amount_paid/remaining_balance, so it's
+     * applied to the collection after the DB query rather than in SQL.
      */
-    private function loanRows(?string $dateFrom, ?string $dateTo, ?string $memberId, ?string $loanType = null, ?string $loanStatus = null, ?string $paymentStatus = null)
+    private function loanRows(?string $dateFrom, ?string $dateTo, ?string $memberId, ?string $loanStatus = null, ?string $paymentStatus = null)
     {
         $query = Loan::with(['loanRequest.farmer', 'payments'])
             ->whereNull('archived_at')
@@ -178,9 +178,6 @@ class ReportController extends Controller
         }
         if ($memberId) {
             $query->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $memberId));
-        }
-        if ($loanType) {
-            $query->whereHas('loanRequest', fn ($q) => $q->where('purpose', 'like', "%{$loanType}%"));
         }
         if ($loanStatus) {
             $query->where('status', $loanStatus);
@@ -203,31 +200,35 @@ class ReportController extends Controller
     /**
      * Per-machine usage within the date range, alongside the machine's
      * current (all-time) maintenance tier — the service policy is based on
-     * lifetime use, not the report's date window.
+     * lifetime use, not the report's date window. Narrowed to a single
+     * machine when machine_id is given.
      */
-    private function maintenanceRows(?string $dateFrom, ?string $dateTo)
+    private function maintenanceRows(?string $dateFrom, ?string $dateTo, ?string $machineId = null)
     {
-        return Machine::whereNull('archived_at')->get()->map(function (Machine $machine) use ($dateFrom, $dateTo) {
-            $completed = $machine->scheduleRequests()->where('status', 'completed')->whereNull('archived_at');
+        return Machine::whereNull('archived_at')
+            ->when($machineId, fn ($q) => $q->where('id', $machineId))
+            ->get()
+            ->map(function (Machine $machine) use ($dateFrom, $dateTo) {
+                $completed = $machine->scheduleRequests()->where('status', 'completed')->whereNull('archived_at');
 
-            if ($dateFrom) {
-                $completed->whereDate('scheduled_date', '>=', $dateFrom);
-            }
-            if ($dateTo) {
-                $completed->whereDate('scheduled_date', '<=', $dateTo);
-            }
+                if ($dateFrom) {
+                    $completed->whereDate('scheduled_date', '>=', $dateFrom);
+                }
+                if ($dateTo) {
+                    $completed->whereDate('scheduled_date', '<=', $dateTo);
+                }
 
-            $bookings = $completed->get();
-            $hours = round($bookings->sum(
-                fn (ScheduleRequest $b) => Carbon::parse($b->start_time)->diffInMinutes(Carbon::parse($b->end_time)) / 60
-            ), 1);
+                $bookings = $completed->get();
+                $hours = round($bookings->sum(
+                    fn (ScheduleRequest $b) => Carbon::parse($b->start_time)->diffInMinutes(Carbon::parse($b->end_time)) / 60
+                ), 1);
 
-            return (object) [
-                'machine' => $machine,
-                'times_used' => $bookings->count(),
-                'usage_hours' => $hours,
-            ];
-        });
+                return (object) [
+                    'machine' => $machine,
+                    'times_used' => $bookings->count(),
+                    'usage_hours' => $hours,
+                ];
+            });
     }
 
     /**

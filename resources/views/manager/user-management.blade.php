@@ -157,7 +157,7 @@
             <div class="modal-header bg-light">
                 <h5 class="modal-title fw-bold" id="createModalLabel">
                     <i class="fas fa-user-plus me-2 text-primary"></i>
-                    Create New Account
+                    Register New Farmer
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -166,62 +166,141 @@
             <div class="modal-body">
                 <form id="userForm" class="needs-validation" novalidate>
                     <div class="alert alert-light border d-flex align-items-center gap-2 mb-4">
-                        <i class="fas fa-user text-primary"></i>
-                        <span>This form creates a <strong>Farmer</strong> account.</span>
+                        <i class="fas fa-info-circle text-primary"></i>
+                        <span>Registering here creates the membership record <strong>and</strong> its login account immediately — no admin review needed. Use this for a farmer you're registering in person.</span>
                     </div>
 
-                    <!-- Row 1: Full Name -->
+                    <!-- Row 1: Name Fields -->
                     <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="nameInput" list="approvedFarmersList" autocomplete="off" required>
-                            <datalist id="approvedFarmersList">
-                                @foreach($availableFarmers as $availableFarmer)
-                                    <option value="{{ $availableFarmer->full_name }}">
-                                @endforeach
-                            </datalist>
-                            <div class="form-text">Start typing to pick from approved membership requests, or enter a name manually.</div>
-                            <div class="invalid-feedback">Please enter full name.</div>
-                            <input type="hidden" name="farmer_id" id="farmerIdInput">
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" class="form-control form-control-lg" placeholder="First name" required>
+                            <div class="invalid-feedback">Please enter first name.</div>
+                        </div>
+                        <div class="col-md-2 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">M.I.</label>
+                            <input type="text" name="middle_initial" class="form-control form-control-lg" placeholder="M.I." maxlength="2">
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" class="form-control form-control-lg" placeholder="Last name" required>
+                            <div class="invalid-feedback">Please enter last name.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Suffix</label>
+                            <select name="suffix" class="form-select form-select-lg">
+                                <option value="" selected>None</option>
+                                <option value="Jr.">Jr.</option>
+                                <option value="Sr.">Sr.</option>
+                                <option value="III">III</option>
+                                <option value="IV">IV</option>
+                                <option value="V">V</option>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Row 2: Username & Email -->
+                    <!-- Row 2: Contact & Location -->
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
+                            <input type="tel" name="contact_number" class="form-control form-control-lg ph-contact-input" placeholder="09123456789" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
+                            <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" value="South Cotabato" readonly>
+                            <input type="hidden" name="province" value="South Cotabato">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-lg" id="municipalitySelect" name="municipality" required>
+                                <option value="" selected disabled>Select Municipality</option>
+                            </select>
+                            <div class="invalid-feedback">Please select municipality.</div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2b: Barangay -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Barangay</label>
+                            <select class="form-select form-select-lg d-none" id="barangayNameSelect" name="barangay" disabled>
+                                <option value="" selected>Select Barangay</option>
+                            </select>
+                            <input type="text" class="form-control form-control-lg" id="barangayNameInput" name="barangay" placeholder="Enter barangay">
+                            <div class="form-text">A barangay list is only available for Surallah and Banga; other municipalities can be typed in.</div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Crop Type & Land Area -->
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
-                            <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text">@</span>
-                                <input type="text" class="form-control" placeholder="username" name="username" id="usernameInput" required>
+                            <label class="form-label fw-semibold">Crop Type <span class="text-danger">*</span></label>
+                            <div class="border rounded-3 p-2" id="cropCheckboxGroup">
+                                @foreach($crops as $crop)
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="crop_ids[]" value="{{ $crop->id }}" id="newCrop{{ $crop->id }}">
+                                        <label class="form-check-label" for="newCrop{{ $crop->id }}">{{ $crop->name }}</label>
+                                    </div>
+                                @endforeach
                             </div>
-                            <div class="invalid-feedback">Please enter username.</div>
+                            <div class="text-danger small mt-1" id="cropCheckboxError" style="display:none;">Please select at least one crop type.</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email <span class="text-muted">(optional)</span></label>
-                            <input type="email" class="form-control form-control-lg" placeholder="email@example.com" name="email" id="emailInput">
-                            <div class="invalid-feedback">Please enter email.</div>
+                            <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
+                            <input type="number" name="land_area" step="0.1" min="0" class="form-control form-control-lg" placeholder="0.0" required>
+                            <div class="invalid-feedback">Please enter land area.</div>
                         </div>
                     </div>
 
-                    <!-- Row 3: Phone -->
+                    <!-- Row 4: Upload Documents -->
                     <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Phone Number</label>
-                            <input type="tel" class="form-control form-control-lg" placeholder="0912-345-6789" name="Phonenumber" id="phoneInput">
-                        </div>
-                    </div>
-
-                    <!-- Row 4: Password -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
-                            <div class="input-group input-group-lg">
-                                <input type="password" class="form-control" placeholder="Enter password" name="password" required>
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Upload Valid ID <span class="text-danger">*</span></label>
+                            <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="documentDropZone">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                <input type="file" name="documents" id="documentsInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                <div id="documentFileName" class="mt-2 text-success fw-medium"></div>
                             </div>
-                            <div class="invalid-feedback">Please enter password.</div>
+                            <div class="invalid-feedback">Please upload required documents.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Upload Certificate of Title <span class="text-danger">*</span></label>
+                            <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="certificateDropZone">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                <input type="file" name="certificate_of_title" id="certificateInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                <div id="certificateFileName" class="mt-2 text-success fw-medium"></div>
+                            </div>
+                            <div class="invalid-feedback">Please upload the certificate of title.</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Upload Barangay Certification of Land Possession <span class="text-danger">*</span></label>
+                            <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="barangayDropZone">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                <input type="file" name="barangay_certification" id="barangayInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                <div id="barangayFileName" class="mt-2 text-success fw-medium"></div>
+                            </div>
+                            <div class="invalid-feedback">Please upload the barangay certification of land possession.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Upload RSBSA Number/ID <span class="text-danger">*</span></label>
+                            <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="rsbsaDropZone">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
+                                <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
+                                <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
+                                <input type="file" name="rsbsa" id="rsbsaInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                                <div id="rsbsaFileName" class="mt-2 text-success fw-medium"></div>
+                            </div>
+                            <div class="invalid-feedback">Please upload the RSBSA number/ID.</div>
                         </div>
                     </div>
                 </form>
@@ -252,36 +331,36 @@
                     <div class="confirm-account-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
                         <i class="fas fa-user-shield"></i>
                     </div>
-                    <h5 class="fw-bold mb-1" id="confirmCreateModalLabel">Confirm Account Creation</h5>
-                    <p class="text-muted small mb-0">Please review the details before creating this account</p>
+                    <h5 class="fw-bold mb-1" id="confirmCreateModalLabel">Confirm Registration</h5>
+                    <p class="text-muted small mb-0">Please review the details before registering this farmer</p>
                 </div>
 
                 <div class="confirm-account-summary border rounded-3 px-3">
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-user text-primary me-2 fa-fw"></i>Full Name</span>
+                        <span class="text-muted small"><i class="fas fa-user text-primary me-2 fa-fw"></i>Farmer Name</span>
                         <span class="fw-semibold text-end" id="confirmAccName">-</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-at text-primary me-2 fa-fw"></i>Username</span>
-                        <span class="fw-semibold text-end" id="confirmAccUsername">-</span>
+                        <span class="text-muted small"><i class="fas fa-seedling text-primary me-2 fa-fw"></i>Crop Type</span>
+                        <span class="fw-semibold text-end" id="confirmAccCropType">-</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-envelope text-primary me-2 fa-fw"></i>Email</span>
-                        <span class="fw-semibold text-end" id="confirmAccEmail">-</span>
+                        <span class="text-muted small"><i class="fas fa-ruler-combined text-primary me-2 fa-fw"></i>Land Area</span>
+                        <span class="fw-semibold text-end" id="confirmAccLandArea">-</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                        <span class="text-muted small"><i class="fas fa-phone text-primary me-2 fa-fw"></i>Phone</span>
+                        <span class="text-muted small"><i class="fas fa-phone text-primary me-2 fa-fw"></i>Contact</span>
                         <span class="fw-semibold text-end" id="confirmAccPhone">-</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-between py-2">
-                        <span class="text-muted small"><i class="fas fa-toggle-on text-primary me-2 fa-fw"></i>Status</span>
-                        <span class="fw-semibold text-end">Inactive until first login</span>
+                        <span class="text-muted small"><i class="fas fa-map-marker-alt text-primary me-2 fa-fw"></i>Location</span>
+                        <span class="fw-semibold text-end" id="confirmAccLocation">-</span>
                     </div>
                 </div>
 
-                <div class="info-banner variant-info mt-3 mb-4" id="confirmAccLinkNote" style="display: none;">
-                    <i class="fas fa-link mt-1"></i>
-                    <p class="small mb-0">This account will be linked to the matching approved membership record.</p>
+                <div class="info-banner variant-info mt-3 mb-4">
+                    <i class="fas fa-bolt mt-1"></i>
+                    <p class="small mb-0">This account is created and approved immediately — a username and temporary password will be generated automatically for you to share with the farmer.</p>
                 </div>
 
                 <div class="d-flex gap-2">
@@ -289,9 +368,39 @@
                         <i class="fas fa-arrow-left me-2"></i>Go Back
                     </button>
                     <button type="button" class="btn btn-primary flex-fill py-2" id="confirmCreateAccountBtn">
-                        <i class="fas fa-check-circle me-2"></i>Confirm &amp; Create
+                        <i class="fas fa-check-circle me-2"></i>Confirm &amp; Register
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Created Result Modal -->
+<div class="modal fade" id="accountCreatedModal" tabindex="-1" aria-labelledby="accountCreatedModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-body px-4 pb-4 pt-4 text-center">
+                <div class="notify-icon-badge success d-inline-flex align-items-center justify-content-center rounded-circle mb-3">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h5 class="fw-bold mb-1" id="accountCreatedModalLabel">Farmer Account Created</h5>
+                <p class="text-muted small mb-4">Share these login details with <strong id="createdAccountName">-</strong> directly.</p>
+
+                <div class="confirm-account-summary border rounded-3 px-3 text-start mb-4">
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                        <span class="text-muted small"><i class="fas fa-at text-primary me-2 fa-fw"></i>Username</span>
+                        <span class="fw-semibold text-end" id="createdAccountUsername">-</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between py-2">
+                        <span class="text-muted small"><i class="fas fa-key text-primary me-2 fa-fw"></i>Temporary Password</span>
+                        <span class="fw-semibold text-end" id="createdAccountPassword">-</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary w-100 py-2" id="accountCreatedDoneBtn">
+                    <i class="fas fa-check me-2"></i>Done
+                </button>
             </div>
         </div>
     </div>
@@ -517,6 +626,9 @@
     .hover-border-primary:hover {
         border-color: var(--brand-primary) !important;
     }
+    .borderdashed {
+        border-style: dashed !important;
+    }
     .form-control-lg, .form-select-lg {
         padding: 0.75rem 1rem;
         font-size: 1rem;
@@ -592,46 +704,6 @@
         });
     })();
 
-    // Map approved farmer full names to their membership record, so picking a
-    // suggested name from the datalist links the account to that record and
-    // auto-fills the details already captured during registration.
-    var approvedFarmersByName = {};
-    @foreach($availableFarmers as $availableFarmer)
-        approvedFarmersByName[@json($availableFarmer->full_name).toLowerCase()] = {
-            id: {{ $availableFarmer->id }},
-            phone: @json($availableFarmer->contact_number),
-            firstName: @json($availableFarmer->first_name),
-            lastName: @json($availableFarmer->last_name)
-        };
-    @endforeach
-
-    // Builds a lowercase, no-punctuation username suggestion from a farmer's name.
-    function suggestUsername(firstName, lastName) {
-        return (firstName + lastName).toLowerCase().replace(/[^a-z0-9]/g, '');
-    }
-
-    var nameInput = document.getElementById('nameInput');
-    var farmerIdInput = document.getElementById('farmerIdInput');
-    var phoneInput = document.getElementById('phoneInput');
-    var usernameInput = document.getElementById('usernameInput');
-    nameInput.addEventListener('input', function() {
-        var match = approvedFarmersByName[nameInput.value.trim().toLowerCase()];
-        if (match) {
-            farmerIdInput.value = match.id;
-            phoneInput.value = match.phone || '';
-            usernameInput.value = suggestUsername(match.firstName, match.lastName);
-        } else {
-            farmerIdInput.value = '';
-        }
-    });
-
-    document.getElementById('createModal').addEventListener('hidden.bs.modal', function() {
-        var form = document.getElementById('userForm');
-        form.reset();
-        form.classList.remove('was-validated');
-        farmerIdInput.value = '';
-    });
-
     // Reveal/hide a farmer's system-generated temporary password in the table.
     function toggleTempPassword(button) {
         var mask = button.previousElementSibling;
@@ -644,18 +716,6 @@
             icon.className = 'fas fa-eye-slash';
         }
     }
-
-    // Toggle password visibility
-    document.getElementById('togglePassword').addEventListener('click', function() {
-        var input = this.previousElementSibling;
-        if (input.type === 'password') {
-            input.type = 'text';
-            this.innerHTML = '<i class="fas fa-eye-slash"></i>';
-        } else {
-            input.type = 'password';
-            this.innerHTML = '<i class="fas fa-eye"></i>';
-        }
-    });
 
     // Toggle password visibility for a field referenced by id (Change Password modal)
     function togglePasswordField(inputId, button) {
@@ -751,20 +811,183 @@
         });
     }
 
-    // Validates the create-account form and, if valid, shows a review
-    // step before the account is actually created.
+    // Mindanao Provinces and Municipalities Data (mirrors Membership Registration)
+    const municipalitiesData = {
+        'South Cotabato': [
+            'Banga', 'Bangian', 'Bagumpasig', 'Banon', 'Buayan', 'Buli', 'Caloocan', 'Datu Saliao', 'General Santos City', 'Koronadal City', 'Lake Sebu', 'Lambayong', 'Mabini', 'Magsaysay', 'Maiha', 'Malapatan', 'Malungon', 'Norala', 'Polomolok', 'Santo Nino', 'Surallah', 'T\'Boli', 'Tampakan', 'Tantangan', 'Tupi'
+        ]
+    };
+
+    // Barangay lists — only populated for Surallah and Banga (South Cotabato) for now.
+    // Every other municipality falls back to a free-text barangay field.
+    const barangaysData = {
+        'Surallah': [
+            'Buenavista', 'Canahay', 'Centrala', 'Colongulo', 'Dajay', 'Duengas', 'Lambontong', 'Lamian', 'Lamsugod', 'Libertad (Poblacion)', 'Little Baguio', 'Moloy', 'Naci', 'Talahik', 'Tubiala', 'Upper Sepaka', 'Veterans'
+        ],
+        'Banga': [
+            'Benitez (Poblacion)', 'Cabudian', 'Cabuling', 'Cinco', 'Derilon', 'El Nonok', 'Improgo Village (Poblacion)', 'Kusan', 'Lam-apos', 'Lamba', 'Lambingi', 'Lampari', 'Liwanay', 'Malaya', 'Punong Grande', 'Rang-ay', 'Reyes (Poblacion)', 'Rizal', 'Rizal Poblacion', 'San Jose', 'San Vicente', 'Yangco Poblacion'
+        ]
+    };
+
+    // Province is fixed to South Cotabato — populate its municipalities on load
+    (function() {
+        const municipalitySelect = document.getElementById('municipalitySelect');
+        municipalitiesData['South Cotabato'].forEach(function(municipality) {
+            const option = document.createElement('option');
+            option.value = municipality;
+            option.textContent = municipality;
+            municipalitySelect.appendChild(option);
+        });
+    })();
+
+    // Municipality Select Change Handler — swaps in a barangay dropdown for
+    // municipalities we have a barangay list for, otherwise falls back to
+    // a free-text barangay field.
+    document.getElementById('municipalitySelect').addEventListener('change', function() {
+        const selectedMunicipality = this.value;
+        const barangaySelect = document.getElementById('barangayNameSelect');
+        const barangayInput = document.getElementById('barangayNameInput');
+
+        barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
+        barangayInput.value = '';
+
+        if (selectedMunicipality && barangaysData[selectedMunicipality]) {
+            barangaysData[selectedMunicipality].forEach(function(barangay) {
+                const option = document.createElement('option');
+                option.value = barangay;
+                option.textContent = barangay;
+                barangaySelect.appendChild(option);
+            });
+
+            barangaySelect.classList.remove('d-none');
+            barangaySelect.disabled = false;
+            barangayInput.classList.add('d-none');
+            barangayInput.disabled = true;
+        } else {
+            barangaySelect.classList.add('d-none');
+            barangaySelect.disabled = true;
+            barangayInput.classList.remove('d-none');
+            barangayInput.disabled = false;
+        }
+    });
+
+    // Document Upload Preview (click-to-browse + drag and drop)
+    function wireDocumentDropZone(dropZoneId, inputId, fileNameId) {
+        const dropZone = document.getElementById(dropZoneId);
+        const input = document.getElementById(inputId);
+        const fileNameDisplay = document.getElementById(fileNameId);
+
+        dropZone.addEventListener('click', function() {
+            input.click();
+        });
+
+        input.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            fileNameDisplay.innerHTML = file ? '<i class="fas fa-file"></i> ' + file.name : '';
+        });
+
+        dropZone.addEventListener('dragover', function(event) {
+            event.preventDefault();
+            dropZone.classList.add('bg-white', 'border-success');
+        });
+
+        dropZone.addEventListener('dragleave', function(event) {
+            event.preventDefault();
+            dropZone.classList.remove('bg-white', 'border-success');
+        });
+
+        dropZone.addEventListener('drop', function(event) {
+            event.preventDefault();
+            dropZone.classList.remove('bg-white', 'border-success');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                input.files = files;
+                fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + files[0].name;
+            }
+        });
+    }
+
+    wireDocumentDropZone('documentDropZone', 'documentsInput', 'documentFileName');
+    wireDocumentDropZone('certificateDropZone', 'certificateInput', 'certificateFileName');
+    wireDocumentDropZone('barangayDropZone', 'barangayInput', 'barangayFileName');
+    wireDocumentDropZone('rsbsaDropZone', 'rsbsaInput', 'rsbsaFileName');
+
+    // Restrict Philippine contact number inputs to digits (with optional leading +)
+    document.querySelectorAll('.ph-contact-input').forEach(function(input) {
+        input.addEventListener('input', function() {
+            let value = input.value.replace(/[^\d+]/g, '');
+            if (value.indexOf('+') > 0) {
+                value = value.replace(/\+/g, '');
+            }
+            input.value = value;
+        });
+    });
+
+    function resetCreateForm() {
+        var form = document.getElementById('userForm');
+        form.reset();
+        form.classList.remove('was-validated');
+        document.getElementById('cropCheckboxError').style.display = 'none';
+        ['documentFileName', 'certificateFileName', 'barangayFileName', 'rsbsaFileName'].forEach(function(id) {
+            document.getElementById(id).textContent = '';
+        });
+
+        const municipalitySelect = document.getElementById('municipalitySelect');
+        municipalitySelect.innerHTML = '<option value="" selected disabled>Select Municipality</option>';
+        municipalitiesData['South Cotabato'].forEach(function(municipality) {
+            const option = document.createElement('option');
+            option.value = municipality;
+            option.textContent = municipality;
+            municipalitySelect.appendChild(option);
+        });
+
+        const barangaySelect = document.getElementById('barangayNameSelect');
+        const barangayInput = document.getElementById('barangayNameInput');
+        barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
+        barangaySelect.classList.add('d-none');
+        barangaySelect.disabled = true;
+        barangayInput.classList.remove('d-none');
+        barangayInput.disabled = false;
+    }
+
+    document.getElementById('createModal').addEventListener('hidden.bs.modal', resetCreateForm);
+
+    // Validates the registration form and, if valid, shows a review step
+    // before the farmer + account are actually created.
     function openCreateAccountConfirm() {
         var form = document.getElementById('userForm');
-        if (!form.checkValidity()) {
+        var checkedCrops = form.querySelectorAll('input[name="crop_ids[]"]:checked');
+        var cropError = document.getElementById('cropCheckboxError');
+
+        if (!form.checkValidity() || checkedCrops.length === 0) {
             form.classList.add('was-validated');
+            cropError.style.display = checkedCrops.length === 0 ? 'block' : 'none';
             return;
         }
+        cropError.style.display = 'none';
 
-        document.getElementById('confirmAccName').textContent = nameInput.value.trim();
-        document.getElementById('confirmAccUsername').textContent = '@' + usernameInput.value.trim();
-        document.getElementById('confirmAccEmail').textContent = document.getElementById('emailInput').value.trim() || 'Not provided';
-        document.getElementById('confirmAccPhone').textContent = phoneInput.value.trim() || 'Not provided';
-        document.getElementById('confirmAccLinkNote').style.display = farmerIdInput.value ? 'flex' : 'none';
+        var firstName = form.querySelector('input[name="first_name"]').value.trim();
+        var middleInitial = form.querySelector('input[name="middle_initial"]').value.trim();
+        var lastName = form.querySelector('input[name="last_name"]').value.trim();
+        var suffix = form.querySelector('select[name="suffix"]').value;
+        var contactNumber = form.querySelector('input[name="contact_number"]').value.trim();
+        var landArea = form.querySelector('input[name="land_area"]').value;
+        var municipality = form.querySelector('select[name="municipality"]').value;
+        var province = form.querySelector('input[name="province"]').value;
+        var cropNames = Array.prototype.map.call(checkedCrops, function(checkbox) {
+            return checkbox.nextElementSibling.textContent;
+        }).join(', ');
+
+        var fullName = firstName;
+        if (middleInitial) fullName += ' ' + middleInitial;
+        fullName += ' ' + lastName;
+        if (suffix) fullName += ' ' + suffix;
+
+        document.getElementById('confirmAccName').textContent = fullName;
+        document.getElementById('confirmAccCropType').textContent = cropNames;
+        document.getElementById('confirmAccLandArea').textContent = landArea + ' hectares';
+        document.getElementById('confirmAccPhone').textContent = contactNumber;
+        document.getElementById('confirmAccLocation').textContent = municipality + ', ' + province;
 
         new bootstrap.Modal(document.getElementById('confirmCreateModal')).show();
     }
@@ -774,32 +997,23 @@
         submitUserForm();
     });
 
-    // Form submission function
+    // Form submission function — registers the farmer and provisions their
+    // login account in one request.
     function submitUserForm() {
-        console.log('submitUserForm called');
         var form = document.getElementById('userForm');
-        console.log('Form found:', !!form);
 
         if (!form.checkValidity()) {
-            console.log('Form validation failed');
             form.classList.add('was-validated');
             return;
         }
-
-        console.log('Form validation passed');
 
         var formData = new FormData(form);
         var submitBtn = document.getElementById('submitUserBtn');
         var originalBtnText = submitBtn.innerHTML;
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Registering...';
 
-        var url = '{{ route("user.store") }}';
-        console.log('Submitting to:', url);
-        console.log('CSRF Token:', '{{ csrf_token() }}');
-        console.log('Form data:', Object.fromEntries(formData));
-
-        fetch(url, {
+        fetch('{{ route("user.store") }}', {
             method: 'POST',
             body: formData,
             headers: {
@@ -807,32 +1021,22 @@
             }
         })
         .then(function(response) {
-            console.log('Response status:', response.status);
-            return response.json().catch(function(err) {
-                console.log('JSON parse error:', err);
-                return { success: false, message: 'Unknown error', errors: {} };
+            return response.json().catch(function() {
+                return { success: false, message: 'Unknown error' };
             });
         })
         .then(function(data) {
-            console.log('Full Response data:', JSON.stringify(data, null, 2));
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
 
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
-                showAlert(data.message, 'success', function() {
-                    window.location.reload();
-                });
+                document.getElementById('createdAccountName').textContent = data.name;
+                document.getElementById('createdAccountUsername').textContent = data.username;
+                document.getElementById('createdAccountPassword').textContent = data.password;
+                new bootstrap.Modal(document.getElementById('accountCreatedModal')).show();
             } else {
-                var errorMsg = data.message || 'Validation failed';
-                if (data.errors) {
-                    var errorsArray = [];
-                    for (var key in data.errors) {
-                        errorsArray.push(key + ': ' + data.errors[key].join(', '));
-                    }
-                    errorMsg = errorsArray.join('\n');
-                }
-                showAlert(errorMsg, 'danger');
+                showAlert(data.message || 'Validation failed', 'danger');
             }
         })
         .catch(function(error) {
@@ -842,6 +1046,10 @@
             showAlert(error.message, 'danger');
         });
     }
+
+    document.getElementById('accountCreatedDoneBtn').addEventListener('click', function() {
+        window.location.reload();
+    });
 
     // Search and Filter Functionality — filters the full user list on the
     // server (not just the rows on the current page), same as Membership.

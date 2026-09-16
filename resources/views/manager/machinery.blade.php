@@ -42,8 +42,14 @@
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
+                <select name="type" class="form-select" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    @foreach($existingTypes as $type)
+                    <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>{{ $type }}</option>
+                    @endforeach
+                </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->anyFilled(['search']))
+                @if(request()->anyFilled(['search', 'type']))
                 <a href="{{ route('manager.machinery') }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
@@ -63,6 +69,7 @@
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine ID</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Brand</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Serial Number</th>
@@ -76,6 +83,7 @@
                 @forelse($machines as $machine)
                 <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$machine->type ?? '—'" /></td>
                     <td class="px-4 px-md-6 py-4">{{ $machine->name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->brand ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->serial_number ?? '—' }}</td>
@@ -92,7 +100,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No machinery on record yet.</td>
+                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">No machinery on record yet.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -108,6 +116,7 @@
 <x-modal id="viewMachineModal{{ $machine->id }}" title="Machine Details">
     <div class="row g-3">
         <div class="col-6"><label class="text-muted small d-block">Machine ID</label><p class="fw-medium mb-0">MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Machine Type</label><p class="fw-medium mb-0">{{ $machine->type ?? '—' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Machine Name</label><p class="fw-medium mb-0">{{ $machine->name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Brand</label><p class="fw-medium mb-0">{{ $machine->brand ?? '—' }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Serial Number</label><p class="fw-medium mb-0">{{ $machine->serial_number ?? '—' }}</p></div>
@@ -138,9 +147,21 @@
                 @method('PUT')
                 <div class="modal-body">
                     <div class="row g-3">
+                        <div class="col-md-6 machine-type-field">
+                            <label class="form-label fw-semibold">Machine Type <span class="text-danger">*</span></label>
+                            <select class="form-select machine-type-select">
+                                <option value="">Select existing type...</option>
+                                @foreach($existingTypes as $type)
+                                <option value="{{ $type }}">{{ $type }}</option>
+                                @endforeach
+                                <option value="__new__">+ Add New Type</option>
+                            </select>
+                            <input type="text" name="type" class="form-control machine-type-input mt-2" placeholder="e.g. Seeder" value="{{ $machine->type }}" autocomplete="off" required>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Machine Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control" value="{{ $machine->name }}" required>
+                            <input type="text" name="name" class="form-control" value="{{ $machine->name }}" placeholder="e.g. Seeder 1" required>
+                            <small class="text-muted">This specific unit's own label.</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Brand</label>
@@ -219,9 +240,21 @@
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
+                        <div class="col-md-6 machine-type-field">
+                            <label class="form-label fw-semibold">Machine Type <span class="text-danger">*</span></label>
+                            <select class="form-select machine-type-select">
+                                <option value="">Select existing type...</option>
+                                @foreach($existingTypes as $type)
+                                <option value="{{ $type }}">{{ $type }}</option>
+                                @endforeach
+                                <option value="__new__">+ Add New Type</option>
+                            </select>
+                            <input type="text" name="type" id="addMachineType" class="form-control machine-type-input mt-2" placeholder="e.g. Seeder" value="{{ old('type') }}" autocomplete="off" required>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Machine Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control" placeholder="e.g. Harvester" value="{{ old('name') }}" required>
+                            <input type="text" name="name" class="form-control" placeholder="e.g. Seeder 1" value="{{ old('name') }}" required>
+                            <small class="text-muted">This specific unit's own label.</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Brand</label>
@@ -229,7 +262,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Serial Number</label>
-                            <input type="text" name="serial_number" class="form-control" value="{{ old('serial_number') }}">
+                            <input type="text" name="serial_number" id="addSerialNumber" class="form-control" placeholder="Auto-generated if left blank" value="{{ old('serial_number') }}">
+                            <small class="text-muted">Format: CFMC-[code]-[year]-[number], e.g. CFMC-HV-{{ now()->year }}-001.</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
@@ -264,4 +298,92 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.machine-type-field').forEach(function (field) {
+        var select = field.querySelector('.machine-type-select');
+        var input = field.querySelector('.machine-type-input');
+
+        function typeOptionValues() {
+            return Array.prototype.map.call(select.options, function (opt) { return opt.value; })
+                .filter(function (value) { return value !== '' && value !== '__new__'; });
+        }
+
+        // Reflect the input's current value (e.g. old('type') on a validation
+        // error, or the machine's current type when editing) in the select.
+        select.value = typeOptionValues().indexOf(input.value) !== -1 ? input.value : '';
+
+        select.addEventListener('change', function () {
+            if (select.value === '__new__') {
+                input.value = '';
+                input.focus();
+            } else if (select.value !== '') {
+                input.value = select.value;
+            }
+            // Programmatic value changes don't fire 'input' on their own —
+            // dispatch it so listeners depending on the type (like the
+            // serial-number preview below) stay in sync.
+            input.dispatchEvent(new Event('input'));
+        });
+
+        input.addEventListener('input', function () {
+            var matches = typeOptionValues().indexOf(input.value) !== -1;
+            select.value = matches ? input.value : (input.value ? '__new__' : '');
+        });
+    });
+
+    (function () {
+        var typeInput = document.getElementById('addMachineType');
+        var serialInput = document.getElementById('addSerialNumber');
+
+        if (!typeInput || !serialInput) {
+            return;
+        }
+
+        var SERIAL_PREVIEW = @json($serialPreview);
+        var TYPE_CODES = @json(\App\Models\Machine::TYPE_CODES);
+        var CURRENT_YEAR = {{ now()->year }};
+
+        function guessTypeCode(type) {
+            var key = type.trim().toLowerCase();
+            if (TYPE_CODES[key]) {
+                return TYPE_CODES[key];
+            }
+            var words = type.trim().split(/\s+/).filter(Boolean);
+            if (words.length >= 2) {
+                return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+            }
+            return type.trim().substring(0, 2).toUpperCase();
+        }
+
+        var serialEditedByHand = false;
+
+        serialInput.addEventListener('input', function () {
+            if (!serialInput.dataset.syncing) {
+                serialEditedByHand = true;
+            }
+        });
+
+        function updateSerialPreview() {
+            var type = typeInput.value.trim();
+
+            if (!type) {
+                serialInput.placeholder = 'Auto-generated if left blank';
+                return;
+            }
+
+            var preview = SERIAL_PREVIEW[type] || ('CFMC-' + guessTypeCode(type) + '-' + CURRENT_YEAR + '-001');
+            serialInput.placeholder = 'Auto: ' + preview;
+
+            if (!serialEditedByHand) {
+                serialInput.dataset.syncing = '1';
+                serialInput.value = preview;
+                delete serialInput.dataset.syncing;
+            }
+        }
+
+        typeInput.addEventListener('input', updateSerialPreview);
+        updateSerialPreview();
+    })();
+</script>
 @endsection

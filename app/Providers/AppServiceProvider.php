@@ -26,9 +26,20 @@ class AppServiceProvider extends ServiceProvider
         // This app has no "dashboard"/"home" route, so the framework's default
         // guest-redirect (used when an already-logged-in user hits /login)
         // would otherwise silently fall back to "/" instead of the user's
-        // actual role dashboard.
+        // actual role dashboard. This is also the single-session-per-browser
+        // enforcement point: the `guest` middleware already runs before the
+        // login controller for both GET and POST /login, so a second account
+        // can never be authenticated while one is already logged in on this
+        // browser — the attempt is redirected away before it's processed,
+        // with a flashed message explaining why.
         RedirectIfAuthenticated::redirectUsing(function ($request) {
-            return $request->user()?->dashboardUrl() ?? '/';
+            $user = $request->user();
+
+            if ($user && $request->routeIs('login')) {
+                session()->flash('login_blocked', "An account is already logged in as \"{$user->name}\". Please logout first before logging in to another account.");
+            }
+
+            return $user?->dashboardUrl() ?? '/';
         });
 
         // Feeds the notification bell shown on every role's topbar.
