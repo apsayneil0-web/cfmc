@@ -464,8 +464,8 @@
 
 @if($summary)
 <!-- Report Summary + Breakdown -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 summary-breakdown-grid">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 no-print">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Report Summary</h3>
         <table class="table table-sm mb-0">
             <tbody>
@@ -621,6 +621,13 @@
         .print-only { display: block; }
 
         @page { margin: 8mm; }
+
+        /* Report Summary is hidden in print (kept on screen) — let the
+           breakdown panel take the full row instead of leaving a blank gap
+           where the summary column used to be. */
+        .summary-breakdown-grid {
+            grid-template-columns: 1fr;
+        }
 
         /* The loan table has 12 columns — only pin it to fixed percentage
            widths for print, where it must fit the page instead of running

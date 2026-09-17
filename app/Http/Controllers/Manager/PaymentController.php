@@ -48,6 +48,7 @@ class PaymentController extends Controller
             'type_label' => match ($payment->type) {
                 'payment' => 'Loan Payment',
                 'prepayment' => 'Prepayment',
+                'partial' => 'Partial Payment',
                 default => 'Interest Charge',
             },
             'reference' => 'LN-'.str_pad($payment->loan_id, 3, '0', STR_PAD_LEFT),
@@ -93,7 +94,7 @@ class PaymentController extends Controller
             ->get();
 
         $stats = [
-            'loan_payments' => LoanPayment::whereIn('type', ['payment', 'prepayment'])->sum('amount'),
+            'loan_payments' => LoanPayment::whereIn('type', ['payment', 'prepayment', 'partial'])->sum('amount'),
             'cbu_contributions' => CbuTransaction::where('type', 'contribution')->sum('amount'),
             'operational_expenses' => Expense::where('category', 'operational')->sum('amount'),
             'replaceable_parts' => Expense::where('category', 'replaceable_parts')->sum('amount'),
@@ -162,7 +163,7 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'loan_id' => 'required|exists:loans,id',
-            'type' => 'required|in:payment,prepayment',
+            'type' => 'required|in:payment,prepayment,partial',
             'amount' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string|max:1000',
         ]);

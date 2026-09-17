@@ -152,6 +152,7 @@
             $paymentTypeLabel = match ($payment->type) {
                 'payment' => 'Loan Payment',
                 'prepayment' => 'Prepayment',
+                'partial' => 'Partial Payment',
                 default => 'Interest Charge',
             };
         @endphp

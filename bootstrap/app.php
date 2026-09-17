@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'account.active' => \App\Http\Middleware\EnsureAccountIsActive::class,
             'nocache' => \App\Http\Middleware\PreventBackHistoryCache::class,
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'timeout' => \App\Http\Middleware\EnsureSessionIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

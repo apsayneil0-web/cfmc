@@ -31,6 +31,7 @@ class Loan extends Model
         'collateral',
         'remaining_balance',
         'current_period_paid',
+        'carried_over_amount',
         'next_due_date',
         'original_due_date',
         'partial_penalty_applied_at',
@@ -74,6 +75,16 @@ class Loan extends Model
         $minimumDue = round((float) $this->principal_amount * ((float) $this->interest_rate / 100), 2);
 
         return round($minimumDue + (float) $this->installment_amount, 2);
+    }
+
+    /**
+     * What's actually due for the upcoming period: the standard monthly_due,
+     * plus any shortfall a "partial" payment carried forward from a prior
+     * period (see recordPayment()). Zero once that shortfall is paid off.
+     */
+    public function getAmountDueAttribute(): float
+    {
+        return round($this->monthly_due + (float) $this->carried_over_amount, 2);
     }
 
     /**
@@ -139,7 +150,9 @@ class Loan extends Model
             $schedule[] = (object) [
                 'number' => $number,
                 'due_date' => $this->original_due_date->copy()->addMonthsNoOverflow($number - 1),
-                'amount' => $this->monthly_due,
+                // Only the upcoming installment carries a prior period's
+                // shortfall — past and future rows show the plain monthly_due.
+                'amount' => $number === $currentNumber ? $this->amount_due : $this->monthly_due,
                 'status' => $status,
             ];
         }
@@ -203,13 +216,14 @@ class Loan extends Model
     }
 
     /**
-     * Total farmer payments recorded against this loan — excludes the
-     * system-applied interest/penalty charges, which are their own ledger
-     * entries (type 'interest').
+     * Total farmer payments recorded against this loan — regular, prepaid,
+     * and partial payments alike — excluding the system-applied
+     * interest/penalty charges, which are their own ledger entries (type
+     * 'interest').
      */
     public function getAmountPaidAttribute(): float
     {
-        return round((float) $this->payments->where('type', 'payment')->sum('amount'), 2);
+        return round((float) $this->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->sum('amount'), 2);
     }
 
     /**
@@ -271,7 +285,7 @@ class Loan extends Model
         $this->remaining_balance = max(0, round((float) $this->remaining_balance - $amount, 2));
         $this->status = $this->remaining_balance <= 0 ? 'fully_paid' : 'active';
 
-        $this->advanceDueDateForPayment($amount);
+        $this->advanceDueDateForPayment($amount, $type);
 
         $this->save();
 
@@ -287,26 +301,41 @@ class Loan extends Model
 
     /**
      * Applies a payment toward the current due period's running total and
-     * advances next_due_date one month at a time for every monthly_due it
-     * fully covers — so a farmer making several partial payments (or one
-     * large prepayment covering several periods at once) moves the due date
-     * forward automatically, without a manager having to edit it by hand.
-     * Applies identically to regular and batch loans, since both are plain
-     * Loan records going through this same method.
+     * advances next_due_date one month at a time for every amount_due it
+     * fully covers — so a farmer making several payments toward the same
+     * period (or one large prepayment covering several periods at once)
+     * moves the due date forward automatically, without a manager having to
+     * edit it by hand. Applies identically to regular and batch loans, since
+     * both are plain Loan records going through this same method.
+     *
+     * A "partial" payment is the one exception: rather than leaving the
+     * period open until it's topped up, it closes the period out
+     * immediately and rolls whatever's still short into carried_over_amount,
+     * which amount_due folds into the next period's due figure until it's
+     * paid off (see getAmountDueAttribute()).
      */
-    private function advanceDueDateForPayment(float $amount): void
+    private function advanceDueDateForPayment(float $amount, string $type): void
     {
         if ($this->remaining_balance <= 0 || ! $this->next_due_date) {
             $this->current_period_paid = 0;
+            $this->carried_over_amount = 0;
 
             return;
         }
 
         $this->current_period_paid = round((float) $this->current_period_paid + $amount, 2);
-        $monthlyDue = $this->monthly_due;
 
-        while ($monthlyDue > 0 && $this->current_period_paid >= $monthlyDue) {
-            $this->current_period_paid = round($this->current_period_paid - $monthlyDue, 2);
+        if ($type === 'partial') {
+            $this->carried_over_amount = max(0, round($this->amount_due - $this->current_period_paid, 2));
+            $this->current_period_paid = 0;
+            $this->next_due_date = $this->next_due_date->copy()->addMonthNoOverflow();
+
+            return;
+        }
+
+        while ($this->amount_due > 0 && $this->current_period_paid >= $this->amount_due) {
+            $this->current_period_paid = round($this->current_period_paid - $this->amount_due, 2);
+            $this->carried_over_amount = 0;
             $this->next_due_date = $this->next_due_date->copy()->addMonthNoOverflow();
         }
     }

@@ -128,7 +128,7 @@
                     <td class="small">{{ peso($loan->principal_amount) }}</td>
                     <td class="small text-muted">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' (now '.$loan->current_installment_number.')' : '' }}</td>
                     <td class="small fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
-                    <td class="small text-muted">{{ peso($loan->monthly_due) }}</td>
+                    <td class="small text-muted">{{ peso($loan->amount_due) }}</td>
                     <td class="small {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
                     <td class="small">
                         @if($loan->archived_at)
@@ -220,6 +220,8 @@
                         <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
                         @elseif($payment->type === 'prepayment')
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Prepayment</span>
+                        @elseif($payment->type === 'partial')
+                        <span class="badge bg-info-subtle text-info border border-info-subtle">Partial Payment</span>
                         @else
                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
                         @endif

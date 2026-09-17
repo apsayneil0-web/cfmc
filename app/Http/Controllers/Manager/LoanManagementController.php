@@ -66,7 +66,7 @@ class LoanManagementController extends Controller
                 ->tap($regularOnly)
                 ->whereBetween('next_due_date', [now()->startOfMonth(), now()->endOfMonth()])
                 ->get()
-                ->sum(fn (Loan $loan) => $loan->monthly_due),
+                ->sum(fn (Loan $loan) => $loan->amount_due),
             'interest_earned' => LoanPayment::where('type', 'interest')
                 ->whereHas('loan', fn ($q) => $q->whereNull('archived_at')->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular')))
                 ->sum('amount'),

@@ -40,7 +40,7 @@ Route::get('/', function () {
 })->name('welcome');
 
 // Dashboard routes
-Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
+Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(function () {
     // Admin Routes
     Route::middleware('role:1')->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
@@ -193,6 +193,14 @@ Route::middleware(['auth', 'account.active', 'nocache'])->group(function () {
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
 
     Route::post('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture.update');
+
+    // Pinged by the client-side inactivity timer while the user is
+    // genuinely active, so the server-side timeout clock (see the
+    // "timeout" middleware above) doesn't expire a tab someone is still
+    // reading/scrolling but hasn't navigated away from.
+    Route::post('/session/heartbeat', function () {
+        return response()->noContent();
+    })->name('session.heartbeat');
 });
 
 require __DIR__.'/auth.php';

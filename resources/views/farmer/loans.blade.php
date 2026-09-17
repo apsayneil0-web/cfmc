@@ -20,7 +20,7 @@
 @else
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <x-stat-card label="Remaining Balance" value="{{ peso($activeLoan->remaining_balance) }}" icon="fa-hand-holding-usd" color="danger" />
-    <x-stat-card label="Monthly Due" value="{{ peso($activeLoan->monthly_due) }}" icon="fa-calendar-day" color="warning" />
+    <x-stat-card label="Monthly Due" value="{{ peso($activeLoan->amount_due) }}" icon="fa-calendar-day" color="warning" />
     <x-stat-card label="Next Due Date" value="{{ $activeLoan->next_due_date->format('M d, Y') }}" icon="fa-clock" color="primary" />
 </div>
 @endif
@@ -61,13 +61,16 @@
                         </div>
                         <div class="text-end">
                             <div class="fw-semibold {{ $row->status === 'paid' ? 'text-muted text-decoration-line-through' : 'text-primary' }}">{{ peso($row->amount) }}</div>
-                            <button type="button" class="btn btn-sm btn-link p-0 text-muted text-decoration-none" data-bs-toggle="collapse" data-bs-target="#installmentDetail{{ $activeLoan->id }}-{{ $row->number }}" aria-expanded="false">
+                            <button type="button" class="btn btn-sm btn-link p-0 text-muted text-decoration-none installment-toggle" data-target="installmentDetail{{ $activeLoan->id }}-{{ $row->number }}" aria-expanded="false">
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="collapse small text-muted mt-1" id="installmentDetail{{ $activeLoan->id }}-{{ $row->number }}">
+                    <div class="small text-muted mt-1 d-none" id="installmentDetail{{ $activeLoan->id }}-{{ $row->number }}">
                         Principal: {{ peso($activeLoan->installment_amount) }} &bull; Interest: {{ peso($activeLoan->monthly_due - $activeLoan->installment_amount) }}
+                        @if($row->status === 'current' && $activeLoan->carried_over_amount > 0)
+                        <br>Includes {{ peso($activeLoan->carried_over_amount) }} carried over from a previous partial payment.
+                        @endif
                     </div>
                 </div>
             </div>
@@ -97,6 +100,8 @@
                         <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
                         @elseif($payment->type === 'prepayment')
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Prepayment</span>
+                        @elseif($payment->type === 'partial')
+                        <span class="badge bg-info-subtle text-info border border-info-subtle">Partial Payment</span>
                         @else
                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
                         @endif
@@ -140,7 +145,7 @@
                     <td class="px-4 px-md-6 py-4" data-label="Principal">{{ peso($loan->principal_amount) }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Disbursed">{{ $loan->disbursed_at?->format('M d, Y') ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Paid Off">{{ $loan->payments->max('transaction_date')?->format('M d, Y') ?? '—' }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark" data-label="Total Paid">{{ peso($loan->payments->whereIn('type', ['payment', 'prepayment'])->sum('amount')) }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark" data-label="Total Paid">{{ peso($loan->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->sum('amount')) }}</td>
                     <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge status="Fully Paid" /></td>
                     <td class="px-4 px-md-6 py-4" data-label="Actions">
                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#paidLoanModal{{ $loan->id }}">
@@ -183,6 +188,8 @@
                         <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
                         @elseif($payment->type === 'prepayment')
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Prepayment</span>
+                        @elseif($payment->type === 'partial')
+                        <span class="badge bg-info-subtle text-info border border-info-subtle">Partial Payment</span>
                         @else
                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
                         @endif
@@ -296,4 +303,23 @@
         border-color: #cbd5e1;
     }
 </style>
+
+<script>
+    // Plain show/hide instead of Bootstrap's animated collapse — the
+    // installment detail was flashing open and immediately closing on a
+    // single click, so this makes the toggle deterministic: one click opens
+    // and holds it open, the next click (chevron flips to point up) closes it.
+    document.querySelectorAll('.installment-toggle').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var target = document.getElementById(button.dataset.target);
+            var icon = button.querySelector('i');
+            var isOpen = !target.classList.contains('d-none');
+
+            target.classList.toggle('d-none');
+            button.setAttribute('aria-expanded', String(!isOpen));
+            icon.classList.toggle('fa-chevron-down', isOpen);
+            icon.classList.toggle('fa-chevron-up', !isOpen);
+        });
+    });
+</script>
 @endsection

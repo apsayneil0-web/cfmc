@@ -139,7 +139,12 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Destroy an authenticated session.
+     * Destroy an authenticated session. The client-side inactivity timer
+     * (resources/js/app.js) submits this same logout form with
+     * reason=timeout for an immediate redirect while a tab sits idle; the
+     * actual, unbypassable enforcement is the EnsureSessionIsActive
+     * middleware, which performs the same logout server-side on the next
+     * request regardless of whether this was ever called from JS.
      */
     public function destroy(Request $request)
     {
@@ -151,6 +156,13 @@ class AuthenticatedSessionController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($request->input('reason') === 'timeout') {
+            return redirect()->route('login')->withErrors([
+                'username' => 'Your session has expired due to inactivity. Please log in again.',
+            ]);
+        }
+
         return redirect()->route('login');
     }
 }

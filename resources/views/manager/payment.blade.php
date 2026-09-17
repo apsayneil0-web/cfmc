@@ -158,7 +158,7 @@
                         <select name="loan_id" id="recordPaymentLoanSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
                             <option value="" disabled selected>Select a loan</option>
                             @forelse($payableLoans as $loan)
-                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->monthly_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}">
+                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->amount_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}">
                                 LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — {{ $loan->farmer->full_name }} (Balance: {{ peso($loan->remaining_balance) }})
                             </option>
                             @empty
@@ -172,6 +172,7 @@
                         <select name="type" id="recordPaymentTypeSelect" class="form-select" required>
                             <option value="payment" selected>Regular Payment</option>
                             <option value="prepayment">Prepayment (ahead of the due date)</option>
+                            <option value="partial">Partial Payment</option>
                         </select>
                     </div>
                     <div class="mb-3">

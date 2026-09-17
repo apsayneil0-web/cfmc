@@ -38,6 +38,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Inactivity Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Minutes of no page interaction (mouse, keyboard, scroll) before an
+    | authenticated user is automatically logged out, independent of the
+    | overall session "lifetime" above. Enforced server-side by the
+    | EnsureSessionIsActive middleware; change this one value to change
+    | the timeout everywhere (server check and the JS countdown both
+    | read it, via config('session.inactivity_timeout')).
+    |
+    */
+
+    'inactivity_timeout' => (int) env('SESSION_INACTIVITY_TIMEOUT', 15),
+
+    /*
+    |--------------------------------------------------------------------------
     | Session Encryption
     |--------------------------------------------------------------------------
     |
