@@ -90,11 +90,23 @@
                                 <div class="modal-body">
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Date</label>
-                                        <input type="date" name="appointment_date" class="form-control" min="{{ date('Y-m-d') }}" value="{{ $appointment->appointment_date->format('Y-m-d') }}" required>
+                                        <input
+                                            type="date" name="appointment_date" class="form-control"
+                                            id="rescheduleDate{{ $appointment->id }}"
+                                            min="{{ date('Y-m-d') }}"
+                                            value="{{ $appointment->appointment_date->format('Y-m-d') }}"
+                                            data-current-time="{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('H:i') }}"
+                                            data-exclude="{{ $appointment->id }}"
+                                            onchange="loanAppointmentRefreshSlots('rescheduleDate{{ $appointment->id }}', 'rescheduleTime{{ $appointment->id }}', 'rescheduleSlotsHint{{ $appointment->id }}')"
+                                            required
+                                        >
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label fw-semibold">Time</label>
-                                        <input type="time" name="appointment_time" class="form-control" value="{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('H:i') }}" required>
+                                        <label class="form-label fw-semibold">Time <span class="text-danger">*</span></label>
+                                        <select name="appointment_time" id="rescheduleTime{{ $appointment->id }}" class="form-select" required>
+                                            <option value="{{ \Carbon\Carbon::parse($appointment->appointment_time)->format('H:i') }}">{{ \App\Models\LoanAppointment::slotLabel(\Carbon\Carbon::parse($appointment->appointment_time)->format('H:i')) }}</option>
+                                        </select>
+                                        <p class="small text-muted mb-0 mt-1" id="rescheduleSlotsHint{{ $appointment->id }}">Up to 5 appointments allowed per day, one per 1-hour slot.</p>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Appointment Notes</label>
@@ -205,11 +217,20 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
-                        <input type="date" name="appointment_date" class="form-control" min="{{ date('Y-m-d') }}" required>
+                        <input
+                            type="date" name="appointment_date" class="form-control"
+                            id="createAppointmentDate"
+                            min="{{ date('Y-m-d') }}"
+                            onchange="loanAppointmentRefreshSlots('createAppointmentDate', 'createAppointmentTime', 'createSlotsHint')"
+                            required
+                        >
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Time <span class="text-danger">*</span></label>
-                        <input type="time" name="appointment_time" class="form-control" required>
+                        <select name="appointment_time" id="createAppointmentTime" class="form-select" required disabled>
+                            <option value="">Select a date first</option>
+                        </select>
+                        <p class="small text-muted mb-0 mt-1" id="createSlotsHint">Up to 5 appointments allowed per day, one per 1-hour slot.</p>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Appointment Notes <span class="text-danger">*</span></label>
@@ -274,4 +295,70 @@
 {{-- Camera capture modals from x-collateral-proof-input, pushed here so
      they're siblings of the other modals rather than nested descendants. --}}
 @stack('modals')
+
+<script>
+    // Refreshes a Time <select> with whichever of the 5 daily slots are
+    // still open for the chosen date (excluding this appointment's own
+    // current slot on reschedule, so re-picking the same time is allowed).
+    // Keeps "5 appointments/day, one per 1-hour slot" enforced client-side
+    // for a good UX — the server validates the same rule again on submit.
+    async function loanAppointmentRefreshSlots(dateInputId, timeSelectId, hintId) {
+        var dateInput = document.getElementById(dateInputId);
+        var timeSelect = document.getElementById(timeSelectId);
+        var hint = document.getElementById(hintId);
+        var currentValue = dateInput.dataset.currentTime || null;
+        var excludeId = dateInput.dataset.exclude || '';
+
+        if (!dateInput.value) {
+            return;
+        }
+
+        timeSelect.disabled = true;
+
+        try {
+            var url = '{{ route('loan-appointment.available-slots') }}?date=' + encodeURIComponent(dateInput.value)
+                + (excludeId ? '&exclude=' + encodeURIComponent(excludeId) : '');
+            var response = await fetch(url);
+            var data = await response.json();
+
+            timeSelect.innerHTML = '';
+
+            if (data.slots.length === 0) {
+                timeSelect.innerHTML = '<option value="">No slots available</option>';
+                hint.textContent = 'This date is fully booked (5 of 5 slots taken). Please choose another date.';
+                hint.classList.add('text-danger');
+                hint.classList.remove('text-muted');
+                return;
+            }
+
+            data.slots.forEach(function (slot) {
+                var option = document.createElement('option');
+                option.value = slot.value;
+                option.textContent = slot.label;
+                if (slot.value === currentValue) {
+                    option.selected = true;
+                }
+                timeSelect.appendChild(option);
+            });
+
+            hint.textContent = data.slots.length + ' of 5 slot(s) available for this date.';
+            hint.classList.remove('text-danger');
+            hint.classList.add('text-muted');
+        } finally {
+            timeSelect.disabled = false;
+        }
+    }
+
+    // Pre-load the Reschedule modal's slots (for its already-filled date)
+    // the moment it opens, so the dropdown isn't just the one hardcoded
+    // "current" option until the farmer happens to touch the date field.
+    document.addEventListener('shown.bs.modal', function (event) {
+        if (event.target.id.startsWith('editModal')) {
+            var dateInput = event.target.querySelector('input[name="appointment_date"]');
+            if (dateInput) {
+                loanAppointmentRefreshSlots(dateInput.id, dateInput.id.replace('rescheduleDate', 'rescheduleTime'), dateInput.id.replace('rescheduleDate', 'rescheduleSlotsHint'));
+            }
+        }
+    });
+</script>
 @endsection

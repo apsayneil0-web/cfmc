@@ -185,6 +185,18 @@ class MachineScheduleController extends Controller
             'harvest_yield' => $validated['harvest_yield'],
         ]);
 
+        if ($schedule->user_id) {
+            Notification::create([
+                'user_id' => $schedule->user_id,
+                'schedule_id' => $schedule->id,
+                'title' => 'Schedule Completed',
+                'message' => "Your {$schedule->machinery} schedule has been marked complete. Recorded harvest yield: {$validated['harvest_yield']}.",
+                'type' => 'schedule_completed',
+                'is_read' => false,
+                'created_at' => now(),
+            ]);
+        }
+
         return redirect()->route('manager.machine-schedule')
             ->with('success', 'Schedule marked complete and harvest yield recorded.');
     }

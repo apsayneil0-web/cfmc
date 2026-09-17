@@ -68,6 +68,15 @@
             <div class="report-type-desc">Operational &amp; machine costs</div>
         </div>
     </a>
+
+    <a href="{{ route('manager.reporting', ['report_type' => 'harvest_payment']) }}"
+        class="report-type-card {{ $reportType === 'harvest_payment' ? 'active' : '' }}" title="Cooperative's 9%/12% cut of farmer-reported harvest income">
+        <div class="report-type-icon bg-success-subtle text-success"><i class="fas fa-hand-holding-usd"></i></div>
+        <div class="report-type-text">
+            <div class="report-type-title">Harvest Payment</div>
+            <div class="report-type-desc">9% member / 12% non-member</div>
+        </div>
+    </a>
 </div>
 
 <!-- Report Generator -->
@@ -86,6 +95,7 @@
                     <option value="cbu" @selected($reportType === 'cbu')>Capital Build-Up Report</option>
                     <option value="complaint" @selected($reportType === 'complaint')>Complaint Report</option>
                     <option value="expense" @selected($reportType === 'expense')>Expense Report</option>
+                    <option value="harvest_payment" @selected($reportType === 'harvest_payment')>Harvest Payment Report</option>
                 </select>
             </div>
             <div>
@@ -177,6 +187,7 @@
         'cbu' => 'Capital Build-Up Report',
         'complaint' => 'Complaint Report',
         'expense' => 'Expense Report',
+        'harvest_payment' => 'Harvest Payment Report',
     };
 @endphp
 
@@ -459,13 +470,44 @@
             </tbody>
         </table>
     </div>
+    @elseif($reportType === 'harvest_payment')
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Type</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Harvest Amount</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Rate</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Payment Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($rows as $row)
+                <tr>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->payment_date->format('M d, Y') }}</td>
+                    <td class="px-4 px-md-6 py-4">{{ $row->payer_name }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$row->member_type === 'member' ? 'Member' : 'Non-Member'" /></td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ peso($row->harvest_amount) }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ rtrim(rtrim(number_format($row->rate, 2), '0'), '.') }}%</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($row->payment_amount) }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No harvest payments match these filters.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
     @endif
 </div>
 
 @if($summary)
 <!-- Report Summary + Breakdown -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 summary-breakdown-grid">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 no-print">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 summary-breakdown-grid {{ $reportType === 'harvest_payment' ? 'summary-breakdown-grid--print-summary' : '' }}">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 {{ $reportType === 'harvest_payment' ? '' : 'no-print' }}">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Report Summary</h3>
         <table class="table table-sm mb-0">
             <tbody>
@@ -622,11 +664,17 @@
 
         @page { margin: 8mm; }
 
-        /* Report Summary is hidden in print (kept on screen) — let the
-           breakdown panel take the full row instead of leaving a blank gap
-           where the summary column used to be. */
+        /* Report Summary is hidden in print for most report types (kept on
+           screen) — let the breakdown panel take the full row instead of
+           leaving a blank gap where the summary column used to be. The
+           Harvest Payment report is the exception: its totals are meant to
+           be part of the printed/PDF record, so it keeps both columns. */
         .summary-breakdown-grid {
             grid-template-columns: 1fr;
+        }
+
+        .summary-breakdown-grid--print-summary {
+            grid-template-columns: 1fr 1fr;
         }
 
         /* The loan table has 12 columns — only pin it to fixed percentage

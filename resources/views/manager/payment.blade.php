@@ -26,9 +26,10 @@
 @endif
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
     <x-stat-card label="Loan Payments" value="₱{{ number_format($stats['loan_payments'], 2) }}" icon="fa-hand-holding-usd" color="primary" />
     <x-stat-card label="CBU Contributions" value="₱{{ number_format($stats['cbu_contributions'], 2) }}" icon="fa-piggy-bank" color="info" />
+    <x-stat-card label="Harvest Payments" value="₱{{ number_format($stats['harvest_payments'], 2) }}" icon="fa-seedling" color="success" />
     <x-stat-card label="Operational Expenses" value="₱{{ number_format($stats['operational_expenses'], 2) }}" icon="fa-file-invoice" color="warning" />
     <x-stat-card label="Replaceable Parts" value="₱{{ number_format($stats['replaceable_parts'], 2) }}" icon="fa-cogs" color="danger" />
 </div>
@@ -41,22 +42,44 @@
                 <input type="text" placeholder="Search payments..." class="form-control ps-5" style="min-width: 220px;">
                 <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
             </div>
-            <select class="form-select" style="width: auto;">
+            <select id="paymentTypeFilter" class="form-select" style="width: auto;">
                 <option value="">All Types</option>
-                <option>Loan Payment</option>
-                <option>CBU Contribution</option>
-                <option>Operational Expense</option>
-                <option>Replaceable Parts</option>
+                <option value="Loan Payment">Loan Payment</option>
+                <option value="CBU Contribution">CBU Contribution</option>
+                <option value="Harvest Payment">Harvest Payment</option>
+                <option value="Operational Expense">Operational Expense</option>
+                <option value="Replaceable Parts">Replaceable Parts</option>
             </select>
             <input type="date" class="form-control" style="width: auto;">
         </x-slot:filters>
         <x-slot:actions>
-            <button type="button" class="btn btn-outline-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#recordCbuPaymentModal">
-                <i class="fas fa-piggy-bank"></i><span>Record CBU Payment</span>
-            </button>
-            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
-                <i class="fas fa-plus"></i><span>Record Loan Payment</span>
-            </button>
+            <div class="dropdown">
+                <button type="button" class="btn btn-primary dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-plus"></i><span>Record Payment</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                            <i class="fas fa-hand-holding-usd text-primary"></i>Loan Payment
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#recordCbuPaymentModal">
+                            <i class="fas fa-piggy-bank text-primary"></i>CBU Payment
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#payExpenseModal">
+                            <i class="fas fa-file-invoice text-warning"></i>Expense Payment
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#recordHarvestPaymentModal">
+                            <i class="fas fa-seedling text-success"></i>Harvesting Payment
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </x-slot:actions>
     </x-table-toolbar>
 
@@ -74,16 +97,16 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="paymentsTableBody">
                 @forelse($payments as $payment)
-                <tr>
+                <tr data-filter-category="{{ $payment->filter_category }}">
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $payment->transaction_code }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $payment->date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $payment->payer }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->type_label" /></td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $payment->reference }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($payment->amount) }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge status="Completed" /></td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->status_label" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
                             <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewPaymentModal{{ $payment->kind }}{{ $payment->id }}" />
@@ -98,6 +121,9 @@
                     <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments recorded yet.</td>
                 </tr>
                 @endforelse
+                <tr id="paymentsNoFilterMatch" class="d-none">
+                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments match this type.</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -239,6 +265,118 @@
     </div>
 </div>
 
+<!-- Record Expense Payment Modal -->
+<div class="modal fade" id="payExpenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice me-2"></i>Record Expense Payment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.payment.pay-expense') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pending Expense <span class="text-danger">*</span></label>
+                        <select name="expense_id" id="payExpenseSelect" class="form-select searchable-select" data-placeholder="Search expenses..." required>
+                            <option value="" disabled selected>Select an expense</option>
+                            @forelse($payableExpenses as $expense)
+                            <option value="{{ $expense->id }}">
+                                EXP-{{ str_pad($expense->id, 3, '0', STR_PAD_LEFT) }} — {{ $expense->description }} ({{ peso($expense->amount) }})
+                            </option>
+                            @empty
+                            <option value="" disabled>No pending expenses</option>
+                            @endforelse
+                        </select>
+                        <p class="text-muted small mb-0 mt-1">Marks the expense as paid, dated today.</p>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Record Harvesting Payment Modal -->
+<div class="modal fade" id="recordHarvestPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-seedling me-2"></i>Record Harvesting Payment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.payment.record-harvest') }}" method="POST" id="recordHarvestForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Farmer Type <span class="text-danger">*</span></label>
+                        <select name="member_type" id="harvestMemberType" class="form-select" required>
+                            <option value="member" selected>Member ({{ rtrim(rtrim(number_format(\App\Models\HarvestPayment::MEMBER_RATE, 2), '0'), '.') }}%)</option>
+                            <option value="non-member">Non-member ({{ rtrim(rtrim(number_format(\App\Models\HarvestPayment::NON_MEMBER_RATE, 2), '0'), '.') }}%)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="harvestFarmerSelectGroup">
+                        <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
+                        <select name="farmer_id" id="harvestFarmerSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
+                            <option value="" disabled selected>Select a farmer</option>
+                            @forelse($cbuFarmers as $farmer)
+                            <option value="{{ $farmer->id }}">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }} — {{ $farmer->full_name }}</option>
+                            @empty
+                            <option value="" disabled>No approved farmers</option>
+                            @endforelse
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="harvestFarmerNameGroup">
+                        <label class="form-label fw-semibold">Farmer Name <span class="text-danger">*</span></label>
+                        <input type="text" name="farmer_name" id="harvestFarmerNameInput" class="form-control" placeholder="Full name" list="nonMemberNamesList" autocomplete="off">
+                        <datalist id="nonMemberNamesList">
+                            @foreach($nonMemberNames as $name)
+                            <option value="{{ $name }}"></option>
+                            @endforeach
+                        </datalist>
+                        <p class="text-muted small mb-0 mt-1">Start typing to see returning non-members, or enter a new name.</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Total Harvest Amount <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0.01" name="harvest_amount" id="harvestAmountInput" class="form-control" required>
+                    </div>
+                    <div class="text-center mb-3">
+                        <button type="button" id="harvestCalculateBtn" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-calculator me-1"></i>Calculate
+                        </button>
+                    </div>
+                    <div id="harvestPreview" class="bg-light rounded p-3 mb-3 d-none">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Harvest Amount</span>
+                            <span id="harvestPreviewAmount" class="fw-medium"></span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Applicable Rate</span>
+                            <span id="harvestPreviewRate" class="fw-medium"></span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-semibold">Cooperative Payment Due</span>
+                            <span id="harvestPreviewPayment" class="fw-bold text-success"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold">Notes</label>
+                        <textarea name="notes" rows="2" class="form-control" placeholder="Optional remarks"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Confirm &amp; Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
@@ -318,6 +456,86 @@
             : '';
 
         updateCbuMinimumHint();
+    });
+
+    // Harvesting Payment: toggles between an existing member (dropdown) and
+    // a manually-typed non-member name, and previews the 9%/12% calculation
+    // client-side. The server always recomputes the rate/amount itself —
+    // this preview is only for the Manager's confirmation, never trusted as-is.
+    var HARVEST_MEMBER_RATE = {{ \App\Models\HarvestPayment::MEMBER_RATE }};
+    var HARVEST_NON_MEMBER_RATE = {{ \App\Models\HarvestPayment::NON_MEMBER_RATE }};
+
+    function formatPeso(amount) {
+        return '₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function toggleHarvestFarmerFields() {
+        var memberType = document.getElementById('harvestMemberType').value;
+        var selectGroup = document.getElementById('harvestFarmerSelectGroup');
+        var nameGroup = document.getElementById('harvestFarmerNameGroup');
+        var farmerSelect = document.getElementById('harvestFarmerSelect');
+        var nameInput = document.getElementById('harvestFarmerNameInput');
+
+        if (memberType === 'member') {
+            selectGroup.classList.remove('d-none');
+            nameGroup.classList.add('d-none');
+            farmerSelect.setAttribute('required', 'required');
+            nameInput.removeAttribute('required');
+            nameInput.value = '';
+        } else {
+            selectGroup.classList.add('d-none');
+            nameGroup.classList.remove('d-none');
+            farmerSelect.removeAttribute('required');
+            nameInput.setAttribute('required', 'required');
+        }
+    }
+
+    function updateHarvestPreview() {
+        var memberType = document.getElementById('harvestMemberType').value;
+        var amount = parseFloat(document.getElementById('harvestAmountInput').value);
+        var preview = document.getElementById('harvestPreview');
+
+        if (!amount || amount <= 0) {
+            preview.classList.add('d-none');
+            return;
+        }
+
+        var rate = memberType === 'member' ? HARVEST_MEMBER_RATE : HARVEST_NON_MEMBER_RATE;
+        var payment = Math.round(amount * rate) / 100;
+
+        document.getElementById('harvestPreviewAmount').textContent = formatPeso(amount);
+        document.getElementById('harvestPreviewRate').textContent = rate + '%';
+        document.getElementById('harvestPreviewPayment').textContent = formatPeso(payment);
+        preview.classList.remove('d-none');
+    }
+
+    document.getElementById('harvestMemberType')?.addEventListener('change', function () {
+        toggleHarvestFarmerFields();
+        updateHarvestPreview();
+    });
+    document.getElementById('harvestAmountInput')?.addEventListener('input', updateHarvestPreview);
+    document.getElementById('harvestCalculateBtn')?.addEventListener('click', updateHarvestPreview);
+
+    // "All Types" filter: purely client-side, since the whole feed is
+    // already rendered — toggles row visibility by the category each row
+    // was tagged with server-side (data-filter-category).
+    document.getElementById('paymentTypeFilter')?.addEventListener('change', function () {
+        var selected = this.value;
+        var rows = document.querySelectorAll('#paymentsTableBody tr[data-filter-category]');
+        var visibleCount = 0;
+
+        rows.forEach(function (row) {
+            var matches = !selected || row.getAttribute('data-filter-category') === selected;
+            row.classList.toggle('d-none', !matches);
+            if (matches) {
+                visibleCount++;
+            }
+        });
+
+        var noMatchRow = document.getElementById('paymentsNoFilterMatch');
+        if (noMatchRow) {
+            noMatchRow.classList.toggle('d-none', visibleCount !== 0 || rows.length === 0);
+        }
     });
 </script>
 @endsection

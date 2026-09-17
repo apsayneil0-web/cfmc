@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Farmer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,12 +27,21 @@ class ComplaintController extends Controller
             'action' => 'required|in:draft,submit',
         ]);
 
-        Complaint::create([
+        $complaint = Complaint::create([
             'user_id' => Auth::id(),
             'subject' => $validated['subject'],
             'description' => $validated['description'],
             'status' => $validated['action'] === 'submit' ? 'submitted' : 'draft',
         ]);
+
+        if ($complaint->status === 'submitted') {
+            Notification::notifyRoles(
+                [2],
+                'New Complaint Submitted',
+                Auth::user()->name." submitted a complaint: \"{$complaint->subject}\"",
+                'complaint_submitted',
+            );
+        }
 
         $message = $validated['action'] === 'submit'
             ? 'Complaint submitted for review!'
@@ -57,6 +67,15 @@ class ComplaintController extends Controller
             'status' => $validated['action'] === 'submit' ? 'submitted' : 'draft',
         ]);
 
+        if ($complaint->status === 'submitted') {
+            Notification::notifyRoles(
+                [2],
+                'New Complaint Submitted',
+                Auth::user()->name." submitted a complaint: \"{$complaint->subject}\"",
+                'complaint_submitted',
+            );
+        }
+
         return redirect()->route('farmer.complaints')->with('success', 'Complaint updated successfully!');
     }
 
@@ -76,6 +95,13 @@ class ComplaintController extends Controller
         abort_if($complaint->status !== 'resolved', 422, 'Only resolved complaints can be reopened.');
 
         $complaint->update(['status' => 'submitted']);
+
+        Notification::notifyRoles(
+            [2],
+            'Complaint Reopened',
+            Auth::user()->name." reopened their complaint: \"{$complaint->subject}\"",
+            'complaint_reopened',
+        );
 
         return redirect()->route('farmer.complaints')->with('success', 'Complaint reopened for further review.');
     }

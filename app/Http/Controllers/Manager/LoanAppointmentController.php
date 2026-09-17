@@ -80,7 +80,21 @@ class LoanAppointmentController extends Controller
 
         $validated = $request->validate([
             'appointment_date' => 'required|date|after_or_equal:today',
-            'appointment_time' => 'required',
+            'appointment_time' => [
+                'required',
+                'in:'.implode(',', LoanAppointment::SLOTS),
+                function ($attribute, $value, $fail) use ($request, $loan_appointment) {
+                    if (! $request->filled('appointment_date')) {
+                        return;
+                    }
+
+                    $available = LoanAppointment::availableSlotsFor($request->input('appointment_date'), $loan_appointment->id);
+
+                    if (! in_array($value, $available, true)) {
+                        $fail('That time slot is already taken for the selected date. This date allows up to 5 appointments per day, one per slot.');
+                    }
+                },
+            ],
         ]);
 
         $loan_appointment->update($validated);

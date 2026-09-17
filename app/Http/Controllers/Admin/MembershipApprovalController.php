@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Farmer;
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +82,24 @@ class MembershipApprovalController extends Controller
             $message .= " Login account created — username: {$credentials['username']}, temporary password: {$credentials['password']}. Please share these with the farmer directly.";
         }
 
+        if ($farmer->user_id) {
+            Notification::notify(
+                $farmer->user_id,
+                'Membership Application Approved',
+                "{$farmer->full_name}'s membership application has been approved.",
+                'membership_approved',
+            );
+        }
+
+        if ($farmer->account_user_id) {
+            Notification::notify(
+                $farmer->account_user_id,
+                'Membership Approved',
+                'Your membership application has been approved. Welcome to the cooperative!',
+                'membership_approved',
+            );
+        }
+
         return redirect()->route('admin.membership-approval')
             ->with('success', $message);
     }
@@ -130,6 +149,16 @@ class MembershipApprovalController extends Controller
             'status' => 'rejected',
             'rejection_reason' => $validated['rejection_reason'] ?? null,
         ]);
+
+        if ($farmer->user_id) {
+            $message = "{$farmer->full_name}'s membership application has been rejected.";
+
+            if (! empty($validated['rejection_reason'])) {
+                $message .= " Reason: {$validated['rejection_reason']}";
+            }
+
+            Notification::notify($farmer->user_id, 'Membership Application Rejected', $message, 'membership_rejected');
+        }
 
         return redirect()->route('admin.membership-approval')
             ->with('success', "{$farmer->full_name}'s membership application has been rejected.");

@@ -132,6 +132,8 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::get('/manager/payment', [PaymentController::class, 'index'])->name('manager.payment');
     Route::post('/manager/payment', [PaymentController::class, 'recordLoanPayment'])->name('manager.payment.record');
     Route::post('/manager/payment/cbu', [PaymentController::class, 'recordCbuPayment'])->name('manager.payment.record-cbu');
+    Route::post('/manager/payment/expense', [PaymentController::class, 'payExpense'])->name('manager.payment.pay-expense');
+    Route::post('/manager/payment/harvest', [PaymentController::class, 'recordHarvestPayment'])->name('manager.payment.record-harvest');
     Route::get('/manager/payment/{loan_payment}/receipt', [PaymentController::class, 'receipt'])->name('manager.payment.receipt');
 
     Route::get('/manager/machinery', [MachineController::class, 'index'])->name('manager.machinery');
@@ -189,6 +191,8 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     }); // end role:3 (Farmer)
 
     // Shared Routes
+    Route::get('/loan-appointment/available-slots', [LoanAppointmentController::class, 'availableSlots'])->name('loan-appointment.available-slots');
+
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
 

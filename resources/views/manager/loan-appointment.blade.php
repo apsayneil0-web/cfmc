@@ -236,11 +236,23 @@
                                     <p class="text-muted small">Move <strong>{{ $farmerName }}</strong>'s appointment (currently {{ $appt->appointment_date->format('M d, Y') }} at {{ \Carbon\Carbon::parse($appt->appointment_time)->format('g:i A') }}) to a new date/time.</p>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
-                                        <input type="date" name="appointment_date" class="form-control" min="{{ date('Y-m-d') }}" value="{{ $appt->appointment_date->format('Y-m-d') }}" required>
+                                        <input
+                                            type="date" name="appointment_date" class="form-control"
+                                            id="mgrRescheduleDate{{ $appt->id }}"
+                                            min="{{ date('Y-m-d') }}"
+                                            value="{{ $appt->appointment_date->format('Y-m-d') }}"
+                                            data-current-time="{{ \Carbon\Carbon::parse($appt->appointment_time)->format('H:i') }}"
+                                            data-exclude="{{ $appt->id }}"
+                                            onchange="loanAppointmentRefreshSlots('mgrRescheduleDate{{ $appt->id }}', 'mgrRescheduleTime{{ $appt->id }}', 'mgrRescheduleSlotsHint{{ $appt->id }}')"
+                                            required
+                                        >
                                     </div>
                                     <div>
                                         <label class="form-label fw-semibold">Time <span class="text-danger">*</span></label>
-                                        <input type="time" name="appointment_time" class="form-control" value="{{ \Carbon\Carbon::parse($appt->appointment_time)->format('H:i') }}" required>
+                                        <select name="appointment_time" id="mgrRescheduleTime{{ $appt->id }}" class="form-select" required>
+                                            <option value="{{ \Carbon\Carbon::parse($appt->appointment_time)->format('H:i') }}">{{ \App\Models\LoanAppointment::slotLabel(\Carbon\Carbon::parse($appt->appointment_time)->format('H:i')) }}</option>
+                                        </select>
+                                        <p class="small text-muted mb-0 mt-1" id="mgrRescheduleSlotsHint{{ $appt->id }}">Up to 5 appointments allowed per day, one per 1-hour slot.</p>
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-light">
@@ -284,5 +296,66 @@
             openTarget();
         }
     }
+
+    // Refreshes a Time <select> with whichever of the 5 daily slots are
+    // still open for the chosen date (excluding this appointment's own
+    // current slot, so re-picking the same time is allowed). Mirrors the
+    // farmer-side booking form so both enforce "5 appointments/day, one
+    // per 1-hour slot" the same way — the server validates it again too.
+    async function loanAppointmentRefreshSlots(dateInputId, timeSelectId, hintId) {
+        var dateInput = document.getElementById(dateInputId);
+        var timeSelect = document.getElementById(timeSelectId);
+        var hint = document.getElementById(hintId);
+        var currentValue = dateInput.dataset.currentTime || null;
+        var excludeId = dateInput.dataset.exclude || '';
+
+        if (!dateInput.value) {
+            return;
+        }
+
+        timeSelect.disabled = true;
+
+        try {
+            var url = '{{ route('loan-appointment.available-slots') }}?date=' + encodeURIComponent(dateInput.value)
+                + (excludeId ? '&exclude=' + encodeURIComponent(excludeId) : '');
+            var response = await fetch(url);
+            var data = await response.json();
+
+            timeSelect.innerHTML = '';
+
+            if (data.slots.length === 0) {
+                timeSelect.innerHTML = '<option value="">No slots available</option>';
+                hint.textContent = 'This date is fully booked (5 of 5 slots taken). Please choose another date.';
+                hint.classList.add('text-danger');
+                hint.classList.remove('text-muted');
+                return;
+            }
+
+            data.slots.forEach(function (slot) {
+                var option = document.createElement('option');
+                option.value = slot.value;
+                option.textContent = slot.label;
+                if (slot.value === currentValue) {
+                    option.selected = true;
+                }
+                timeSelect.appendChild(option);
+            });
+
+            hint.textContent = data.slots.length + ' of 5 slot(s) available for this date.';
+            hint.classList.remove('text-danger');
+            hint.classList.add('text-muted');
+        } finally {
+            timeSelect.disabled = false;
+        }
+    }
+
+    document.addEventListener('shown.bs.modal', function (event) {
+        if (event.target.id.startsWith('rescheduleModal')) {
+            var dateInput = event.target.querySelector('input[name="appointment_date"]');
+            if (dateInput) {
+                loanAppointmentRefreshSlots(dateInput.id, dateInput.id.replace('mgrRescheduleDate', 'mgrRescheduleTime'), dateInput.id.replace('mgrRescheduleDate', 'mgrRescheduleSlotsHint'));
+            }
+        }
+    });
 </script>
 @endsection

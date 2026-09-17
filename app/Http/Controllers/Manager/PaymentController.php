@@ -7,8 +7,11 @@ use App\Models\Cbu;
 use App\Models\CbuTransaction;
 use App\Models\Expense;
 use App\Models\Farmer;
+use App\Models\HarvestPayment;
 use App\Models\Loan;
 use App\Models\LoanPayment;
+use App\Models\Notification;
+use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -39,6 +42,10 @@ class PaymentController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $harvestPayments = HarvestPayment::with('farmer')
+            ->orderByDesc('created_at')
+            ->get();
+
         $payments = $loanPayments->map(fn ($payment) => (object) [
             'kind' => 'loan',
             'id' => $payment->id,
@@ -55,6 +62,8 @@ class PaymentController extends Controller
             'amount' => $payment->amount,
             'balance_after' => $payment->balance_after,
             'notes' => $payment->notes,
+            'status_label' => 'Completed',
+            'filter_category' => 'Loan Payment',
             'model' => $payment,
         ])->concat($cbuTransactions->map(fn ($transaction) => (object) [
             'kind' => 'cbu',
@@ -67,6 +76,8 @@ class PaymentController extends Controller
             'amount' => $transaction->amount,
             'balance_after' => $transaction->balance_after,
             'notes' => $transaction->notes,
+            'status_label' => 'Completed',
+            'filter_category' => 'CBU Contribution',
             'model' => $transaction,
         ]))->concat($expenses->map(fn ($expense) => (object) [
             'kind' => 'expense',
@@ -79,7 +90,23 @@ class PaymentController extends Controller
             'amount' => $expense->amount,
             'balance_after' => null,
             'notes' => null,
+            'status_label' => ucfirst($expense->status),
+            'filter_category' => $expense->category === 'operational' ? 'Operational Expense' : 'Replaceable Parts',
             'model' => $expense,
+        ]))->concat($harvestPayments->map(fn ($harvest) => (object) [
+            'kind' => 'harvest',
+            'id' => $harvest->id,
+            'transaction_code' => 'HRV-'.str_pad($harvest->id, 3, '0', STR_PAD_LEFT),
+            'date' => $harvest->payment_date,
+            'payer' => $harvest->payer_name,
+            'type_label' => $harvest->member_type === 'member' ? 'Harvest Payment (Member)' : 'Harvest Payment (Non-member)',
+            'reference' => $harvest->farmer_id ? 'FM-'.str_pad($harvest->farmer_id, 3, '0', STR_PAD_LEFT) : '-',
+            'amount' => $harvest->payment_amount,
+            'balance_after' => null,
+            'notes' => $harvest->notes,
+            'status_label' => 'Completed',
+            'filter_category' => 'Harvest Payment',
+            'model' => $harvest,
         ]))->sortByDesc(fn ($payment) => $payment->model->created_at)->values();
 
         $payableLoans = Loan::whereNull('archived_at')
@@ -93,14 +120,33 @@ class PaymentController extends Controller
             ->orderBy('last_name')
             ->get();
 
+        $payableExpenses = Expense::where('status', 'pending')
+            ->orderBy('expense_date')
+            ->get();
+
+        // Past non-member names, so a returning walk-in harvester can be
+        // picked consistently instead of retyped/misspelled each visit.
+        $nonMemberNames = HarvestPayment::where('member_type', 'non-member')
+            ->whereNotNull('farmer_name')
+            ->pluck('farmer_name')
+            ->merge(
+                ScheduleRequest::where('member_type', 'non-member')
+                    ->whereNotNull('farmer_name')
+                    ->pluck('farmer_name')
+            )
+            ->unique()
+            ->sort()
+            ->values();
+
         $stats = [
             'loan_payments' => LoanPayment::whereIn('type', ['payment', 'prepayment', 'partial'])->sum('amount'),
             'cbu_contributions' => CbuTransaction::where('type', 'contribution')->sum('amount'),
             'operational_expenses' => Expense::where('category', 'operational')->sum('amount'),
             'replaceable_parts' => Expense::where('category', 'replaceable_parts')->sum('amount'),
+            'harvest_payments' => HarvestPayment::sum('payment_amount'),
         ];
 
-        return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'stats'));
+        return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'payableExpenses', 'nonMemberNames', 'stats'));
     }
 
     /**
@@ -152,6 +198,17 @@ class PaymentController extends Controller
             Auth::id()
         );
 
+        if ($cbu->farmer->account_user_id) {
+            $typeLabel = $validated['type'] === 'contribution' ? 'CBU contribution' : 'CBU expense';
+
+            Notification::notify(
+                $cbu->farmer->account_user_id,
+                'Payment Recorded',
+                'A '.$typeLabel.' of '.peso($validated['amount']).' has been recorded on your CBU account.',
+                'payment_recorded',
+            );
+        }
+
         return redirect()->route('manager.payment')
             ->with('success', 'CBU payment recorded successfully.');
     }
@@ -176,8 +233,83 @@ class PaymentController extends Controller
 
         $loan->recordPayment($validated['amount'], $validated['notes'] ?? null, Auth::id(), $validated['type']);
 
+        if ($loan->farmer?->account_user_id) {
+            Notification::notify(
+                $loan->farmer->account_user_id,
+                'Payment Recorded',
+                'Your payment of '.peso($validated['amount']).' has been recorded against your loan. Remaining balance: '.peso($loan->remaining_balance).'.',
+                'payment_recorded',
+                ['loan_id' => $loan->id],
+            );
+        }
+
         return redirect()->route('manager.payment')
             ->with('success', 'Payment recorded successfully.');
+    }
+
+    /**
+     * Settle a pending cooperative expense (operational/machinery/replaceable
+     * parts) from the Payment page.
+     */
+    public function payExpense(Request $request)
+    {
+        $validated = $request->validate([
+            'expense_id' => 'required|exists:expenses,id',
+        ]);
+
+        $expense = Expense::findOrFail($validated['expense_id']);
+
+        abort_if($expense->status === 'paid', 422, 'This expense is already paid.');
+
+        $expense->markPaid(Auth::id());
+
+        return redirect()->route('manager.payment')
+            ->with('success', 'Expense payment recorded successfully.');
+    }
+
+    /**
+     * Record the cooperative's cut of a farmer's reported harvest income —
+     * 9% for members, 12% for non-members. The rate and resulting payment
+     * amount are always computed here from HarvestPayment's constants, never
+     * trusted from the request, even though the form previews the same math
+     * client-side for the Manager's benefit.
+     */
+    public function recordHarvestPayment(Request $request)
+    {
+        $validated = $request->validate([
+            'member_type' => 'required|in:member,non-member',
+            'farmer_id' => 'required_if:member_type,member|nullable|exists:farmers,id',
+            'farmer_name' => 'required_if:member_type,non-member|nullable|string|max:255',
+            'harvest_amount' => 'required|numeric|min:0.01',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $rate = HarvestPayment::rateFor($validated['member_type']);
+        $paymentAmount = round((float) $validated['harvest_amount'] * $rate / 100, 2);
+
+        $harvestPayment = HarvestPayment::create([
+            'farmer_id' => $validated['member_type'] === 'member' ? $validated['farmer_id'] : null,
+            'farmer_name' => $validated['member_type'] === 'non-member' ? $validated['farmer_name'] : null,
+            'member_type' => $validated['member_type'],
+            'harvest_amount' => $validated['harvest_amount'],
+            'rate' => $rate,
+            'payment_amount' => $paymentAmount,
+            'payment_date' => now()->toDateString(),
+            'notes' => $validated['notes'] ?? null,
+            'recorded_by' => Auth::id(),
+        ]);
+
+        if ($validated['member_type'] === 'member' && $harvestPayment->farmer?->account_user_id) {
+            Notification::notify(
+                $harvestPayment->farmer->account_user_id,
+                'Payment Recorded',
+                'A harvest payment of '.peso($paymentAmount).' ('.$rate.'% of '.peso($validated['harvest_amount']).' reported harvest) has been recorded for you.',
+                'payment_recorded',
+            );
+        }
+
+        return redirect()->route('manager.payment')
+            ->with('success', 'Harvesting payment recorded successfully.');
     }
 
     /**

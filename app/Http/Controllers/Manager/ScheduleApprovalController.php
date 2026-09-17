@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
 
@@ -69,6 +70,16 @@ class ScheduleApprovalController extends Controller
             $schedule->originalSchedule?->update(['archived_at' => now()]);
         }
 
+        if ($schedule->user_id) {
+            Notification::notify(
+                $schedule->user_id,
+                'Schedule Approved',
+                "Your {$schedule->machinery} schedule for ".$schedule->scheduled_date->format('M d, Y').' has been approved.',
+                'schedule_approved',
+                ['schedule_id' => $schedule->id],
+            );
+        }
+
         return redirect()->route('manager.schedule-approval')
             ->with('success', "Schedule for {$schedule->display_name} has been approved.");
     }
@@ -88,6 +99,16 @@ class ScheduleApprovalController extends Controller
             'status' => 'denied',
             'denial_reason' => $validated['denial_reason'],
         ]);
+
+        if ($schedule->user_id) {
+            Notification::notify(
+                $schedule->user_id,
+                'Schedule Denied',
+                "Your {$schedule->machinery} schedule request has been denied. Reason: {$validated['denial_reason']}",
+                'schedule_denied',
+                ['schedule_id' => $schedule->id],
+            );
+        }
 
         return redirect()->route('manager.schedule-approval')
             ->with('success', "Schedule for {$schedule->display_name} has been denied.");

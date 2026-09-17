@@ -132,6 +132,15 @@ class Farmer extends Model
     }
 
     /**
+     * Get this farmer's recorded harvest payments (the cooperative's cut of
+     * their reported harvest income).
+     */
+    public function harvestPayments(): HasMany
+    {
+        return $this->hasMany(HarvestPayment::class);
+    }
+
+    /**
      * Minimum size required for every farmer's very first CBU contribution:
      * a flat ₱4,000, regardless of land area. Every contribution after the
      * first only needs to clear a flat ₱1,000 minimum, enforced separately

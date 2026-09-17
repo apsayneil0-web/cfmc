@@ -8,6 +8,7 @@ use App\Models\Loan;
 use App\Models\LoanAppointment;
 use App\Models\LoanBatch;
 use App\Models\LoanRequest;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -228,6 +229,15 @@ class LoanRequestController extends Controller
             'status' => 'pending_disbursement',
         ]);
 
+        if ($loan_request->farmer->account_user_id) {
+            Notification::notify(
+                $loan_request->farmer->account_user_id,
+                'Loan Terms Finalized',
+                'Your loan terms have been finalized: principal '.peso($validated['principal_amount']).", {$validated['repayment_terms_months']}-month term. Awaiting disbursement.",
+                'loan_finalized',
+            );
+        }
+
         return redirect()->route('manager.loan-management')
             ->with('success', "Loan terms for {$loan_request->farmer->full_name} are finalized. Awaiting disbursement.");
     }
@@ -249,6 +259,7 @@ class LoanRequestController extends Controller
             ->where('status', 'approved')
             ->whereNull('archived_at')
             ->whereDoesntHave('loan')
+            ->with('farmer')
             ->get();
 
         abort_if($members->isEmpty(), 422, 'This batch has no approved requests left to finalize.');
@@ -274,6 +285,15 @@ class LoanRequestController extends Controller
                 'scheduled_disbursement_date' => $validated['disbursement_date'],
                 'scheduled_by' => Auth::id(),
             ]);
+
+            if ($member->farmer->account_user_id) {
+                Notification::notify(
+                    $member->farmer->account_user_id,
+                    'Loan Terms Finalized',
+                    'Your loan terms have been finalized: principal '.peso($member->requested_amount).", {$member->repayment_terms_months}-month term, as part of {$batch->label}.",
+                    'loan_finalized',
+                );
+            }
 
             if ($isImmediate) {
                 $loan->disburse(

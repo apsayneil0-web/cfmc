@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class ComplaintController extends Controller
@@ -58,6 +59,15 @@ class ComplaintController extends Controller
             'status' => $validated['status'],
             'manager_response' => $validated['manager_response'] ?? $complaint->manager_response,
         ]);
+
+        $statusLabel = $validated['status'] === 'resolved' ? 'resolved' : 'marked in progress';
+        $message = "Your complaint \"{$complaint->subject}\" has been {$statusLabel}.";
+
+        if (! empty($validated['manager_response'])) {
+            $message .= " Response: {$validated['manager_response']}";
+        }
+
+        Notification::notify($complaint->user_id, 'Complaint Update', $message, 'complaint_response');
 
         return redirect()->route('manager.complaints')->with('success', "Complaint \"{$complaint->subject}\" updated.");
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Farmer;
 
 use App\Http\Controllers\Controller;
 use App\Models\LoanAppointment;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,6 +30,31 @@ class LoanAppointmentController extends Controller
             'loanPurposes' => self::LOAN_PURPOSES,
             'loanTerms' => self::LOAN_TERMS,
             'loanEligibility' => Auth::user()->farmer?->regular_loan_eligibility,
+            'appointmentSlots' => LoanAppointment::SLOTS,
+        ]);
+    }
+
+    /**
+     * Which of the 5 daily slots are still open for a given date — used by
+     * the date picker (farmer's own booking form, and the Manager's
+     * reschedule form) to refresh the time dropdown without a full page
+     * reload. Reveals nothing about who holds a slot, only which hours
+     * remain, so it's safe for any authenticated user regardless of role.
+     */
+    public function availableSlots(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'exclude' => 'nullable|integer',
+        ]);
+
+        $slots = LoanAppointment::availableSlotsFor($validated['date'], $validated['exclude'] ?? null);
+
+        return response()->json([
+            'slots' => collect($slots)->map(fn ($slot) => [
+                'value' => $slot,
+                'label' => LoanAppointment::slotLabel($slot),
+            ])->values(),
         ]);
     }
 
@@ -42,7 +68,7 @@ class LoanAppointmentController extends Controller
             $documentsPath = $document->storeAs('loan_documents', time().'_'.$document->getClientOriginalName(), 'public');
         }
 
-        LoanAppointment::create([
+        $appointment = LoanAppointment::create([
             'user_id' => Auth::id(),
             'appointment_date' => $validated['appointment_date'],
             'appointment_time' => $validated['appointment_time'],
@@ -55,6 +81,13 @@ class LoanAppointmentController extends Controller
             'status' => 'pending',
         ]);
 
+        Notification::notifyRoles(
+            [2],
+            'New Loan Appointment',
+            Auth::user()->name.' booked a loan appointment for '.$appointment->appointment_date->format('M d, Y').' at '.LoanAppointment::slotLabel($appointment->appointment_time).'.',
+            'loan_appointment_booked',
+        );
+
         return redirect()->route('farmer.loan-appointment')
             ->with('success', 'Loan appointment request submitted successfully!');
     }
@@ -64,7 +97,7 @@ class LoanAppointmentController extends Controller
         abort_if($loan_appointment->user_id !== Auth::id(), 403);
         abort_if($loan_appointment->status !== 'pending', 422, 'Only pending appointments can be rescheduled.');
 
-        $validated = $this->validateAppointment($request);
+        $validated = $this->validateAppointment($request, $loan_appointment->id);
 
         $documentsPath = $loan_appointment->documents_path;
         if ($request->hasFile('documents')) {
@@ -83,11 +116,25 @@ class LoanAppointmentController extends Controller
             ->with('success', 'Appointment rescheduled successfully!');
     }
 
-    private function validateAppointment(Request $request): array
+    private function validateAppointment(Request $request, ?int $excludeId = null): array
     {
         return $request->validate([
             'appointment_date' => 'required|date|after_or_equal:today',
-            'appointment_time' => 'required',
+            'appointment_time' => [
+                'required',
+                'in:'.implode(',', LoanAppointment::SLOTS),
+                function ($attribute, $value, $fail) use ($request, $excludeId) {
+                    if (! $request->filled('appointment_date')) {
+                        return;
+                    }
+
+                    $available = LoanAppointment::availableSlotsFor($request->input('appointment_date'), $excludeId);
+
+                    if (! in_array($value, $available, true)) {
+                        $fail('That time slot is no longer available for the selected date. Please choose another slot or a different date — this date allows up to 5 appointments per day.');
+                    }
+                },
+            ],
             'purpose' => 'required|string|max:255',
             'requested_amount' => [
                 'required',
@@ -130,6 +177,13 @@ class LoanAppointmentController extends Controller
         abort_if($loan_appointment->status !== 'pending', 422, 'Only pending appointments can be cancelled.');
 
         $loan_appointment->update(['status' => 'cancelled']);
+
+        Notification::notifyRoles(
+            [2],
+            'Loan Appointment Cancelled',
+            Auth::user()->name.' cancelled their loan appointment for '.$loan_appointment->appointment_date->format('M d, Y').'.',
+            'loan_appointment_cancelled',
+        );
 
         return redirect()->route('farmer.loan-appointment')
             ->with('success', 'Appointment cancelled.');

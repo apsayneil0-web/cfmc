@@ -13,6 +13,7 @@
         'member' => 'primary', 'in use' => 'primary', 'new' => 'primary', 'assigned' => 'primary',
         'cbu contribution' => 'info', 'cbu expense' => 'danger', 'billing' => 'info', 'loan payment' => 'primary', 'interest charge' => 'warning',
         'operational expense' => 'warning',
+        'harvest payment (member)' => 'success', 'harvest payment (non-member)' => 'info',
         'routine inspection' => 'success', 'basic maintenance' => 'info', 'full maintenance' => 'warning',
         'comprehensive servicing' => 'danger', 'not yet used' => 'secondary',
     ];

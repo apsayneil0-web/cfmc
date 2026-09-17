@@ -204,6 +204,12 @@ class Loan extends Model
             'reference_no' => $referenceNo,
             'disbursed_by' => $disbursedBy,
         ]);
+
+        $this->notifyFarmer(
+            'loan_disbursed',
+            'Loan Disbursed',
+            'Your loan of '.peso($this->principal_amount).' has been disbursed. Repayment begins '.now()->parse($firstDueDate)->format('M d, Y').'.',
+        );
     }
 
     /**
@@ -443,6 +449,12 @@ class Loan extends Model
                 "Grace Period Interest — {$farmerName}",
                 "{$loanCode}: ".self::PARTIAL_PENALTY_RATE.'% grace-period interest applied to the unpaid balance.',
             );
+
+            $this->notifyFarmer(
+                'loan_grace_interest',
+                'Grace Period Interest Applied',
+                "{$loanCode}: A ".self::PARTIAL_PENALTY_RATE.'% grace-period interest has been applied to your unpaid balance. Please settle your loan to avoid further penalties.',
+            );
         }
 
         if ($this->grace_penalty_applied_at === null && now()->greaterThan($graceExpiresAt)) {
@@ -458,6 +470,12 @@ class Loan extends Model
                 "Loan Penalized — {$farmerName}",
                 "{$loanCode}: ".self::GRACE_PENALTY_RATE.'% penalty applied. Restricted from new loans until paid in full.',
             );
+
+            $this->notifyFarmer(
+                'loan_penalty',
+                'Loan Penalty Applied',
+                "{$loanCode}: Your loan is now overdue past the grace period. A ".self::GRACE_PENALTY_RATE.'% penalty has been applied, and you are restricted from new loans until this balance is fully paid.',
+            );
         }
 
         if ($this->barangay_summon_at === null && now()->greaterThanOrEqualTo($this->original_due_date->copy()->addMonths(self::BARANGAY_SUMMON_MONTHS))) {
@@ -469,6 +487,12 @@ class Loan extends Model
                 "Barangay Summons Flagged — {$farmerName}",
                 "{$loanCode}: unpaid for ".self::BARANGAY_SUMMON_MONTHS.' months. Flagged for Barangay summons.',
             );
+
+            $this->notifyFarmer(
+                'loan_barangay_summon',
+                'Barangay Summons Notice',
+                "{$loanCode}: Your loan has been unpaid for ".self::BARANGAY_SUMMON_MONTHS.' months and has been flagged for Barangay summons. Please contact the cooperative immediately.',
+            );
         }
 
         if ($this->legal_action_at === null && now()->greaterThanOrEqualTo($this->original_due_date->copy()->addMonths(self::LEGAL_ACTION_MONTHS))) {
@@ -479,6 +503,12 @@ class Loan extends Model
                 'loan_legal_action',
                 "Legal Action Flagged — {$farmerName}",
                 "{$loanCode}: unpaid for ".self::LEGAL_ACTION_MONTHS.' months. Flagged for legal action per the notarized promissory note.',
+            );
+
+            $this->notifyFarmer(
+                'loan_legal_action',
+                'Legal Action Notice',
+                "{$loanCode}: Your loan has been unpaid for ".self::LEGAL_ACTION_MONTHS.' months and has been flagged for legal action per your notarized promissory note. Please contact the cooperative immediately.',
             );
         }
     }
@@ -508,20 +538,18 @@ class Loan extends Model
      */
     private function notifyStaff(string $type, string $title, string $message): void
     {
-        $recipientIds = User::whereIn('roleID', [1, 2])->pluck('id');
+        Notification::notifyRoles([1, 2], $title, $message, $type, ['loan_id' => $this->id]);
+    }
 
-        $rows = $recipientIds->map(fn ($userId) => [
-            'user_id' => $userId,
-            'loan_id' => $this->id,
-            'title' => $title,
-            'message' => $message,
-            'type' => $type,
-            'is_read' => false,
-            'created_at' => now(),
-        ])->all();
+    /**
+     * Notify the farmer's own login account, if they have one.
+     */
+    private function notifyFarmer(string $type, string $title, string $message): void
+    {
+        $accountId = $this->farmer?->account_user_id;
 
-        if (! empty($rows)) {
-            Notification::insert($rows);
+        if ($accountId) {
+            Notification::notify($accountId, $title, $message, $type, ['loan_id' => $this->id]);
         }
     }
 }

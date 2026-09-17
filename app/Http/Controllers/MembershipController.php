@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Crop;
 use App\Models\Farmer;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -95,6 +96,13 @@ class MembershipController extends Controller
         ]);
 
         $farmer->crops()->sync($validated['crop_ids']);
+
+        Notification::notifyRoles(
+            [1],
+            'New Membership Application',
+            "{$farmer->full_name}'s membership application is awaiting review.",
+            'membership_application',
+        );
 
         return redirect()->route('manager.membership')
             ->with('success', 'Membership request submitted successfully!');

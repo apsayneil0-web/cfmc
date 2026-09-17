@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LoanBatch;
 use App\Models\LoanRequest;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class LoanApprovalController extends Controller
@@ -153,6 +154,8 @@ class LoanApprovalController extends Controller
 
         $loan_request->update(['status' => 'approved', 'denial_reason' => null]);
 
+        $this->notifyFarmerOfDecision($loan_request, 'loan_approved', 'Loan Request Approved', 'Your loan request for '.peso($loan_request->requested_amount).' has been approved. The Manager will finalize your loan terms soon.');
+
         return redirect()->route('admin.loan-approval')
             ->with('success', "{$loan_request->farmer->full_name}'s loan request has been approved.");
     }
@@ -170,6 +173,8 @@ class LoanApprovalController extends Controller
 
         $loan_request->update(['status' => 'denied', 'denial_reason' => $validated['denial_reason']]);
 
+        $this->notifyFarmerOfDecision($loan_request, 'loan_denied', 'Loan Request Denied', 'Your loan request for '.peso($loan_request->requested_amount).' has been denied. Reason: '.$validated['denial_reason']);
+
         return redirect()->route('admin.loan-approval')
             ->with('success', "{$loan_request->farmer->full_name}'s loan request has been denied.");
     }
@@ -181,14 +186,18 @@ class LoanApprovalController extends Controller
     {
         abort_unless($batch->is_full, 422, "{$batch->label} is not full yet and cannot be sent for approval.");
 
-        $pendingIds = $batch->loanRequests()->where('status', 'pending')->whereNull('archived_at')->pluck('id');
+        $pendingRequests = $batch->loanRequests()->where('status', 'pending')->whereNull('archived_at')->with('farmer')->get();
 
-        abort_if($pendingIds->isEmpty(), 422, 'This batch has no pending requests to approve.');
+        abort_if($pendingRequests->isEmpty(), 422, 'This batch has no pending requests to approve.');
 
-        LoanRequest::whereIn('id', $pendingIds)->update(['status' => 'approved', 'denial_reason' => null]);
+        LoanRequest::whereIn('id', $pendingRequests->pluck('id'))->update(['status' => 'approved', 'denial_reason' => null]);
+
+        foreach ($pendingRequests as $loan_request) {
+            $this->notifyFarmerOfDecision($loan_request, 'loan_approved', 'Loan Request Approved', 'Your loan request for '.peso($loan_request->requested_amount)." has been approved as part of {$batch->label}. The Manager will finalize your loan terms soon.");
+        }
 
         return redirect()->route('admin.loan-approval')
-            ->with('success', "{$batch->label}'s {$pendingIds->count()} loan requests have been approved.");
+            ->with('success', "{$batch->label}'s {$pendingRequests->count()} loan requests have been approved.");
     }
 
     /**
@@ -198,17 +207,32 @@ class LoanApprovalController extends Controller
     {
         abort_unless($batch->is_full, 422, "{$batch->label} is not full yet and cannot be sent for approval.");
 
-        $pendingIds = $batch->loanRequests()->where('status', 'pending')->whereNull('archived_at')->pluck('id');
+        $pendingRequests = $batch->loanRequests()->where('status', 'pending')->whereNull('archived_at')->with('farmer')->get();
 
-        abort_if($pendingIds->isEmpty(), 422, 'This batch has no pending requests to deny.');
+        abort_if($pendingRequests->isEmpty(), 422, 'This batch has no pending requests to deny.');
 
         $validated = $request->validate([
             'denial_reason' => 'required|string|max:1000',
         ]);
 
-        LoanRequest::whereIn('id', $pendingIds)->update(['status' => 'denied', 'denial_reason' => $validated['denial_reason']]);
+        LoanRequest::whereIn('id', $pendingRequests->pluck('id'))->update(['status' => 'denied', 'denial_reason' => $validated['denial_reason']]);
+
+        foreach ($pendingRequests as $loan_request) {
+            $this->notifyFarmerOfDecision($loan_request, 'loan_denied', 'Loan Request Denied', 'Your loan request for '.peso($loan_request->requested_amount)." as part of {$batch->label} has been denied. Reason: ".$validated['denial_reason']);
+        }
 
         return redirect()->route('admin.loan-approval')
-            ->with('success', "{$batch->label}'s {$pendingIds->count()} loan requests have been denied.");
+            ->with('success', "{$batch->label}'s {$pendingRequests->count()} loan requests have been denied.");
+    }
+
+    /**
+     * Notify a loan request's farmer of an Admin decision, if they have a
+     * login account (farmers without one yet can't receive in-app notices).
+     */
+    private function notifyFarmerOfDecision(LoanRequest $loan_request, string $type, string $title, string $message): void
+    {
+        if ($loan_request->farmer->account_user_id) {
+            Notification::notify($loan_request->farmer->account_user_id, $title, $message, $type);
+        }
     }
 }

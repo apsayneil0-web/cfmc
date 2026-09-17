@@ -8,6 +8,7 @@ use App\Models\CbuTransaction;
 use App\Models\Complaint;
 use App\Models\Expense;
 use App\Models\Farmer;
+use App\Models\HarvestPayment;
 use App\Models\Loan;
 use App\Models\Machine;
 use App\Models\ScheduleRequest;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
-    private const REPORT_TYPES = ['harvesting', 'loan', 'maintenance', 'schedule', 'cbu', 'complaint', 'expense'];
+    private const REPORT_TYPES = ['harvesting', 'loan', 'maintenance', 'schedule', 'cbu', 'complaint', 'expense', 'harvest_payment'];
 
     public function index(Request $request)
     {
@@ -48,6 +49,7 @@ class ReportController extends Controller
             'cbu' => $this->cbuCategoryBreakdown($rows),
             'complaint' => $this->complaintCommonProblems($rows),
             'expense' => $this->expenseCategoryBreakdown($rows),
+            'harvest_payment' => $this->harvestPaymentMemberBreakdown($rows),
         };
 
         $breakdownTitle = match ($reportType) {
@@ -58,6 +60,7 @@ class ReportController extends Controller
             'cbu' => 'CBU Category Breakdown',
             'complaint' => 'Common Problems',
             'expense' => 'Expense Category Breakdown',
+            'harvest_payment' => 'Payments by Farmer Type',
         };
 
         $summary = match ($reportType) {
@@ -66,6 +69,7 @@ class ReportController extends Controller
             'cbu' => $this->cbuSummary($rows),
             'complaint' => $this->complaintSummary($rows),
             'expense' => $this->expenseSummary($rows),
+            'harvest_payment' => $this->harvestPaymentSummary($rows),
             default => null,
         };
 
@@ -109,6 +113,7 @@ class ReportController extends Controller
                 'cbu' => $this->writeCbuCsv($handle, $rows),
                 'complaint' => $this->writeComplaintCsv($handle, $rows),
                 'expense' => $this->writeExpenseCsv($handle, $rows),
+                'harvest_payment' => $this->writeHarvestPaymentCsv($handle, $rows),
             };
 
             fclose($handle);
@@ -131,6 +136,7 @@ class ReportController extends Controller
             'cbu' => $this->cbuRows($dateFrom, $dateTo, $memberId),
             'complaint' => $this->complaintRows($dateFrom, $dateTo, $memberId),
             'expense' => $this->expenseRows($dateFrom, $dateTo, $category),
+            'harvest_payment' => $this->harvestPaymentRows($dateFrom, $dateTo, $memberId),
         };
     }
 
@@ -320,6 +326,28 @@ class ReportController extends Controller
         return $query->orderByDesc('expense_date')->orderByDesc('created_at')->get();
     }
 
+    /**
+     * The cooperative's cut of reported harvest income (9% member / 12%
+     * non-member), within the date range. member_id only narrows members —
+     * non-member entries have no farmer_id to match against.
+     */
+    private function harvestPaymentRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
+    {
+        $query = HarvestPayment::with('farmer');
+
+        if ($dateFrom) {
+            $query->whereDate('payment_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('payment_date', '<=', $dateTo);
+        }
+        if ($memberId) {
+            $query->where('farmer_id', $memberId);
+        }
+
+        return $query->orderByDesc('payment_date')->orderByDesc('created_at')->get();
+    }
+
     private function yieldByFarmer($rows)
     {
         return $rows->groupBy(fn ($r) => $r->display_name)
@@ -397,6 +425,16 @@ class ReportController extends Controller
             ->values();
     }
 
+    private function harvestPaymentMemberBreakdown($rows)
+    {
+        $labels = ['member' => 'Member', 'non-member' => 'Non-Member'];
+
+        return $rows->groupBy('member_type')
+            ->map(fn ($group, $type) => (object) ['label' => $labels[$type] ?? ucfirst($type), 'value' => $group->count()])
+            ->sortByDesc('value')
+            ->values();
+    }
+
     /**
      * Totals for the loan report's Report Summary panel.
      */
@@ -455,6 +493,20 @@ class ReportController extends Controller
             ['label' => 'Machinery', 'value' => peso($rows->where('category', 'machinery')->sum('amount'))],
             ['label' => 'Replaceable Parts', 'value' => peso($rows->where('category', 'replaceable_parts')->sum('amount'))],
             ['label' => 'Total Amount', 'value' => peso($rows->sum('amount')), 'emphasis' => true],
+        ]];
+    }
+
+    private function harvestPaymentSummary($rows)
+    {
+        $memberPayments = (float) $rows->where('member_type', 'member')->sum('payment_amount');
+        $nonMemberPayments = (float) $rows->where('member_type', 'non-member')->sum('payment_amount');
+
+        return (object) ['rows' => [
+            ['label' => 'Total Records', 'value' => (string) $rows->count()],
+            ['label' => 'Total Harvest Income Reported', 'value' => peso($rows->sum('harvest_amount'))],
+            ['label' => 'Member Payments Collected (9%)', 'value' => peso($memberPayments)],
+            ['label' => 'Non-Member Payments Collected (12%)', 'value' => peso($nonMemberPayments)],
+            ['label' => 'Total Payment Collected', 'value' => peso($memberPayments + $nonMemberPayments), 'emphasis' => true],
         ]];
     }
 
@@ -561,6 +613,22 @@ class ReportController extends Controller
                 $row->amount,
                 ucfirst($row->status),
                 $row->recordedBy?->name,
+            ]);
+        }
+    }
+
+    private function writeHarvestPaymentCsv($handle, $rows): void
+    {
+        fputcsv($handle, ['Date', 'Farmer', 'Farmer Type', 'Harvest Amount', 'Rate (%)', 'Payment Amount', 'Notes']);
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row->payment_date->format('Y-m-d'),
+                $row->payer_name,
+                $row->member_type === 'member' ? 'Member' : 'Non-Member',
+                $row->harvest_amount,
+                $row->rate,
+                $row->payment_amount,
+                $row->notes,
             ]);
         }
     }
