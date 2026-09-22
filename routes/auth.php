@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\FarmerOtpController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use Illuminate\Support\Facades\Route;
 
@@ -8,6 +9,12 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
                 ->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    Route::get('farmer/verify-otp', [FarmerOtpController::class, 'showVerifyForm'])
+                ->name('farmer.otp.verify.form');
+    Route::post('farmer/verify-otp', [FarmerOtpController::class, 'verify'])
+                ->middleware('throttle:10,1')
+                ->name('farmer.otp.verify');
 
     Route::get('forgot-password', [PasswordResetController::class, 'showForgotForm'])
                 ->name('password.request');

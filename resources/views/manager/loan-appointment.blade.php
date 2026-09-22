@@ -91,20 +91,26 @@
                     </td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($appt->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
+                        <div class="d-flex align-items-center gap-1">
                             <x-icon-button icon="fa-eye" color="primary" title="View Details" data-bs-toggle="modal" data-bs-target="#viewModal{{ $appt->id }}" />
+
                             @if($appt->status === 'pending')
-                            <x-icon-button icon="fa-check" color="success" title="Approve" data-bs-toggle="modal" data-bs-target="#approveModal{{ $appt->id }}" />
+                            <div class="vr mx-1"></div>
+                            <x-icon-button icon="fa-check" color="success" title="Approve Appointment" data-bs-toggle="modal" data-bs-target="#approveModal{{ $appt->id }}" />
                             @endif
+
                             @if($appt->status === 'approved' && $appt->requested_amount && ! $appt->loan_request_id)
+                            <div class="vr mx-1"></div>
                                 @if($appt->user->farmer)
-                                <x-icon-button icon="fa-paper-plane" color="primary" title="Submit for Loan Request" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}" />
+                                <x-icon-button icon="fa-paper-plane" color="info" title="Submit Loan Request to Admin" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}" />
                                 @else
                                 <span class="icon-btn text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle"></i></span>
                                 @endif
                             @endif
+
                             @if($appt->status !== 'cancelled' && ! $appt->loan_request_id)
-                            <x-icon-button icon="fa-calendar-alt" color="warning" title="Reschedule" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $appt->id }}" />
+                            <div class="vr mx-1"></div>
+                            <x-icon-button icon="fa-calendar-alt" color="warning" title="Reschedule Appointment" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $appt->id }}" />
                             @endif
                         </div>
                     </td>
@@ -151,7 +157,7 @@
                     @if($appt->status === 'approved' && ! $appt->loan_request_id)
                         @if($appt->user->farmer)
                         <div class="mt-3 text-end">
-                            <button type="button" class="btn btn-primary btn-sm" onclick="switchModal('viewModal{{ $appt->id }}', 'submitLoanRequestModal{{ $appt->id }}')">
+                            <button type="button" class="btn btn-info btn-sm text-white" onclick="switchModal('viewModal{{ $appt->id }}', 'submitLoanRequestModal{{ $appt->id }}')">
                                 <i class="fas fa-paper-plane me-1"></i> Submit for Loan Request
                             </button>
                         </div>
@@ -167,7 +173,7 @@
                 <div class="modal fade" id="submitLoanRequestModal{{ $appt->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
-                            <div class="modal-header bg-primary text-white">
+                            <div class="modal-header bg-info text-white">
                                 <h5 class="modal-title fw-bold"><i class="fas fa-paper-plane me-2"></i>Submit for Loan Request</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
@@ -185,7 +191,7 @@
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                                 <form action="{{ route('manager.loan-appointment.submit-loan-request', $appt) }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-info text-white">
                                         <i class="fas fa-paper-plane me-1"></i> Submit to Admin
                                     </button>
                                 </form>

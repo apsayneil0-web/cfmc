@@ -7,6 +7,7 @@ use App\Models\Crop;
 use App\Models\Farmer;
 use App\Models\Staff;
 use App\Models\User;
+use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -196,9 +197,14 @@ class UserController extends Controller
                 return ['name' => $farmer->full_name, 'username' => $username, 'password' => $password];
             });
 
+            app(SmsService::class)->send(
+                $validated['contact_number'],
+                "Welcome to CFMC! Your account is ready. Username: {$result['username']} Password: {$result['password']} Please log in and change your password."
+            );
+
             return response()->json([
                 'success' => true,
-                'message' => "{$result['name']}'s account was created. Username: {$result['username']}, temporary password: {$result['password']}. Please share these with them directly.",
+                'message' => "{$result['name']}'s account was created. Username: {$result['username']}, temporary password: {$result['password']}. Credentials have been texted to the farmer.",
                 'name' => $result['name'],
                 'username' => $result['username'],
                 'password' => $result['password'],

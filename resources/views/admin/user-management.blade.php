@@ -520,7 +520,7 @@
                     <i class="fas fa-check-circle"></i>
                 </div>
                 <h5 class="fw-bold mb-1" id="accountCreatedModalLabel">Farmer Account Created</h5>
-                <p class="text-muted small mb-4">Share these login details with <strong id="createdAccountName">-</strong> directly.</p>
+                <p class="text-muted small mb-4">These login details have been texted to <strong id="createdAccountName">-</strong>.</p>
 
                 <div class="confirm-account-summary border rounded-3 px-3 text-start mb-4">
                     <div class="d-flex align-items-center justify-content-between py-2 border-bottom">

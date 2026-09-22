@@ -156,7 +156,6 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
 
     Route::get('/manager/user-management', [UserController::class, 'index'])->name('manager.user-management');
 
-    Route::post('/manager/user-management', [UserController::class, 'store'])->name('user.store');
     Route::patch('/manager/user-management/{user}/archive', [UserController::class, 'archive'])->name('user.archive');
     Route::patch('/manager/user-management/{user}/unarchive', [UserController::class, 'unarchive'])->name('user.unarchive');
     Route::patch('/manager/user-management/{user}/unlock', [UserController::class, 'unlock'])->name('user.unlock');

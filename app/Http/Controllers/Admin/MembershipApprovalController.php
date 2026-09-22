@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Farmer;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -79,7 +80,14 @@ class MembershipApprovalController extends Controller
         $message = "{$farmer->full_name}'s membership application has been approved.";
 
         if ($credentials) {
-            $message .= " Login account created — username: {$credentials['username']}, temporary password: {$credentials['password']}. Please share these with the farmer directly.";
+            $message .= " Login account created — username: {$credentials['username']}, temporary password: {$credentials['password']}. Credentials have been texted to the farmer.";
+
+            if ($farmer->contact_number) {
+                app(SmsService::class)->send(
+                    $farmer->contact_number,
+                    "Welcome to CFMC! Your account is ready. Username: {$credentials['username']} Password: {$credentials['password']} Please log in and change your password."
+                );
+            }
         }
 
         if ($farmer->user_id) {

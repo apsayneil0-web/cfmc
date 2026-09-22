@@ -273,7 +273,93 @@
         </x-slot:actions>
     </x-table-toolbar>
 
-    <!-- Table -->
+    <!-- Batch Requests (folded to one row per batch) -->
+    @if($requestBatchGroups->isNotEmpty())
+    <div class="px-4 px-md-6 pb-3">
+        <h3 class="text-base fw-semibold text-gray-900 mb-0">Batch Requests</h3>
+    </div>
+    <div class="table-responsive mb-4">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Members</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Total Amount</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($requestBatchGroups as $group)
+                @php
+                    $groupStatuses = $group->members->pluck('status')->unique();
+                    $groupStatus = $groupStatuses->count() === 1 ? ucfirst($groupStatuses->first()) : 'Mixed';
+                @endphp
+                <tr>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $group->batch?->label ?? 'Batch' }}</td>
+                    <td class="px-4 px-md-6 py-4">
+                        {{ $group->members->count() }} farmer(s)
+                        @if($group->batch && $group->batch->status === 'pending' && !$group->batch->is_full)
+                        <div class="small text-muted mt-1">{{ $group->batch->member_count }}/{{ $group->batch->capacity }} &mdash; awaiting more before admin review</div>
+                        @endif
+                    </td>
+                    <td class="px-4 px-md-6 py-4">{{ peso($group->members->sum('requested_amount')) }}</td>
+                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$groupStatus" /></td>
+                    <td class="px-4 px-md-6 py-4">
+                        <x-icon-button icon="fa-eye" color="primary" title="View Members" data-bs-toggle="modal" data-bs-target="#viewBatchGroupModal{{ $group->batch?->id }}" />
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    @foreach($requestBatchGroups as $group)
+    <x-modal id="viewBatchGroupModal{{ $group->batch?->id }}" title="{{ $group->batch?->label ?? 'Batch' }} — Requests">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="small">Farmer</th>
+                        <th class="small">Amount</th>
+                        <th class="small">Purpose</th>
+                        <th class="small">Terms</th>
+                        <th class="small">Status</th>
+                        <th class="small">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($group->members as $member)
+                    <tr>
+                        <td class="small fw-medium text-dark">{{ $member->farmer->full_name }}</td>
+                        <td class="small">{{ peso($member->requested_amount) }}</td>
+                        <td class="small text-muted">{{ $member->purpose }}</td>
+                        <td class="small text-muted">{{ $member->repayment_terms_months }} months</td>
+                        <td class="small"><x-status-badge :status="ucfirst($member->status)" /></td>
+                        <td class="small">
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary" title="View" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'viewModal{{ $member->id }}')"><i class="fas fa-eye"></i></button>
+                                @if($member->status === 'pending')
+                                <button type="button" class="btn btn-sm btn-outline-warning" title="Edit" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'editModal{{ $member->id }}')"><i class="fas fa-edit"></i></button>
+                                @endif
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Archive" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'archiveModal{{ $member->id }}')"><i class="fas fa-archive"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </x-modal>
+    @endforeach
+    @endif
+
+    <!-- Regular Requests -->
+    @if($requestBatchGroups->isNotEmpty())
+    <div class="px-4 px-md-6 pb-3">
+        <h3 class="text-base fw-semibold text-gray-900 mb-0">Regular Requests</h3>
+    </div>
+    @endif
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-light">
@@ -290,22 +376,12 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($requests as $req)
+                @forelse($regularRequests as $req)
                 <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $req->farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        <span class="badge bg-{{ $req->type === 'batch' ? 'info' : 'primary' }}-subtle text-{{ $req->type === 'batch' ? 'info' : 'primary' }} border border-{{ $req->type === 'batch' ? 'info' : 'primary' }}-subtle">
-                            {{ $req->type === 'batch' ? ($req->batch?->label ?? 'Batch') : 'Regular' }}
-                        </span>
-                        @if($req->type === 'batch' && $req->batch && $req->status === 'pending')
-                        <div class="small text-muted mt-1">
-                            {{ $req->batch->member_count }}/{{ $req->batch->capacity }} members
-                            @if(!$req->batch->is_full)
-                            &mdash; awaiting more before admin review
-                            @endif
-                        </div>
-                        @endif
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Regular</span>
                     </td>
                     <td class="px-4 px-md-6 py-4">{{ peso($req->requested_amount) }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->purpose }}</td>
@@ -318,14 +394,26 @@
                             @if($req->status === 'pending')
                             <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}" />
                             @endif
-                            @if($req->type !== 'batch' && $req->status === 'approved' && !$req->loan)
+                            @if($req->status === 'approved' && !$req->loan)
                             <x-icon-button icon="fa-file-invoice-dollar" color="success" title="Finalize into Loan" data-bs-toggle="modal" data-bs-target="#finalizeModal{{ $req->id }}" />
                             @endif
                             <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}" />
                         </div>
                     </td>
                 </tr>
+                @empty
+                <tr>
+                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">No regular loan requests found.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
+    {{-- View/Edit/Finalize/Archive modals for every request (regular rows above,
+         and batch members reached via the Batch Requests group modal's own
+         View/Edit/Archive buttons through switchModal()). --}}
+    @foreach($requests as $req)
                 <!-- View Modal -->
                 <x-modal id="viewModal{{ $req->id }}" title="Loan Request Details">
                     <div class="row g-3">
@@ -497,14 +585,7 @@
                         </div>
                     </div>
                 </div>
-                @empty
-                <tr>
-                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">No loan requests found.</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+    @endforeach
 </div>
 
 <!-- Create Request Modal -->

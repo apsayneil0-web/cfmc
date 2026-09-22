@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -66,13 +67,37 @@ class AuthenticatedSessionController extends Controller
         }
 
         if (Auth::attempt([$loginField => $credentials['username'], 'password' => $credentials['password']], $request->boolean('remember'))) {
+            $user = Auth::user();
+
+            // A farmer's very first login is gated behind an SMS OTP sent to the
+            // phone number on file, rather than dropping straight into a session.
+            // Password is already confirmed correct at this point; log the guard
+            // back out until the code is verified.
+            if ((int) $user->roleID === 3 && $user->firstTimelogin) {
+                Auth::logout();
+
+                $otp = (string) random_int(100000, 999999);
+                $user->update([
+                    'OTP' => $otp,
+                    'OTPexpriry' => now()->addMinutes(10),
+                ]);
+
+                app(SmsService::class)->send(
+                    $user->Phonenumber,
+                    "Your CFMC login verification code is {$otp}. It expires in 10 minutes."
+                );
+
+                $request->session()->put('farmer_otp_user_id', $user->id);
+
+                return redirect()->route('farmer.otp.verify.form');
+            }
+
             $request->session()->regenerate();
 
             // The system marks an account active the moment it's actually used to
             // log in, rather than having that chosen manually at creation. Accounts
             // an admin/manager has locked or archived stay that way even after a
             // successful login.
-            $user = Auth::user();
             if (! in_array($user->status, ['locked', 'archived'], true)) {
                 $user->update([
                     'status' => 'active',

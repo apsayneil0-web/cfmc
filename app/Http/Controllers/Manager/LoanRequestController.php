@@ -52,6 +52,19 @@ class LoanRequestController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Fold every batch's requests into one row on the main table (Regular
+        // requests stay listed individually) — same pattern used on the
+        // Admin Loan Approval / Approved Loans pages.
+        $regularRequests = $requests->where('type', '!=', 'batch')->values();
+        $requestBatchGroups = $requests->where('type', 'batch')
+            ->groupBy('batch_id')
+            ->map(fn ($members) => (object) [
+                'batch' => $members->first()->batch,
+                'members' => $members->values(),
+            ])
+            ->sortByDesc(fn ($group) => $group->members->max('created_at'))
+            ->values();
+
         $farmers = Farmer::where('status', 'approved')->orderBy('created_at', 'desc')->get();
         $batches = LoanBatch::orderBy('created_at', 'desc')->get();
 
@@ -85,6 +98,8 @@ class LoanRequestController extends Controller
 
         return view('manager.loan-request', [
             'requests' => $requests,
+            'regularRequests' => $regularRequests,
+            'requestBatchGroups' => $requestBatchGroups,
             'farmers' => $farmers,
             'batches' => $batches,
             'batchesInProgress' => $batchesInProgress,
