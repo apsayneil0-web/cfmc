@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -14,7 +16,8 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with('role')->where('roleID', '!=', 2);
+        // Manager account management is Farmer-only: no Manager (2) or Admin (1) accounts.
+        $query = User::with('role')->where('roleID', 3);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -47,6 +50,7 @@ class UserController extends Controller
     {
         try {
             $user->update(['status' => 'archived']);
+            ActivityLogger::log(Auth::user(), 'user.archived', "Archived {$user->name}'s account.", $user);
             return response()->json([
                 'success' => true,
                 'message' => 'User archived successfully!'
@@ -76,6 +80,8 @@ class UserController extends Controller
                 'status' => 'active',
                 'FailedLoginAttemps' => 0,
             ]);
+
+            ActivityLogger::log(Auth::user(), 'user.unarchived', "Unarchived {$user->name}'s account.", $user);
 
             return response()->json([
                 'success' => true,
@@ -108,6 +114,8 @@ class UserController extends Controller
                 'status' => 'active',
                 'FailedLoginAttemps' => 0,
             ]);
+
+            ActivityLogger::log(Auth::user(), 'user.unlocked', "Unlocked {$user->name}'s account.", $user);
 
             return response()->json([
                 'success' => true,
@@ -145,6 +153,8 @@ class UserController extends Controller
         try {
             $newStatus = $user->status === 'active' ? 'inactive' : 'active';
             $user->update(['status' => $newStatus]);
+
+            ActivityLogger::log(Auth::user(), 'user.'.$newStatus, "{$user->name}'s account was ".($newStatus === 'active' ? 'activated' : 'deactivated').'.', $user);
 
             return response()->json([
                 'success' => true,
@@ -191,6 +201,10 @@ class UserController extends Controller
                 // the manager can relay it to the farmer directly from this screen.
                 'temp_password' => $request->password,
             ]);
+
+            // Never put the actual password in the log — just the fact that
+            // a reset happened and who did it.
+            ActivityLogger::log(Auth::user(), 'user.password_reset', "{$user->name}'s password was reset by a manager.", $user);
 
             return response()->json([
                 'success' => true,
@@ -252,6 +266,8 @@ class UserController extends Controller
             }
 
             $user->update($updateData);
+
+            ActivityLogger::log(Auth::user(), 'user.updated', "Updated {$user->name}'s account details.", $user);
 
             return response()->json([
                 'success' => true,

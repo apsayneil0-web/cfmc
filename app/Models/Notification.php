@@ -83,6 +83,40 @@ class Notification extends Model
     }
 
     /**
+     * Where this notification's "View" button should send the viewer, and
+     * its label. Driven by type, and — for types shared across roles, like
+     * loan delinquency alerts and membership decisions, which go out to
+     * either a farmer or a staff account — by the recipient's role too,
+     * since each role has its own equivalent page. Null hides the button.
+     */
+    public function getActionAttribute(): ?array
+    {
+        $role = (int) ($this->user->roleID ?? 0);
+
+        return match ($this->type) {
+            'reminder' => $this->schedule_id
+                ? ['url' => route('farmer.schedule'), 'label' => 'View My Schedule']
+                : ($role === 3 ? ['url' => route('farmer.loan-appointment'), 'label' => 'View Appointment'] : null),
+            'membership_approved', 'membership_rejected' => $role === 3
+                ? ['url' => route('farmer.dashboard'), 'label' => 'Go to Dashboard']
+                : ['url' => route('manager.membership'), 'label' => 'View Membership'],
+            'membership_application' => ['url' => route('admin.membership-approval'), 'label' => 'Review Application'],
+            'loan_approved', 'loan_denied' => ['url' => route('farmer.loans'), 'label' => 'View My Loans'],
+            'loan_finalized', 'loan_disbursed', 'loan_grace_interest', 'loan_penalty', 'loan_barangay_summon', 'loan_legal_action' => $role === 3
+                ? ['url' => route('farmer.loans'), 'label' => 'View My Loan']
+                : ['url' => route('manager.loan-management'), 'label' => 'View Loan Management'],
+            'schedule_approved', 'schedule_denied', 'schedule_completed' => ['url' => route('farmer.schedule'), 'label' => 'View My Schedule'],
+            'complaint_response' => ['url' => route('farmer.complaints'), 'label' => 'View Complaint'],
+            'complaint_submitted', 'complaint_reopened' => ['url' => route('manager.complaints'), 'label' => 'View Complaints'],
+            'loan_appointment_booked', 'loan_appointment_cancelled' => ['url' => route('manager.loan-appointment'), 'label' => 'View Appointments'],
+            'payment_recorded' => $this->loan_id
+                ? ['url' => route('farmer.loans'), 'label' => 'View My Loans']
+                : ['url' => route('farmer.cbu'), 'label' => 'View CBU'],
+            default => null,
+        };
+    }
+
+    /**
      * Create one notification for a single user. Thin wrapper around
      * create() that fills in the boilerplate every call site otherwise
      * repeats (is_read/created_at), and accepts the same optional foreign

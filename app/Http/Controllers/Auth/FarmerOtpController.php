@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -56,6 +57,8 @@ class FarmerOtpController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
         $request->session()->forget('farmer_otp_user_id');
+
+        ActivityLogger::log($user, 'auth.login', "{$user->name} logged in (first login, OTP verified).", $user);
 
         return redirect($user->dashboardUrl());
     }

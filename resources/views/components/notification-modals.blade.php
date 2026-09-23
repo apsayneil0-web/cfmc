@@ -12,6 +12,7 @@
     $loan = $notification->loan;
     $schedule = $notification->schedule;
     $display = \App\Models\Notification::typeDisplay($notification->type);
+    $action = $notification->action;
 @endphp
 @if($schedule)
 <div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
@@ -33,14 +34,15 @@
             </div>
             <div class="modal-footer bg-light">
                 <span class="text-muted small me-auto">{{ $notification->created_at->format('M d, Y \a\t g:i A') }}</span>
-                <a href="{{ route('farmer.schedule') }}" class="btn btn-outline-primary btn-sm">View My Schedule</a>
+                @if($action)
+                <a href="{{ $action['url'] }}" class="btn btn-outline-primary btn-sm">{{ $action['label'] }}</a>
+                @endif
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-@endif
-@if($loan)
+@elseif($loan)
 <div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -59,14 +61,15 @@
             </div>
             <div class="modal-footer bg-light">
                 <span class="text-muted small me-auto">{{ $notification->created_at->format('M d, Y \a\t g:i A') }}</span>
-                <a href="{{ route('manager.loan-management') }}" class="btn btn-outline-primary btn-sm">View Loan Management</a>
+                @if($action)
+                <a href="{{ $action['url'] }}" class="btn btn-outline-primary btn-sm">{{ $action['label'] }}</a>
+                @endif
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-@endif
-@if($announcement)
+@elseif($announcement)
 <div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -96,6 +99,27 @@
             </div>
             <div class="modal-footer bg-light">
                 <span class="text-muted small me-auto">Posted {{ $announcement->created_at->format('M d, Y \a\t g:i A') }}</span>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@else
+<div class="modal fade" id="notifDetail{{ $notification->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">{{ $display['icon'] }} {{ $notification->title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fw-medium mb-0">{{ $notification->message }}</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <span class="text-muted small me-auto">{{ $notification->created_at->format('M d, Y \a\t g:i A') }}</span>
+                @if($action)
+                <a href="{{ $action['url'] }}" class="btn btn-outline-primary btn-sm">{{ $action['label'] }}</a>
+                @endif
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

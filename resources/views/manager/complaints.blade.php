@@ -56,7 +56,7 @@
                 <tr>
                     <td class="px-4 px-md-6 py-4">{{ $complaint->user->name ?? 'Unknown' }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $complaint->subject }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted text-truncate d-inline-block" style="max-width: 220px;">{{ $complaint->description }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted"><span class="d-inline-block text-truncate align-middle" style="max-width: 220px;" title="{{ $complaint->description }}">{{ $complaint->description }}</span></td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $complaint->created_at->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></td>
                     <td class="px-4 px-md-6 py-4">

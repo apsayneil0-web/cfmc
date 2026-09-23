@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\LoanApprovalController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Admin\CbuController as AdminCbuController;
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Farmer\DashboardController as FarmerDashboardController;
 use App\Http\Controllers\Farmer\ScheduleController as FarmerScheduleController;
 use App\Http\Controllers\Farmer\LoanAppointmentController;
@@ -75,6 +76,8 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::patch('/admin/user-management/{user}/change-password', [AdminUserController::class, 'changePassword'])->name('admin.user.change-password');
     Route::get('/admin/user-management/{user}', [AdminUserController::class, 'show'])->name('admin.user.show');
     Route::put('/admin/user-management/{user}', [AdminUserController::class, 'update'])->name('admin.user.update');
+
+    Route::get('/admin/activity-logs', [ActivityLogController::class, 'index'])->name('admin.activity-logs');
     }); // end role:1 (Admin)
 
     // Manager Routes

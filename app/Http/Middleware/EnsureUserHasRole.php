@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ActivityLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,8 @@ class EnsureUserHasRole
         }
 
         if ($user) {
+            ActivityLogger::log($user, 'auth.access_denied', "{$user->name} tried to access {$request->path()}, which their role doesn't allow.", $user);
+
             session()->flash('role_denied', "You don't have permission to access that page.");
 
             return redirect($user->dashboardUrl());

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ActivityLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +38,7 @@ class EnsureSessionIsActive
                 $user = Auth::user();
                 if ($user) {
                     $user->update(['isloggedin' => false]);
+                    ActivityLogger::log($user, 'auth.session_timeout', "{$user->name}'s session expired due to inactivity.", $user);
                 }
 
                 Auth::logout();

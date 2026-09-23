@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ActivityLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,8 @@ class EnsureAccountIsActive
 
         if ($user && in_array($user->status, ['locked', 'archived'], true)) {
             $user->update(['isloggedin' => false]);
+
+            ActivityLogger::log($user, 'auth.force_logout', "{$user->name} was force-logged-out mid-session (account is now {$user->status}).", $user);
 
             Auth::logout();
             $request->session()->invalidate();

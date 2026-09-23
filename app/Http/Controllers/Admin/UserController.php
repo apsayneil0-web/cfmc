@@ -8,8 +8,10 @@ use App\Models\Farmer;
 use App\Models\Staff;
 use App\Models\User;
 use App\Services\SmsService;
+use App\Support\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -99,6 +101,8 @@ class UserController extends Controller
                 'profile_picture' => $this->storeProfilePicture($request),
                 'user_id' => $user->id,
             ]);
+
+            ActivityLogger::log(Auth::user(), 'user.created', "Created {$user->name}'s account (".($roleID === 1 ? 'Admin' : 'Manager').').', $user);
 
             return response()->json([
                 'success' => true,
@@ -194,13 +198,15 @@ class UserController extends Controller
 
                 $farmer->update(['account_user_id' => $user->id]);
 
-                return ['name' => $farmer->full_name, 'username' => $username, 'password' => $password];
+                return ['user' => $user, 'name' => $farmer->full_name, 'username' => $username, 'password' => $password];
             });
 
             app(SmsService::class)->send(
                 $validated['contact_number'],
                 "Welcome to CFMC! Your account is ready. Username: {$result['username']} Password: {$result['password']} Please log in and change your password."
             );
+
+            ActivityLogger::log(Auth::user(), 'user.created', "Created and approved {$result['name']}'s farmer account.", $result['user']);
 
             return response()->json([
                 'success' => true,
@@ -310,6 +316,7 @@ class UserController extends Controller
     {
         try {
             $user->update(['status' => 'archived']);
+            ActivityLogger::log(Auth::user(), 'user.archived', "Archived {$user->name}'s account.", $user);
             return response()->json([
                 'success' => true,
                 'message' => 'User archived successfully!'
@@ -339,6 +346,8 @@ class UserController extends Controller
                 'status' => 'active',
                 'FailedLoginAttemps' => 0,
             ]);
+
+            ActivityLogger::log(Auth::user(), 'user.unarchived', "Unarchived {$user->name}'s account.", $user);
 
             return response()->json([
                 'success' => true,
@@ -376,6 +385,8 @@ class UserController extends Controller
         try {
             $newStatus = $user->status === 'active' ? 'inactive' : 'active';
             $user->update(['status' => $newStatus]);
+
+            ActivityLogger::log(Auth::user(), 'user.'.$newStatus, "{$user->name}'s account was ".($newStatus === 'active' ? 'activated' : 'deactivated').'.', $user);
 
             return response()->json([
                 'success' => true,
@@ -422,6 +433,10 @@ class UserController extends Controller
                 // elsewhere) so the admin can hand it to the account holder directly.
                 'temp_password' => $request->password,
             ]);
+
+            // Never put the actual password in the log — just the fact that
+            // a reset happened and who did it.
+            ActivityLogger::log(Auth::user(), 'user.password_reset', "{$user->name}'s password was reset by an administrator.", $user);
 
             return response()->json([
                 'success' => true,
@@ -529,6 +544,8 @@ class UserController extends Controller
 
                 Staff::updateOrCreate(['user_id' => $user->id], $staffData);
             }
+
+            ActivityLogger::log(Auth::user(), 'user.updated', "Updated {$user->name}'s account details.", $user);
 
             return response()->json([
                 'success' => true,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SmsService;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,8 @@ class AuthenticatedSessionController extends Controller
         $user = User::where($loginField, $credentials['username'])->first();
 
         if ($user && (int) $user->roleID === 3 && $user->status === 'locked') {
+            ActivityLogger::log($user, 'auth.login_blocked', "{$user->name} tried to log in but the account is locked.", $user);
+
             return back()->withErrors([
                 'username' => 'This account has been locked after too many failed login attempts. Please contact your cooperative manager to have it unlocked.',
             ])->onlyInput('username');
@@ -55,12 +58,16 @@ class AuthenticatedSessionController extends Controller
         if ($user && (int) $user->roleID !== 1 && $user->status === 'inactive' && ! $user->firstTimelogin) {
             $contact = (int) $user->roleID === 3 ? 'your cooperative manager' : 'an administrator';
 
+            ActivityLogger::log($user, 'auth.login_blocked', "{$user->name} tried to log in but the account is deactivated.", $user);
+
             return back()->withErrors([
                 'username' => "This account has been deactivated. Please contact {$contact}.",
             ])->onlyInput('username');
         }
 
         if ($user && $this->hasActiveSessionElsewhere($user, $request)) {
+            ActivityLogger::log($user, 'auth.login_blocked', "{$user->name} tried to log in while already logged in elsewhere.", $user);
+
             return back()->withErrors([
                 'username' => 'This account is already logged in on another device or browser. Please logout there first before logging in again.',
             ])->onlyInput('username');
@@ -89,6 +96,8 @@ class AuthenticatedSessionController extends Controller
 
                 $request->session()->put('farmer_otp_user_id', $user->id);
 
+                ActivityLogger::log($user, 'auth.otp_sent', "{$user->name}'s password was correct; an OTP was sent to complete first login.", $user);
+
                 return redirect()->route('farmer.otp.verify.form');
             }
 
@@ -107,6 +116,8 @@ class AuthenticatedSessionController extends Controller
                 ]);
             }
 
+            ActivityLogger::log($user, 'auth.login', "{$user->name} logged in.", $user);
+
             // Redirect based on user role
             return redirect($user->dashboardUrl());
         }
@@ -120,6 +131,8 @@ class AuthenticatedSessionController extends Controller
                     'status' => 'locked',
                 ]);
 
+                ActivityLogger::log($user, 'auth.account_locked', "{$user->name}'s account was locked after {$attempts} failed login attempts.", $user);
+
                 return back()->withErrors([
                     'username' => 'This account has been locked after too many failed login attempts. Please contact your cooperative manager to have it unlocked.',
                 ])->onlyInput('username');
@@ -129,10 +142,16 @@ class AuthenticatedSessionController extends Controller
 
             $remaining = self::MAX_FARMER_LOGIN_ATTEMPTS - $attempts;
 
+            ActivityLogger::log($user, 'auth.login_failed', "Failed login attempt for {$user->name} ({$attempts}/".self::MAX_FARMER_LOGIN_ATTEMPTS.').', $user);
+
             return back()->withErrors([
                 'username' => "The provided credentials do not match our records. {$remaining} attempt(s) remaining before this account is locked.",
             ])->onlyInput('username');
         }
+
+        ActivityLogger::log($user, 'auth.login_failed', $user
+            ? "Failed login attempt for {$user->name}."
+            : "Failed login attempt for unknown username \"{$credentials['username']}\".", $user);
 
         return back()->withErrors([
             'username' => 'The provided credentials do not match our records.',
@@ -178,11 +197,22 @@ class AuthenticatedSessionController extends Controller
             $user->update(['isloggedin' => false]);
         }
 
+        $isTimeout = $request->input('reason') === 'timeout';
+
+        if ($user) {
+            ActivityLogger::log(
+                $user,
+                $isTimeout ? 'auth.session_timeout' : 'auth.logout',
+                $isTimeout ? "{$user->name}'s session expired due to inactivity." : "{$user->name} logged out.",
+                $user
+            );
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        if ($request->input('reason') === 'timeout') {
+        if ($isTimeout) {
             return redirect()->route('login')->withErrors([
                 'username' => 'Your session has expired due to inactivity. Please log in again.',
             ]);

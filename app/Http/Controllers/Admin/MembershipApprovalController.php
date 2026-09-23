@@ -7,7 +7,9 @@ use App\Models\Farmer;
 use App\Models\Notification;
 use App\Models\User;
 use App\Services\SmsService;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -108,6 +110,8 @@ class MembershipApprovalController extends Controller
             );
         }
 
+        ActivityLogger::log(Auth::user(), 'membership.approved', "Approved {$farmer->full_name}'s membership application.", $farmer);
+
         return redirect()->route('admin.membership-approval')
             ->with('success', $message);
     }
@@ -167,6 +171,10 @@ class MembershipApprovalController extends Controller
 
             Notification::notify($farmer->user_id, 'Membership Application Rejected', $message, 'membership_rejected');
         }
+
+        ActivityLogger::log(Auth::user(), 'membership.rejected', "Rejected {$farmer->full_name}'s membership application.", $farmer, array_filter([
+            'reason' => $validated['rejection_reason'] ?? null,
+        ]));
 
         return redirect()->route('admin.membership-approval')
             ->with('success', "{$farmer->full_name}'s membership application has been rejected.");

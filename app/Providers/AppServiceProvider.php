@@ -52,7 +52,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $notifications = Notification::where('user_id', $user->id)
-                ->with('announcement.creator', 'announcement.recipients', 'loan.loanRequest.farmer')
+                ->with('announcement.creator', 'announcement.recipients', 'loan.loanRequest.farmer', 'schedule', 'user')
                 ->orderBy('created_at', 'desc')
                 ->take(8)
                 ->get();

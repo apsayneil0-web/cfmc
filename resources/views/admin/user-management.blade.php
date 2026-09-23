@@ -48,7 +48,7 @@
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Email</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Phone</th>
-                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Temp Password</th>
+                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Password</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Created At</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Actions</th>
@@ -79,7 +79,9 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->Phonenumber ?? 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">
-                        @if($user->temp_password)
+                        @if($user->roleID == 1)
+                        <span>••••••••••</span>
+                        @elseif($user->temp_password)
                         <span class="d-flex align-items-center gap-2">
                             <span class="temp-password-mask" data-password="{{ $user->temp_password }}">••••••••••</span>
                             <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Show/hide password" onclick="toggleTempPassword(this)"><i class="fas fa-eye"></i></button>
@@ -94,8 +96,10 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
+                            @if($user->roleID != 1)
                             <button class="btn btn-sm btn-outline-primary" title="View" onclick="viewUser({{ $user->id }})"><i class="fas fa-eye"></i></button>
                             <button class="btn btn-sm btn-outline-warning" title="Edit" onclick="editUser({{ $user->id }})"><i class="fas fa-edit"></i></button>
+                            @endif
                             @if($user->roleID != 1)
                             <button class="btn btn-sm btn-outline-primary" title="Change Password" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }})"><i class="fas fa-key"></i></button>
                             @endif

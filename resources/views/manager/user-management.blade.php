@@ -17,10 +17,6 @@
                         <i class="fas fa-times-circle"></i>
                     </button>
                 </div>
-                <select id="roleFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
-                    <option value="">All Roles</option>
-                    <option value="3" {{ request('role') == '3' ? 'selected' : '' }}>Farmer</option>
-                </select>
                 <select id="statusFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
                     <option value="">All Status</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
@@ -555,7 +551,6 @@
     var searchInput = document.getElementById('searchInput');
     var searchIcon = document.getElementById('searchIcon');
     var searchClearBtn = document.getElementById('searchClearBtn');
-    var roleFilter = document.getElementById('roleFilter');
     var statusFilter = document.getElementById('statusFilter');
 
     function toggleSearchClearBtn() {
@@ -569,12 +564,6 @@
             currentUrl.searchParams.set('search', searchInput.value);
         } else {
             currentUrl.searchParams.delete('search');
-        }
-
-        if (roleFilter.value) {
-            currentUrl.searchParams.set('role', roleFilter.value);
-        } else {
-            currentUrl.searchParams.delete('role');
         }
 
         if (statusFilter.value) {
@@ -614,7 +603,6 @@
         applyUserFilters();
     });
 
-    roleFilter.addEventListener('change', applyUserFilters);
     statusFilter.addEventListener('change', applyUserFilters);
 
     // Restore focus (with cursor at the end) after a search reloads the page,

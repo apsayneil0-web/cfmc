@@ -89,6 +89,11 @@
                     User Management
                 </a>
 
+                <a href="{{ route('admin.activity-logs') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.activity-logs') ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-clock-rotate-left w-5"></i>
+                    Activity Logs
+                </a>
+
                 <hr class="my-2 text-gray-200">
 
                 <button onclick="confirmLogout()" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger w-100 border-0 bg-transparent">
