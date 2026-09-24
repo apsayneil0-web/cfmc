@@ -1,6 +1,7 @@
 @php
     $isSelected = old('audience', $announcement->audience ?? 'all_members') === 'selected';
     $isMeeting = old('purpose', $announcement->purpose ?? 'Information') === 'Meeting';
+    $isResolution = old('purpose', $announcement->purpose ?? 'Information') === 'Resolution';
     $selectedFarmerIds = old('farmer_ids', $announcement?->recipients->pluck('id')->all() ?? []);
 @endphp
 <div class="announcement-form">
@@ -36,8 +37,8 @@
             <input type="text" name="location" class="form-control" placeholder="e.g. CFMC Office" value="{{ old('location', $announcement->location ?? '') }}">
         </div>
     </div>
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Resolution (Optional)</label>
+    <div class="mb-3 resolution-field" style="{{ $isResolution ? '' : 'display:none;' }}">
+        <label class="form-label fw-semibold">Resolution</label>
         <textarea name="resolution" rows="2" class="form-control" placeholder="Enter resolution details">{{ old('resolution', $announcement->resolution ?? '') }}</textarea>
     </div>
     <div class="mb-3">
@@ -49,9 +50,10 @@
     </div>
     <div class="mb-3 farmer-picker" style="{{ $isSelected ? '' : 'display:none;' }}">
         <label class="form-label fw-semibold">Farmers <span class="text-danger">*</span></label>
+        <input type="text" class="form-control form-control-sm mb-2 farmer-search" placeholder="Search farmer...">
         <div class="border rounded-lg p-2" style="max-height: 180px; overflow-y: auto;">
             @forelse($farmers as $farmer)
-            <div class="form-check">
+            <div class="form-check farmer-option">
                 <input class="form-check-input" type="checkbox" name="farmer_ids[]" value="{{ $farmer->id }}"
                     id="{{ $prefix }}_farmer{{ $farmer->id }}" {{ in_array($farmer->id, $selectedFarmerIds) ? 'checked' : '' }}>
                 <label class="form-check-label" for="{{ $prefix }}_farmer{{ $farmer->id }}">{{ $farmer->full_name }}</label>

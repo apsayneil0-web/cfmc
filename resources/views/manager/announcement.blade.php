@@ -199,10 +199,24 @@
 
         var purposeSelect = form.querySelector('.purpose-select');
         var meetingFields = form.querySelector('.meeting-fields');
+        var resolutionField = form.querySelector('.resolution-field');
 
         purposeSelect.addEventListener('change', function () {
             meetingFields.style.display = purposeSelect.value === 'Meeting' ? '' : 'none';
+            resolutionField.style.display = purposeSelect.value === 'Resolution' ? '' : 'none';
         });
+
+        var farmerSearch = form.querySelector('.farmer-search');
+        if (farmerSearch) {
+            farmerSearch.addEventListener('input', function () {
+                var query = farmerSearch.value.trim().toLowerCase();
+                form.querySelectorAll('.farmer-option').forEach(function (option) {
+                    var label = option.querySelector('.form-check-label');
+                    var matches = label.textContent.toLowerCase().includes(query);
+                    option.style.display = matches ? '' : 'none';
+                });
+            });
+        }
     });
 </script>
 @endsection
