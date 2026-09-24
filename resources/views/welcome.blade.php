@@ -2,6 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
+    @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>CFMC - Cooperative Management System</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
