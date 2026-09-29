@@ -253,7 +253,10 @@ class UserController extends Controller
             $updateData = [
                 'name' => $request->name,
                 'username' => $request->username,
-                'email' => $request->email,
+                // Farmers communicate by SMS, not email — this screen no longer
+                // collects one, so keep whatever placeholder is already on file
+                // instead of blanking it out.
+                'email' => $request->filled('email') ? $request->email : $user->email,
                 'Phonenumber' => $request->Phonenumber ?? null,
                 'status' => $request->status,
             ];

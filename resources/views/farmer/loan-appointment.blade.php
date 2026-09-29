@@ -12,18 +12,6 @@
 </div>
 @endif
 
-@if($errors->any())
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="fas fa-exclamation-triangle me-2"></i>
-    <strong>Please fix the following errors:</strong>
-    <ul class="mb-0 mt-2">
-        @foreach($errors->all() as $error)
-        <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-@endif
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
     <div class="p-4 p-md-6 border-b border-gray-200 d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
@@ -87,6 +75,7 @@
                             <form action="{{ route('farmer.loan-appointment.update', $appointment->id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
+                                <input type="hidden" name="source_modal" value="editModal{{ $appointment->id }}">
                                 <div class="modal-body">
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Date</label>
@@ -148,18 +137,45 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Collateral</label>
-                                            <input type="text" name="collateral" class="form-control" value="{{ $appointment->collateral }}" placeholder="Describe collateral">
+                                    </div>
+
+                                    {{-- PLACEHOLDER LEGAL TEXT — replace the Republic Act citation and terms
+                                         below with the Cooperative's actual reviewed wording before go-live. --}}
+                                    <div class="mb-3">
+                                        <div class="border rounded-3 p-3 bg-light">
+                                            <h6 class="fw-semibold mb-2"><i class="fas fa-file-contract me-1"></i> Loan Terms &amp; Conditions</h6>
+                                            <div class="small text-muted mb-2" style="max-height: 160px; overflow-y: auto;">
+                                                <p class="mb-2"><strong>Governing Law:</strong> This loan is granted in accordance with Republic Act No. 9520 (the Philippine Cooperative Code of 2008) and the internal lending policies of Centrala Farmers Marketing Cooperative (CFMC).</p>
+                                                <p class="mb-2"><strong>Conditions:</strong></p>
+                                                <ul class="mb-0 ps-3">
+                                                    <li>Interest and any applicable penalties are computed per the Cooperative's approved lending policy and will be disclosed before disbursement.</li>
+                                                    <li>Collateral declared below secures this loan until it is fully settled and may be inspected or verified by the Cooperative.</li>
+                                                    <li>Missed due dates may result in grace-period interest, penalties, and — per the Cooperative's delinquency policy — restriction from future loans, Barangay summons, or legal action for accounts left unpaid.</li>
+                                                    <li>All information provided, including collateral details and proof, must be true and accurate; misrepresentation may result in denial or cancellation of this request.</li>
+                                                </ul>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="agreeTerms{{ $appointment->id }}" data-agree-checkbox-source required>
+                                                <label class="form-check-label small" for="agreeTerms{{ $appointment->id }}">
+                                                    I have read and agree to the Republic Act provisions and Terms &amp; Conditions above.
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Collateral <span class="text-danger">*</span></label>
+                                        <input type="text" name="collateral" class="form-control" value="{{ $appointment->collateral }}" placeholder="Describe collateral" required>
+                                    </div>
                                     <div>
-                                        <label class="form-label fw-semibold">Collateral Proof</label>
+                                        <label class="form-label fw-semibold">Collateral Proof <span class="text-danger">*</span></label>
                                         <x-collateral-proof-input
                                             id="documentsEdit{{ $appointment->id }}"
                                             :existing-label="$appointment->documents_path ? 'Current file on record — choose a new one only to replace it.' : null"
                                             :existing-url="$appointment->documents_path ? asset('storage/'.$appointment->documents_path) : null"
                                             parent-modal-id="editModal{{ $appointment->id }}"
+                                            agree-checkbox-id="agreeTerms{{ $appointment->id }}"
+                                            :required="true"
                                         />
                                     </div>
                                 </div>
@@ -214,6 +230,7 @@
             </div>
             <form action="{{ route('farmer.loan-appointment.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+                <input type="hidden" name="source_modal" value="createModal">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
@@ -273,14 +290,39 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Collateral</label>
-                            <input type="text" name="collateral" class="form-control" placeholder="Describe collateral">
+                    </div>
+
+                    {{-- PLACEHOLDER LEGAL TEXT — replace the Republic Act citation and terms
+                         below with the Cooperative's actual reviewed wording before go-live. --}}
+                    <div class="mb-3">
+                        <div class="border rounded-3 p-3 bg-light">
+                            <h6 class="fw-semibold mb-2"><i class="fas fa-file-contract me-1"></i> Loan Terms &amp; Conditions</h6>
+                            <div class="small text-muted mb-2" style="max-height: 160px; overflow-y: auto;">
+                                <p class="mb-2"><strong>Governing Law:</strong> This loan is granted in accordance with Republic Act No. 9520 (the Philippine Cooperative Code of 2008) and the internal lending policies of Centrala Farmers Marketing Cooperative (CFMC).</p>
+                                <p class="mb-2"><strong>Conditions:</strong></p>
+                                <ul class="mb-0 ps-3">
+                                    <li>Interest and any applicable penalties are computed per the Cooperative's approved lending policy and will be disclosed before disbursement.</li>
+                                    <li>Collateral declared below secures this loan until it is fully settled and may be inspected or verified by the Cooperative.</li>
+                                    <li>Missed due dates may result in grace-period interest, penalties, and — per the Cooperative's delinquency policy — restriction from future loans, Barangay summons, or legal action for accounts left unpaid.</li>
+                                    <li>All information provided, including collateral details and proof, must be true and accurate; misrepresentation may result in denial or cancellation of this request.</li>
+                                </ul>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="agreeTermsCreate" data-agree-checkbox-source required>
+                                <label class="form-check-label small" for="agreeTermsCreate">
+                                    I have read and agree to the Republic Act provisions and Terms &amp; Conditions above.
+                                </label>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Collateral <span class="text-danger">*</span></label>
+                        <input type="text" name="collateral" class="form-control" placeholder="Describe collateral" required>
+                    </div>
                     <div>
-                        <label class="form-label fw-semibold">Collateral Proof</label>
-                        <x-collateral-proof-input id="documentsCreate" parent-modal-id="createModal" />
+                        <label class="form-label fw-semibold">Collateral Proof <span class="text-danger">*</span></label>
+                        <x-collateral-proof-input id="documentsCreate" parent-modal-id="createModal" agree-checkbox-id="agreeTermsCreate" :required="true" />
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -295,6 +337,50 @@
 {{-- Camera capture modals from x-collateral-proof-input, pushed here so
      they're siblings of the other modals rather than nested descendants. --}}
 @stack('modals')
+
+<!-- Validation Error Dialog: shown instead of a page-top banner so the
+     appointment/reschedule modal the farmer was filling out doesn't just
+     vanish behind a wall of text on a failed submit — dismissing this
+     reopens whichever modal (source_modal) the form was submitted from. -->
+<div class="modal fade" id="validationErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="mb-0 ps-3">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Okay, let me fix it</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if($errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var errorModalEl = document.getElementById('validationErrorModal');
+        var errorModal = new bootstrap.Modal(errorModalEl);
+        errorModal.show();
+
+        errorModalEl.addEventListener('hidden.bs.modal', function () {
+            var sourceId = {!! json_encode(old('source_modal')) !!};
+            var sourceEl = sourceId ? document.getElementById(sourceId) : null;
+
+            if (sourceEl) {
+                new bootstrap.Modal(sourceEl).show();
+            }
+        }, { once: true });
+    });
+</script>
+@endif
 
 <script>
     // Refreshes a Time <select> with whichever of the 5 daily slots are

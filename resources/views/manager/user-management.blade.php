@@ -35,7 +35,6 @@
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">User ID</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Name</th>
-                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Email</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Phone</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Temp Password</th>
@@ -57,7 +56,6 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $user->email ?? 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
                         @if($user->roleID == 2)
                         <span class="badge bg-purple text-white">Manager</span>
@@ -81,33 +79,39 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" title="View" onclick="viewUser({{ $user->id }})"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-sm btn-outline-warning" title="Edit" onclick="editUser({{ $user->id }})"><i class="fas fa-edit"></i></button>
-                            @if($user->roleID == 3)
-                            <button class="btn btn-sm btn-outline-primary" title="Change Password" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }})"><i class="fas fa-key"></i></button>
-                            @endif
-                            @if($user->status === 'locked')
-                            <button class="btn btn-sm btn-outline-success" title="Unlock" onclick="unlockUser({{ $user->id }})"><i class="fas fa-unlock"></i></button>
-                            @endif
-                            @if($user->roleID == 3 && in_array($user->status, ['active', 'inactive']))
-                                @if($user->status === 'active')
-                                <button class="btn btn-sm btn-outline-secondary" title="Deactivate" onclick="toggleUserStatus({{ $user->id }}, 'active')"><i class="fas fa-user-slash"></i></button>
-                                @else
-                                <button class="btn btn-sm btn-outline-success" title="Activate" onclick="toggleUserStatus({{ $user->id }}, 'inactive')"><i class="fas fa-user-check"></i></button>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="viewUser({{ $user->id }}); return false;"><i class="fas fa-eye me-2 text-primary fa-fw"></i>View</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="editUser({{ $user->id }}); return false;"><i class="fas fa-edit me-2 text-primary fa-fw"></i>Edit</a></li>
+                                @if($user->roleID == 3)
+                                <li><a class="dropdown-item" href="#" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }}); return false;"><i class="fas fa-key me-2 text-primary fa-fw"></i>Change Password</a></li>
                                 @endif
-                            @endif
-                            @if($user->status === 'archived')
-                            <button class="btn btn-sm btn-outline-success" title="Unarchive" onclick="unarchiveUser({{ $user->id }})"><i class="fas fa-box-open"></i></button>
-                            @else
-                            <button class="btn btn-sm btn-outline-warning" title="Archive" onclick="archiveUser({{ $user->id }})"><i class="fas fa-archive"></i></button>
-                            @endif
+                                @if($user->status === 'locked')
+                                <li><a class="dropdown-item" href="#" onclick="unlockUser({{ $user->id }}); return false;"><i class="fas fa-unlock me-2 text-success fa-fw"></i>Unlock</a></li>
+                                @endif
+                                @if($user->roleID == 3 && in_array($user->status, ['active', 'inactive']))
+                                    @if($user->status === 'active')
+                                    <li><a class="dropdown-item" href="#" onclick="toggleUserStatus({{ $user->id }}, 'active'); return false;"><i class="fas fa-user-slash me-2 text-secondary fa-fw"></i>Deactivate</a></li>
+                                    @else
+                                    <li><a class="dropdown-item" href="#" onclick="toggleUserStatus({{ $user->id }}, 'inactive'); return false;"><i class="fas fa-user-check me-2 text-success fa-fw"></i>Activate</a></li>
+                                    @endif
+                                @endif
+                                <li><hr class="dropdown-divider"></li>
+                                @if($user->status === 'archived')
+                                <li><a class="dropdown-item" href="#" onclick="unarchiveUser({{ $user->id }}); return false;"><i class="fas fa-box-open me-2 text-success fa-fw"></i>Unarchive</a></li>
+                                @else
+                                <li><a class="dropdown-item text-danger" href="#" onclick="archiveUser({{ $user->id }}); return false;"><i class="fas fa-archive me-2 fa-fw"></i>Archive</a></li>
+                                @endif
+                            </ul>
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="px-4 px-md-6 py-4 text-center text-muted">No users found</td>
+                    <td colspan="8" class="px-4 px-md-6 py-4 text-center text-muted">No users found</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -142,7 +146,7 @@
 </div>
 
 <!-- View User Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-light">
@@ -159,12 +163,6 @@
                     <p class="text-muted" id="viewUsername">@username</p>
                 </div>
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light rounded">
-                            <small class="text-muted d-block">Email</small>
-                            <strong id="viewEmail">email@example.com</strong>
-                        </div>
-                    </div>
                     <div class="col-md-6">
                         <div class="p-3 bg-light rounded">
                             <small class="text-muted d-block">Phone Number</small>
@@ -207,12 +205,12 @@
 </div>
 
 <!-- Edit User Modal -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-light">
                 <h5 class="modal-title fw-bold" id="editModalLabel">
-                    <i class="fas fa-user-edit me-2 text-warning"></i>
+                    <i class="fas fa-user-edit me-2 text-primary"></i>
                     Edit User
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -220,29 +218,46 @@
             <div class="modal-body">
                 <form id="editUserForm" class="needs-validation" novalidate>
                     <input type="hidden" id="editUserId" name="userId">
-                    <!-- Row 1: Full Name -->
+                    <input type="hidden" name="name" id="editName">
+                    <!-- Row 1: Name Fields -->
                     <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="editName" required>
-                            <div class="invalid-feedback">Please enter full name.</div>
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" placeholder="First name" id="editFirstName" required>
+                            <div class="invalid-feedback">Please enter first name.</div>
+                        </div>
+                        <div class="col-md-2 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Middle Name</label>
+                            <input type="text" class="form-control form-control-lg" placeholder="Middle name" id="editMiddleName">
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" placeholder="Last name" id="editLastName" required>
+                            <div class="invalid-feedback">Please enter last name.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Suffix</label>
+                            <select class="form-select form-select-lg" id="editSuffix">
+                                <option value="" selected>None</option>
+                                <option value="Jr.">Jr.</option>
+                                <option value="Sr.">Sr.</option>
+                                <option value="II">II</option>
+                                <option value="III">III</option>
+                                <option value="IV">IV</option>
+                                <option value="V">V</option>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Row 2: Username & Email -->
+                    <!-- Row 2: Username -->
                     <div class="row mb-3">
-                        <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="col-12">
                             <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text">@</span>
                                 <input type="text" class="form-control" placeholder="username" name="username" id="editUsername" required>
                             </div>
                             <div class="invalid-feedback">Please enter username.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control form-control-lg" placeholder="email@example.com" name="email" id="editEmail" required>
-                            <div class="invalid-feedback">Please enter email.</div>
                         </div>
                     </div>
 
@@ -268,7 +283,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-lg px-4" data-bs-dismiss="modal">
                     <i class="fas fa-times me-2"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-warning btn-lg px-4" id="updateUserBtn" onclick="updateUser()">
+                <button type="button" class="btn btn-primary btn-lg px-4" id="updateUserBtn" onclick="updateUser()">
                     <i class="fas fa-save me-2"></i>Update User
                 </button>
             </div>
@@ -277,7 +292,7 @@
 </div>
 
 <!-- Change Password Modal -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-light">
@@ -331,7 +346,7 @@
 </div>
 
 <!-- Notification Modal -->
-<div class="modal fade" id="notifyModal" tabindex="-1" aria-labelledby="notifyMessage" aria-hidden="true">
+<div class="modal fade" id="notifyModal" tabindex="-1" aria-labelledby="notifyMessage" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0">
             <div class="modal-body px-4 pt-4 pb-4 text-center">
@@ -340,6 +355,25 @@
                 </div>
                 <p class="mb-4" id="notifyMessage">-</p>
                 <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Action Modal (replaces native browser confirm() dialogs) -->
+<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionTitle" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0">
+            <div class="modal-body px-4 pt-4 pb-4 text-center">
+                <div class="notify-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3" id="confirmActionBadge">
+                    <i class="fas" id="confirmActionIcon"></i>
+                </div>
+                <h6 class="fw-bold mb-2" id="confirmActionTitle">Confirm Action</h6>
+                <p class="text-muted mb-4" id="confirmActionMessage">-</p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary flex-fill" id="confirmActionBtn">OK</button>
+                </div>
             </div>
         </div>
     </div>
@@ -422,6 +456,40 @@
         }
 
         (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
+    }
+
+    // Shows a centered confirmation modal in place of the native confirm().
+    // `onConfirm` runs only if the user clicks the primary button.
+    function confirmAction(message, onConfirm, options) {
+        options = options || {};
+        var variant = options.variant === 'danger' ? 'danger' : 'success';
+
+        var badge = document.getElementById('confirmActionBadge');
+        badge.className = 'notify-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3 ' + variant;
+        document.getElementById('confirmActionIcon').className = 'fas ' + (options.icon || (variant === 'danger' ? 'fa-exclamation-triangle' : 'fa-question-circle'));
+        document.getElementById('confirmActionTitle').textContent = options.title || 'Confirm Action';
+        document.getElementById('confirmActionMessage').textContent = message;
+
+        var confirmBtn = document.getElementById('confirmActionBtn');
+        confirmBtn.className = 'btn flex-fill ' + (variant === 'danger' ? 'btn-danger' : 'btn-primary');
+        confirmBtn.textContent = options.confirmLabel || 'OK';
+
+        var modalEl = document.getElementById('confirmActionModal');
+        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+
+        var handleConfirm = function() {
+            confirmBtn.removeEventListener('click', handleConfirm);
+            modal.hide();
+            onConfirm();
+        };
+        confirmBtn.addEventListener('click', handleConfirm);
+
+        modalEl.addEventListener('hidden.bs.modal', function cleanup() {
+            modalEl.removeEventListener('hidden.bs.modal', cleanup);
+            confirmBtn.removeEventListener('click', handleConfirm);
+        });
+
+        modal.show();
     }
 
     // Enable Bootstrap validation
@@ -620,7 +688,7 @@
             ? 'Deactivate this account? The farmer will no longer be able to log in.'
             : 'Activate this account? The farmer will be able to log in again.';
 
-        if (confirm(confirmMessage)) {
+        confirmAction(confirmMessage, function() {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
@@ -648,12 +716,12 @@
                 console.error('Error:', error);
                 showAlert(error.message, 'danger');
             });
-        }
+        }, { title: currentStatus === 'active' ? 'Deactivate Account' : 'Activate Account' });
     }
 
     // Unlock User Function
     function unlockUser(userId) {
-        if (confirm('Unlock this account? The failed login count will be reset.')) {
+        confirmAction('Unlock this account? The failed login count will be reset.', function() {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
@@ -681,12 +749,12 @@
                 console.error('Error:', error);
                 showAlert(error.message, 'danger');
             });
-        }
+        }, { title: 'Unlock Account', icon: 'fa-unlock' });
     }
 
     // Unarchive User Function
     function unarchiveUser(userId) {
-        if (confirm('Restore this account from the archive?')) {
+        confirmAction('Restore this account from the archive?', function() {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
@@ -714,12 +782,12 @@
                 console.error('Error:', error);
                 showAlert(error.message, 'danger');
             });
-        }
+        }, { title: 'Restore Account', icon: 'fa-box-open' });
     }
 
     // Archive User Function
     function archiveUser(userId) {
-        if (confirm('Are you sure you want to archive this user?')) {
+        confirmAction('Are you sure you want to archive this user?', function() {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
@@ -747,7 +815,7 @@
                 console.error('Error:', error);
                 showAlert(error.message, 'danger');
             });
-        }
+        }, { title: 'Archive User', variant: 'danger', icon: 'fa-archive' });
     }
 
     // View User Function
@@ -767,7 +835,6 @@
                 document.getElementById('viewAvatar').textContent = user.name.substring(0, 2).toUpperCase();
                 document.getElementById('viewName').textContent = user.name;
                 document.getElementById('viewUsername').textContent = '@' + user.username;
-                document.getElementById('viewEmail').textContent = user.email || 'N/A';
                 document.getElementById('viewPhone').textContent = user.Phonenumber || 'N/A';
                 document.getElementById('viewRole').textContent = user.roleID == 2 ? 'Manager' : 'Farmer';
                 document.getElementById('viewStatus').textContent = user.status.charAt(0).toUpperCase() + user.status.slice(1);
@@ -786,6 +853,49 @@
         });
     }
 
+    // Splits a stored "First [Middle.] Last [Suffix]" display name back into
+    // its parts for the Edit form. Best-effort: names weren't stored as
+    // separate fields to begin with, so this mirrors how the registration
+    // form builds the name in the first place, rather than a strict parse.
+    var NAME_SUFFIXES = ['Jr.', 'Sr.', 'II', 'III', 'IV', 'V'];
+    function splitFullName(fullName) {
+        var tokens = (fullName || '').trim().split(/\s+/).filter(Boolean);
+        var suffix = '';
+
+        if (tokens.length > 1 && NAME_SUFFIXES.indexOf(tokens[tokens.length - 1]) !== -1) {
+            suffix = tokens.pop();
+        }
+
+        var middle = '';
+        if (tokens.length >= 3 && /^[A-Za-z]\.?$/.test(tokens[1])) {
+            var first = tokens[0];
+            middle = tokens[1];
+            var last = tokens.slice(2).join(' ');
+        } else if (tokens.length >= 2) {
+            var first = tokens.slice(0, -1).join(' ');
+            var last = tokens[tokens.length - 1];
+        } else {
+            var first = tokens[0] || '';
+            var last = '';
+        }
+
+        return { first: first, middle: middle, last: last, suffix: suffix };
+    }
+
+    // Recombines the Edit form's separate name fields into the single stored
+    // display name, the same way the registration form does.
+    function combineEditName() {
+        var first = document.getElementById('editFirstName').value.trim();
+        var middle = document.getElementById('editMiddleName').value.trim();
+        var last = document.getElementById('editLastName').value.trim();
+        var suffix = document.getElementById('editSuffix').value;
+
+        var fullName = [first, middle, last].filter(Boolean).join(' ');
+        if (suffix) fullName += ' ' + suffix;
+
+        document.getElementById('editName').value = fullName;
+    }
+
     // Edit User Function
     function editUser(userId) {
         fetch('/manager/user-management/' + userId, {
@@ -800,10 +910,14 @@
         .then(function(data) {
             if (data.success) {
                 var user = data.user;
+                var nameParts = splitFullName(user.name);
+
                 document.getElementById('editUserId').value = user.id;
-                document.getElementById('editName').value = user.name;
+                document.getElementById('editFirstName').value = nameParts.first;
+                document.getElementById('editMiddleName').value = nameParts.middle;
+                document.getElementById('editLastName').value = nameParts.last;
+                document.getElementById('editSuffix').value = nameParts.suffix;
                 document.getElementById('editUsername').value = user.username;
-                document.getElementById('editEmail').value = user.email || '';
                 document.getElementById('editPhone').value = user.Phonenumber || '';
                 document.getElementById('editStatus').value = user.status;
 
@@ -826,6 +940,8 @@
             form.classList.add('was-validated');
             return;
         }
+
+        combineEditName();
 
         var userId = document.getElementById('editUserId').value;
         var formData = new FormData(form);

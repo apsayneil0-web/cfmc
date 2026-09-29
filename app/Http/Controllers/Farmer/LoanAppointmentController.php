@@ -97,7 +97,7 @@ class LoanAppointmentController extends Controller
         abort_if($loan_appointment->user_id !== Auth::id(), 403);
         abort_if($loan_appointment->status !== 'pending', 422, 'Only pending appointments can be rescheduled.');
 
-        $validated = $this->validateAppointment($request, $loan_appointment->id);
+        $validated = $this->validateAppointment($request, $loan_appointment->id, $loan_appointment);
 
         $documentsPath = $loan_appointment->documents_path;
         if ($request->hasFile('documents')) {
@@ -116,8 +116,13 @@ class LoanAppointmentController extends Controller
             ->with('success', 'Appointment rescheduled successfully!');
     }
 
-    private function validateAppointment(Request $request, ?int $excludeId = null): array
+    private function validateAppointment(Request $request, ?int $excludeId = null, ?LoanAppointment $existing = null): array
     {
+        // A file is only mandatory when there isn't already one on record —
+        // an update to a pending appointment that already has collateral
+        // proof shouldn't force re-attaching it just to change something else.
+        $documentsRule = $existing?->documents_path ? 'nullable' : 'required';
+
         return $request->validate([
             'appointment_date' => 'required|date|after_or_equal:today',
             'appointment_time' => [
@@ -166,8 +171,8 @@ class LoanAppointmentController extends Controller
             ],
             'loan_purpose' => ['required', 'string', 'in:'.implode(',', self::LOAN_PURPOSES)],
             'repayment_terms_months' => ['required', 'integer', 'in:'.implode(',', self::LOAN_TERMS)],
-            'collateral' => 'nullable|string|max:255',
-            'documents' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'collateral' => 'required|string|max:255',
+            'documents' => $documentsRule.'|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
     }
 

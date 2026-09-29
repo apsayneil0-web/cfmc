@@ -12,18 +12,6 @@
 </div>
 @endif
 
-@if($errors->any())
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="fas fa-exclamation-triangle me-2"></i>
-    <strong>Please fix the following errors:</strong>
-    <ul class="mb-0 mt-2">
-        @foreach($errors->all() as $error)
-        <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-@endif
 
 @if($batchesReadyToFinalize->isNotEmpty())
 <div class="section-card mb-6">
@@ -73,6 +61,7 @@
             </div>
             <form action="{{ route('manager.loan-request.batch-finalize', $batch) }}" method="POST">
                 @csrf
+                <input type="hidden" name="source_modal" value="batchFinalizeModal{{ $batch->id }}">
                 <div class="modal-body">
                     <p class="text-muted small mb-3">Confirm to finalize all {{ $batch->loanRequests->count() }} approved members below into loans at once, each using their own requested amount and repayment term. This can't be undone from here. Set one interest rate and one disbursement date/method to apply across the batch — choosing today releases funds immediately, choosing a future date schedules it to disburse automatically that day.</p>
                     <div class="table-responsive mb-3">
@@ -450,6 +439,7 @@
                             <form action="{{ route('manager.loan-request.update', $req) }}" method="POST">
                                 @csrf
                                 @method('PUT')
+                                <input type="hidden" name="source_modal" value="editModal{{ $req->id }}">
                                 <div class="modal-body">
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
@@ -532,6 +522,7 @@
                             </div>
                             <form action="{{ route('manager.loan-request.finalize', $req) }}" method="POST">
                                 @csrf
+                                <input type="hidden" name="source_modal" value="finalizeModal{{ $req->id }}">
                                 <div class="modal-body">
                                     <p class="text-muted small">Confirm the terms below to finalize {{ $req->farmer->full_name }}'s loan and send it to disbursement. This can't be undone from here.</p>
                                     <div class="mb-3">
@@ -598,6 +589,7 @@
             </div>
             <form action="{{ route('manager.loan-request.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+                <input type="hidden" name="source_modal" value="createRequestModal">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Farmer <span class="text-danger">*</span></label>
@@ -742,4 +734,47 @@
         batchSelect.value = batchId;
     }
 </script>
+
+<!-- Validation Error Dialog: shown instead of a page-top banner so whichever
+     modal was submitted doesn't just vanish behind a wall of text on a
+     failed submit — dismissing this reopens it (via source_modal). -->
+<div class="modal fade" id="validationErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="mb-0 ps-3">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Okay, let me fix it</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if($errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var errorModalEl = document.getElementById('validationErrorModal');
+        var errorModal = new bootstrap.Modal(errorModalEl);
+        errorModal.show();
+
+        errorModalEl.addEventListener('hidden.bs.modal', function () {
+            var sourceId = {!! json_encode(old('source_modal')) !!};
+            var sourceEl = sourceId ? document.getElementById(sourceId) : null;
+
+            if (sourceEl) {
+                new bootstrap.Modal(sourceEl).show();
+            }
+        }, { once: true });
+    });
+</script>
+@endif
 @endsection

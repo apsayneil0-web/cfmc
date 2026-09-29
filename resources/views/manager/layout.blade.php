@@ -39,90 +39,34 @@
 
                 <div class="sidebar-section-label">Members</div>
 
-                <a href="{{ route('manager.user-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.user-management') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-user-cog w-5"></i>
-                    User Management
-                </a>
-
-                <a href="{{ route('manager.membership') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.membership') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-user-plus w-5"></i>
-                    Membership Registration
-                </a>
-
-                <a href="{{ route('manager.farmer-profile') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.farmer-profile') ? 'active text-gray-900' : 'text-gray-600' }}">
+                @php $inMembersCentral = request()->routeIs('manager.user-management', 'manager.membership', 'manager.farmer-profile'); @endphp
+                <a href="{{ route('manager.user-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inMembersCentral ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-users w-5"></i>
-                    Farmer Profile
+                    Members Central
                 </a>
 
                 <div class="sidebar-section-label">Loans &amp; Finance</div>
 
-                <a href="{{ route('manager.financial') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.financial') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-chart-pie w-5"></i>
-                    Financial Management
-                </a>
-
-                <a href="{{ route('manager.cbu') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.cbu') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-piggy-bank w-5"></i>
-                    Capital Build Up
-                </a>
-
-                <a href="{{ route('manager.loan-request') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.loan-request') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-hand-holding-usd w-5"></i>
-                    Loan Requests
-                </a>
-
-                <a href="{{ route('manager.loan-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.loan-management') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-file-invoice-dollar w-5"></i>
-                    Loan Management
-                </a>
-
-                <a href="{{ route('manager.batch-loan-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.batch-loan-management') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-layer-group w-5"></i>
-                    Batch Loans
-                </a>
-
-                <a href="{{ route('manager.loan-appointment') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.loan-appointment') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-calendar-alt w-5"></i>
-                    Loan Appointments
-                </a>
-
-                <a href="{{ route('manager.payment') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.payment') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-money-bill-wave w-5"></i>
-                    Payments
+                @php $inFinanceCentral = request()->routeIs('manager.financial', 'manager.cbu', 'manager.loan-request', 'manager.loan-management', 'manager.batch-loan-management', 'manager.loan-appointment', 'manager.payment'); @endphp
+                <a href="{{ route('manager.financial') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inFinanceCentral ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-wallet w-5"></i>
+                    Finance Central
                 </a>
 
                 <div class="sidebar-section-label">Operations</div>
 
-                <a href="{{ route('manager.schedule-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.schedule-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-calendar-check w-5"></i>
-                    Schedule Approval
-                </a>
-
-                <a href="{{ route('manager.machine-schedule') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.machine-schedule') ? 'active text-gray-900' : 'text-gray-600' }}">
+                @php $inOperationsCentral = request()->routeIs('manager.schedule-approval', 'manager.machine-schedule', 'manager.machinery', 'manager.machine-usage'); @endphp
+                <a href="{{ route('manager.schedule-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inOperationsCentral ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-tractor w-5"></i>
-                    Machine Scheduling
-                </a>
-
-                <a href="{{ route('manager.machinery') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.machinery') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-cogs w-5"></i>
-                    Machinery
-                </a>
-
-                <a href="{{ route('manager.machine-usage') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.machine-usage') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-chart-line w-5"></i>
-                    Machine Usage
+                    Operations Central
                 </a>
 
                 <div class="sidebar-section-label">Engagement</div>
 
-                <a href="{{ route('manager.complaints') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.complaints') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-exclamation-circle w-5"></i>
-                    Complaints
-                </a>
-
-                <a href="{{ route('manager.announcement') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.announcement') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-bullhorn w-5"></i>
-                    Announcements
+                @php $inEngagementCentral = request()->routeIs('manager.complaints', 'manager.announcement'); @endphp
+                <a href="{{ route('manager.complaints') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inEngagementCentral ? 'active text-gray-900' : 'text-gray-600' }}">
+                    <i class="fas fa-comments w-5"></i>
+                    Engagement Central
                 </a>
 
                 <div class="sidebar-section-label">Reports</div>
@@ -169,6 +113,15 @@
                 <x-info-banner variant="danger" title="Access denied" class="mb-4">
                     {{ session('role_denied') }}
                 </x-info-banner>
+                @endif
+                @if($inMembersCentral)
+                <x-members-central-tabs />
+                @elseif($inFinanceCentral)
+                <x-finance-central-tabs />
+                @elseif($inOperationsCentral)
+                <x-operations-central-tabs />
+                @elseif($inEngagementCentral)
+                <x-engagement-central-tabs />
                 @endif
                 @yield('content')
             </div>

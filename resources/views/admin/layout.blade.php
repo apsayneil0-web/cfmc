@@ -39,41 +39,18 @@
 
                 <div class="sidebar-section-label">Members</div>
 
-                <a href="{{ route('admin.members') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.members') && request('status') !== 'approved' ? 'active text-gray-900' : 'text-gray-600' }}">
+                @php $inMembersCentral = request()->routeIs('admin.members', 'admin.membership-approval'); @endphp
+                <a href="{{ route('admin.members') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inMembersCentral ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-users w-5"></i>
-                    Member Information
-                </a>
-
-                <a href="{{ route('admin.members', ['status' => 'approved']) }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.members') && request('status') === 'approved' ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-user-check w-5"></i>
-                    Approved Membership
-                </a>
-
-                <a href="{{ route('admin.membership-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') && request('status') !== 'rejected' ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-user-clock w-5"></i>
-                    Membership Approval
-                </a>
-
-                <a href="{{ route('admin.membership-approval', ['status' => 'rejected']) }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.membership-approval') && request('status') === 'rejected' ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-user-xmark w-5"></i>
-                    Rejected Applications
+                    Members Central
                 </a>
 
                 <div class="sidebar-section-label">Loans</div>
 
-                <a href="{{ route('admin.loan-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.loan-approval') ? 'active text-gray-900' : 'text-gray-600' }}">
+                @php $inLoansCentral = request()->routeIs('admin.loan-approval', 'admin.approved-loans', 'admin.cbu'); @endphp
+                <a href="{{ route('admin.loan-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inLoansCentral ? 'active text-gray-900' : 'text-gray-600' }}">
                     <i class="fas fa-hand-holding-usd w-5"></i>
-                    Loan Approval
-                </a>
-
-                <a href="{{ route('admin.approved-loans') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.approved-loans') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-check-double w-5"></i>
-                    Approved Loans
-                </a>
-
-                <a href="{{ route('admin.cbu') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.cbu') ? 'active text-gray-900' : 'text-gray-600' }}">
-                    <i class="fas fa-piggy-bank w-5"></i>
-                    Capital Build Up
+                    Loans Central
                 </a>
 
                 <div class="sidebar-section-label">Operations</div>
@@ -132,6 +109,11 @@
                 <x-info-banner variant="danger" title="Access denied" class="mb-4">
                     {{ session('role_denied') }}
                 </x-info-banner>
+                @endif
+                @if($inMembersCentral)
+                <x-admin-members-central-tabs />
+                @elseif($inLoansCentral)
+                <x-admin-loans-central-tabs />
                 @endif
                 @yield('content')
             </div>

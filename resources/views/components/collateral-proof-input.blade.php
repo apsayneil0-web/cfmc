@@ -1,4 +1,4 @@
-@props(['id', 'existingLabel' => null, 'parentModalId' => null, 'existingUrl' => null])
+@props(['id', 'existingLabel' => null, 'parentModalId' => null, 'existingUrl' => null, 'agreeCheckboxId' => null, 'required' => false])
 
 @once
 <style>
@@ -243,16 +243,35 @@
             }
         };
     }
+
+    // Keeps every "Take Photo" button that declares a data-agree-checkbox
+    // disabled until that Terms & Conditions checkbox is checked, so a
+    // farmer can't capture collateral proof before agreeing to the terms.
+    function collateralSyncAgreeGate(checkbox) {
+        document.querySelectorAll('[data-agree-checkbox="' + checkbox.id + '"]').forEach(function (btn) {
+            btn.disabled = !checkbox.checked;
+        });
+    }
+
+    document.addEventListener('change', function (event) {
+        if (event.target.matches('[data-agree-checkbox-source]')) {
+            collateralSyncAgreeGate(event.target);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-agree-checkbox-source]').forEach(collateralSyncAgreeGate);
+    });
 </script>
 @endonce
 
 <div class="d-flex gap-2 mb-2">
     @if($parentModalId)
-    <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="switchModal('{{ $parentModalId }}', '{{ $id }}_cameraModal')">
+    <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="switchModal('{{ $parentModalId }}', '{{ $id }}_cameraModal')" @if($agreeCheckboxId) disabled data-agree-checkbox="{{ $agreeCheckboxId }}" title="Please agree to the Terms & Conditions first" @endif>
         <i class="fas fa-camera me-1"></i> Take Photo
     </button>
     @else
-    <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" data-bs-toggle="modal" data-bs-target="#{{ $id }}_cameraModal">
+    <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" data-bs-toggle="modal" data-bs-target="#{{ $id }}_cameraModal" @if($agreeCheckboxId) disabled data-agree-checkbox="{{ $agreeCheckboxId }}" title="Please agree to the Terms & Conditions first" @endif>
         <i class="fas fa-camera me-1"></i> Take Photo
     </button>
     @endif
@@ -267,6 +286,43 @@
 
 <input type="file" name="documents" id="{{ $id }}" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
 <input type="file" id="{{ $id }}_file" class="d-none" accept=".pdf,.jpg,.jpeg,.png" onchange="syncCollateralProofFile('{{ $id }}_file', '{{ $id }}', '{{ $id }}_label')">
+
+@if($required && ! $existingUrl)
+{{-- Only enforced when there's no file on record yet — an edit form where
+     collateral proof was already submitted shouldn't force re-attaching one
+     just to save an unrelated change. --}}
+<p class="small text-danger mb-0 mt-1 d-none" id="{{ $id }}_requiredError">Please attach a photo or file of your collateral.</p>
+<script>
+    {{-- The real file input is display:none (it's just a target the camera/file
+         chooser buttons write into), and browsers silently skip the native
+         "required" validation bubble on hidden fields — so this is enforced
+         by hand on the enclosing form's submit instead. --}}
+    (function () {
+        var input = document.getElementById('{{ $id }}');
+        var error = document.getElementById('{{ $id }}_requiredError');
+        var form = input.closest('form');
+
+        if (!form) {
+            return;
+        }
+
+        form.addEventListener('submit', function (event) {
+            if (input.files.length === 0) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                error.classList.remove('d-none');
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+
+        input.addEventListener('change', function () {
+            if (input.files.length > 0) {
+                error.classList.add('d-none');
+            }
+        });
+    })();
+</script>
+@endif
 
 {{--
     Pushed to a stack rendered at the bottom of the page (outside this
