@@ -52,23 +52,41 @@ class ComplaintController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:in_progress,resolved',
-            'manager_response' => 'nullable|string|max:2000',
+            'manager_response' => 'required|string|max:2000',
         ]);
 
         $complaint->update([
             'status' => $validated['status'],
-            'manager_response' => $validated['manager_response'] ?? $complaint->manager_response,
+            'manager_response' => $validated['manager_response'],
         ]);
 
         $statusLabel = $validated['status'] === 'resolved' ? 'resolved' : 'marked in progress';
         $message = "Your complaint \"{$complaint->subject}\" has been {$statusLabel}.";
 
-        if (! empty($validated['manager_response'])) {
-            $message .= " Response: {$validated['manager_response']}";
-        }
+        $message .= " Response: {$validated['manager_response']}";
 
         Notification::notify($complaint->user_id, 'Complaint Update', $message, 'complaint_response');
 
         return redirect()->route('manager.complaints')->with('success', "Complaint \"{$complaint->subject}\" updated.");
+    }
+
+    /**
+     * Mark a complaint as viewed so the farmer knows it's been seen, even
+     * before the manager has decided on a status/response yet.
+     */
+    public function markViewed(Complaint $complaint)
+    {
+        if (! $complaint->viewed_at) {
+            $complaint->update(['viewed_at' => now()]);
+
+            Notification::notify(
+                $complaint->user_id,
+                'Complaint Viewed',
+                "Your complaint \"{$complaint->subject}\" has been viewed by the manager.",
+                'complaint_viewed',
+            );
+        }
+
+        return redirect()->route('manager.complaints')->with('success', "Complaint \"{$complaint->subject}\" marked as viewed.");
     }
 }

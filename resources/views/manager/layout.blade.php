@@ -14,6 +14,7 @@
             document.documentElement.setAttribute('data-bs-theme', theme);
         })();
     </script>
+    @include('partials.sidebar-collapse-init')
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -27,60 +28,60 @@
         <!-- Sidebar -->
         <aside class="app-sidebar w-64 shrink-0 border-r border-gray-200 bg-white shadow-sm" id="appSidebar">
             <div class="sidebar-brand p-6 border-b border-gray-200">
-                <h2 class="text-xl font-bold text-gray-900 mb-0">CFMC Manager</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-0">CFMC <span class="sidebar-label">Manager</span></h2>
                 <p class="text-sm text-gray-500 mb-0">Cooperative Management</p>
             </div>
 
             <nav class="p-4 space-y-1">
-                <a href="{{ route('manager.dashboard') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.dashboard') ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('manager.dashboard') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.dashboard') ? 'active text-gray-900' : 'text-gray-600' }}" title="Dashboard">
                     <i class="fas fa-chart-line w-5"></i>
-                    Dashboard
+                    <span class="sidebar-label">Dashboard</span>
                 </a>
 
                 <div class="sidebar-section-label">Members</div>
 
                 @php $inMembersCentral = request()->routeIs('manager.user-management', 'manager.membership', 'manager.farmer-profile'); @endphp
-                <a href="{{ route('manager.user-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inMembersCentral ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('manager.user-management') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inMembersCentral ? 'active text-gray-900' : 'text-gray-600' }}" title="Members Central">
                     <i class="fas fa-users w-5"></i>
-                    Members Central
+                    <span class="sidebar-label">Members Central</span>
                 </a>
 
                 <div class="sidebar-section-label">Loans &amp; Finance</div>
 
                 @php $inFinanceCentral = request()->routeIs('manager.financial', 'manager.cbu', 'manager.loan-request', 'manager.loan-management', 'manager.batch-loan-management', 'manager.loan-appointment', 'manager.payment'); @endphp
-                <a href="{{ route('manager.financial') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inFinanceCentral ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('manager.financial') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inFinanceCentral ? 'active text-gray-900' : 'text-gray-600' }}" title="Finance Central">
                     <i class="fas fa-wallet w-5"></i>
-                    Finance Central
+                    <span class="sidebar-label">Finance Central</span>
                 </a>
 
                 <div class="sidebar-section-label">Operations</div>
 
                 @php $inOperationsCentral = request()->routeIs('manager.schedule-approval', 'manager.machine-schedule', 'manager.machinery', 'manager.machine-usage'); @endphp
-                <a href="{{ route('manager.schedule-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inOperationsCentral ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('manager.schedule-approval') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inOperationsCentral ? 'active text-gray-900' : 'text-gray-600' }}" title="Operations Central">
                     <i class="fas fa-tractor w-5"></i>
-                    Operations Central
+                    <span class="sidebar-label">Operations Central</span>
                 </a>
 
                 <div class="sidebar-section-label">Engagement</div>
 
                 @php $inEngagementCentral = request()->routeIs('manager.complaints', 'manager.announcement'); @endphp
-                <a href="{{ route('manager.complaints') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inEngagementCentral ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('manager.complaints') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ $inEngagementCentral ? 'active text-gray-900' : 'text-gray-600' }}" title="Engagement Central">
                     <i class="fas fa-comments w-5"></i>
-                    Engagement Central
+                    <span class="sidebar-label">Engagement Central</span>
                 </a>
 
                 <div class="sidebar-section-label">Reports</div>
 
-                <a href="{{ route('manager.reporting') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.reporting') ? 'active text-gray-900' : 'text-gray-600' }}">
+                <a href="{{ route('manager.reporting') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('manager.reporting') ? 'active text-gray-900' : 'text-gray-600' }}" title="Reporting">
                     <i class="fas fa-file-alt w-5"></i>
-                    Reporting
+                    <span class="sidebar-label">Reporting</span>
                 </a>
 
                 <hr class="my-2 text-gray-200">
 
-                <button onclick="confirmLogout()" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger w-100 border-0 bg-transparent">
+                <button onclick="confirmLogout()" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-danger w-100 border-0 bg-transparent" title="Logout">
                     <i class="fas fa-sign-out-alt w-5"></i>
-                    Logout
+                    <span class="sidebar-label">Logout</span>
                 </button>
             </nav>
         </aside>
@@ -181,16 +182,31 @@
             var sidebar = document.getElementById('appSidebar');
             var backdrop = document.getElementById('sidebarBackdrop');
             var toggle = document.getElementById('sidebarToggle');
+            var html = document.documentElement;
+            var DESKTOP_BREAKPOINT = 992;
+            var STORAGE_KEY = 'cfmc-sidebar-collapsed';
 
             function closeSidebar() {
                 sidebar.classList.remove('is-open');
                 backdrop.classList.remove('is-open');
             }
 
+            function isDesktop() {
+                return window.innerWidth >= DESKTOP_BREAKPOINT;
+            }
+
+            // The collapsed state itself is already applied to <html> by the
+            // early <head> script (partials.sidebar-collapse-init), so first
+            // paint is never wrong — this just wires up the toggle click.
             if (toggle) {
                 toggle.addEventListener('click', function () {
-                    sidebar.classList.toggle('is-open');
-                    backdrop.classList.toggle('is-open');
+                    if (isDesktop()) {
+                        var collapsed = html.classList.toggle('sidebar-collapsed');
+                        localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+                    } else {
+                        sidebar.classList.toggle('is-open');
+                        backdrop.classList.toggle('is-open');
+                    }
                 });
             }
             backdrop.addEventListener('click', closeSidebar);

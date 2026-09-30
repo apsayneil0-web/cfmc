@@ -141,15 +141,17 @@
                         @endif
                     </td>
                     <td class="small">
-                        <div class="d-flex gap-1">
-                            <button type="button" class="icon-btn text-primary" title="View" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'viewModal{{ $loan->id }}')"><i class="fas fa-eye"></i></button>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'viewModal{{ $loan->id }}'); return false;">View</x-dropdown-item>
                             @if(!$loan->archived_at)
                                 @if(!in_array($loan->status, ['fully_paid', 'pending_disbursement']))
-                                <button type="button" class="icon-btn text-warning" title="Edit" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'editModal{{ $loan->id }}')"><i class="fas fa-edit"></i></button>
+                                <x-dropdown-item icon="fa-edit" color="warning" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'editModal{{ $loan->id }}'); return false;">Edit</x-dropdown-item>
                                 @endif
-                                <button type="button" class="icon-btn text-secondary" title="Archive" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'archiveModal{{ $loan->id }}')"><i class="fas fa-archive"></i></button>
+                                <x-dropdown-item icon="fa-archive" color="secondary" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'archiveModal{{ $loan->id }}'); return false;">Archive</x-dropdown-item>
+                            @else
+                                <x-dropdown-item icon="fa-box-open" color="success" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'unarchiveModal{{ $loan->id }}'); return false;">Restore</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
                 @endforeach
@@ -248,9 +250,9 @@
 <div class="modal fade" id="editModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Edit Loan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Loan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('manager.loan-management.update', $loan) }}" method="POST">
                 @csrf
@@ -271,7 +273,7 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">Save Changes</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -297,6 +299,31 @@
                     @csrf
                     @method('PATCH')
                     <button type="submit" class="btn btn-secondary">Archive</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+@if($loan->archived_at)
+<!-- Unarchive (Restore) Modal -->
+<div class="modal fade" id="unarchiveModal{{ $loan->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-box-open me-2"></i>Restore Loan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Restore LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} for {{ $loan->farmer->full_name }}? It will reappear on the active list.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ route('manager.loan-management.unarchive', $loan) }}" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-success">Restore</button>
                 </form>
             </div>
         </div>

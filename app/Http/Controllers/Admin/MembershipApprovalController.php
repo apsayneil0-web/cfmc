@@ -149,32 +149,31 @@ class MembershipApprovalController extends Controller
     }
 
     /**
-     * Reject a membership application.
+     * Reject a membership application, requiring a documented reason.
      */
     public function reject(Request $request, Farmer $farmer)
     {
         $validated = $request->validate([
-            'rejection_reason' => 'nullable|string|max:1000',
+            'rejection_reason' => 'required|string|max:1000',
         ]);
 
         $farmer->update([
             'status' => 'rejected',
-            'rejection_reason' => $validated['rejection_reason'] ?? null,
+            'rejection_reason' => $validated['rejection_reason'],
         ]);
 
         if ($farmer->user_id) {
-            $message = "{$farmer->full_name}'s membership application has been rejected.";
-
-            if (! empty($validated['rejection_reason'])) {
-                $message .= " Reason: {$validated['rejection_reason']}";
-            }
-
-            Notification::notify($farmer->user_id, 'Membership Application Rejected', $message, 'membership_rejected');
+            Notification::notify(
+                $farmer->user_id,
+                'Membership Application Rejected',
+                "{$farmer->full_name}'s membership application has been rejected. Reason: {$validated['rejection_reason']}",
+                'membership_rejected',
+            );
         }
 
-        ActivityLogger::log(Auth::user(), 'membership.rejected', "Rejected {$farmer->full_name}'s membership application.", $farmer, array_filter([
-            'reason' => $validated['rejection_reason'] ?? null,
-        ]));
+        ActivityLogger::log(Auth::user(), 'membership.rejected', "Rejected {$farmer->full_name}'s membership application.", $farmer, [
+            'reason' => $validated['rejection_reason'],
+        ]);
 
         return redirect()->route('admin.membership-approval')
             ->with('success', "{$farmer->full_name}'s membership application has been rejected.");

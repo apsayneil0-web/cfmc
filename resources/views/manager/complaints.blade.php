@@ -55,7 +55,12 @@
                 @forelse($complaints as $complaint)
                 <tr>
                     <td class="px-4 px-md-6 py-4">{{ $complaint->user->name ?? 'Unknown' }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $complaint->subject }}</td>
+                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">
+                        {{ $complaint->subject }}
+                        @unless($complaint->viewed_at)
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">New</span>
+                        @endunless
+                    </td>
                     <td class="px-4 px-md-6 py-4 text-muted"><span class="d-inline-block text-truncate align-middle" style="max-width: 220px;" title="{{ $complaint->description }}">{{ $complaint->description }}</span></td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $complaint->created_at->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></td>
@@ -84,6 +89,20 @@
                                     <p class="fw-semibold">{{ $complaint->subject }}</p>
                                     <label class="text-muted small">Description</label>
                                     <p>{{ $complaint->description }}</p>
+
+                                    @if($complaint->viewed_at)
+                                    <p class="text-muted small mb-3"><i class="fas fa-eye me-1"></i>Viewed on {{ $complaint->viewed_at->format('M d, Y g:ia') }} &mdash; the farmer has been notified.</p>
+                                    @else
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="markViewed{{ $complaint->id }}" onchange="if(this.checked){ document.getElementById('markViewedForm{{ $complaint->id }}').submit(); }">
+                                        <label class="form-check-label" for="markViewed{{ $complaint->id }}">Mark as viewed (notifies the farmer their complaint has been seen)</label>
+                                    </div>
+                                    <form id="markViewedForm{{ $complaint->id }}" action="{{ route('manager.complaints.mark-viewed', $complaint->id) }}" method="POST" class="d-none">
+                                        @csrf
+                                        @method('PATCH')
+                                    </form>
+                                    @endif
+
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Status</label>
                                         <select name="status" class="form-select" required>
@@ -93,7 +112,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Response to Farmer</label>
-                                        <textarea name="manager_response" class="form-control" rows="4" placeholder="Explain the action taken...">{{ $complaint->manager_response }}</textarea>
+                                        <textarea name="manager_response" class="form-control" rows="4" placeholder="Explain the action taken..." required>{{ $complaint->manager_response }}</textarea>
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-light">

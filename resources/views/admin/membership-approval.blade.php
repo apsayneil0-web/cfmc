@@ -169,8 +169,9 @@
                                 <form id="rejectForm{{ $application->id }}" action="{{ route('admin.membership-approval.reject', $application->id) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
-                                    <label class="form-label fw-semibold small">Reason for Rejection <span class="text-muted">(required if rejecting)</span></label>
-                                    <textarea name="rejection_reason" class="form-control" rows="2" placeholder="Explain why this application does not meet the cooperative's requirements..."></textarea>
+                                    <label class="form-label fw-semibold small">Reason for Rejection <span class="text-danger">*</span> <span class="text-muted">(required if rejecting)</span></label>
+                                    <textarea name="rejection_reason" class="form-control" rows="2" maxlength="1000" placeholder="Explain why this application does not meet the cooperative's requirements..."></textarea>
+                                    <div class="invalid-feedback">Please provide a reason for rejecting this application.</div>
                                 </form>
                                 <form id="approveForm{{ $application->id }}" action="{{ route('admin.membership-approval.approve', $application->id) }}" method="POST" class="d-none">
                                     @csrf
@@ -245,8 +246,19 @@
 
     // Shows a review step before an approve/reject form is actually submitted.
     function confirmMembershipAction(type, applicationId, applicantName) {
-        pendingMembershipAction = { type: type, id: applicationId };
         var isApprove = type === 'approve';
+
+        if (!isApprove) {
+            var reasonField = document.querySelector('#rejectForm' + applicationId + ' textarea[name="rejection_reason"]');
+            if (!reasonField.value.trim()) {
+                reasonField.classList.add('is-invalid');
+                reasonField.focus();
+                return;
+            }
+            reasonField.classList.remove('is-invalid');
+        }
+
+        pendingMembershipAction = { type: type, id: applicationId };
 
         document.getElementById('actionConfirmBadge').className =
             'action-confirm-icon-badge d-inline-flex align-items-center justify-content-center rounded-circle mb-3 ' + (isApprove ? 'success' : 'danger');

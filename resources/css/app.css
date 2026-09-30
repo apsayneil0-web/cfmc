@@ -601,12 +601,9 @@ body.bg-light {
 }
 
 .sidebar-toggle {
-    display: none;
+    display: inline-flex;
 }
 @media (max-width: 991.98px) {
-    .sidebar-toggle {
-        display: inline-flex;
-    }
     .app-sidebar {
         position: fixed;
         inset: 0 auto 0 0;
@@ -626,6 +623,44 @@ body.bg-light {
     }
     .sidebar-backdrop.is-open {
         display: block;
+    }
+}
+
+/* Desktop sidebar collapse (Gmail-style icon rail), persisted via
+   localStorage. Keyed off a class on <html> (set synchronously in <head>,
+   same trick as the theme script above) rather than on the sidebar itself,
+   so the collapsed state applies before first paint instead of flashing
+   expanded on every navigation and only collapsing once body-end JS runs.
+   Scoped to >=992px so it never fights the mobile off-canvas drawer above,
+   even if the class is still present after a resize. */
+@media (min-width: 992px) {
+    html.sidebar-collapsed .app-sidebar {
+        width: 4.5rem;
+        overflow-x: hidden;
+        transition: width 200ms var(--ease);
+    }
+    html.sidebar-collapsed .app-sidebar .sidebar-brand {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        text-align: center;
+        overflow: hidden;
+    }
+    html.sidebar-collapsed .app-sidebar .sidebar-brand h2 {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
+    }
+    html.sidebar-collapsed .app-sidebar .sidebar-brand p,
+    html.sidebar-collapsed .sidebar-label,
+    html.sidebar-collapsed .sidebar-section-label {
+        display: none;
+    }
+    html.sidebar-collapsed .app-sidebar .sidebar-link,
+    html.sidebar-collapsed .app-sidebar nav button.sidebar-link {
+        justify-content: center;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
 }
 

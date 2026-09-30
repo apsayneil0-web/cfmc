@@ -37,6 +37,7 @@
                     <option value="">All Status</option>
                     <option value="published" {{ request('status') == 'published' ? 'selected' : '' }}>Published</option>
                     <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'status']))
@@ -76,13 +77,15 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $announcement->audience_label }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($announcement->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $announcement->id }}" />
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $announcement->id }}">View</x-dropdown-item>
                             @if($announcement->status !== 'archived')
-                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $announcement->id }}" />
-                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $announcement->id }}" />
+                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $announcement->id }}">Edit</x-dropdown-item>
+                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $announcement->id }}">Archive</x-dropdown-item>
+                            @else
+                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $announcement->id }}">Restore</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
 
@@ -150,6 +153,29 @@
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn btn-secondary">Archive</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @else
+                <!-- Unarchive (Restore) Modal -->
+                <div class="modal fade" id="unarchiveModal{{ $announcement->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold"><i class="fas fa-box-open me-2"></i>Restore Announcement</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">Restore "{{ $announcement->title }}"? It will return to the list as a <strong>Draft</strong>. Edit it and set it to Published to notify farmers again.</p>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{{ route('manager.announcement.unarchive', $announcement) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-success">Restore</button>
                                 </form>
                             </div>
                         </div>

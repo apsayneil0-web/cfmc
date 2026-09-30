@@ -78,13 +78,13 @@
                     </td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View Details" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}" />
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View Details</x-dropdown-item>
                             @if($req->status === 'pending')
-                            <x-icon-button icon="fa-check" color="success" title="Approve" data-bs-toggle="modal" data-bs-target="#approveModal{{ $req->id }}" />
-                            <x-icon-button icon="fa-times" color="danger" title="Deny" data-bs-toggle="modal" data-bs-target="#denyModal{{ $req->id }}" />
+                            <x-dropdown-item icon="fa-check" color="success" data-bs-toggle="modal" data-bs-target="#approveModal{{ $req->id }}">Approve</x-dropdown-item>
+                            <x-dropdown-item icon="fa-times" color="danger" data-bs-toggle="modal" data-bs-target="#denyModal{{ $req->id }}">Deny</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
 
@@ -191,7 +191,7 @@
                                     <p>Deny the {{ $req->machinery }} request for <strong>{{ $req->display_name }}</strong> on {{ $req->scheduled_date->format('M d, Y') }}?</p>
                                     <div class="mb-0">
                                         <label class="form-label fw-semibold">Reason for denial <span class="text-danger">*</span></label>
-                                        <textarea name="denial_reason" rows="2" class="form-control" placeholder="e.g. Machinery unavailable / scheduling conflict" required></textarea>
+                                        <textarea name="denial_reason" rows="2" class="form-control" maxlength="1000" placeholder="e.g. Machinery unavailable / scheduling conflict" required></textarea>
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-light">

@@ -48,20 +48,14 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $batch->loanRequests->max('updated_at')?->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="request('status') === 'archived' ? 'Archived' : 'Approved'" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#approvedBatchModal{{ $batch->id }}">
-                                <i class="fas fa-eye me-1"></i> View
-                            </button>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#approvedBatchModal{{ $batch->id }}">View</x-dropdown-item>
                             @if(request('status') === 'archived')
-                            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#unarchiveBatchModal{{ $batch->id }}">
-                                <i class="fas fa-box-open me-1"></i> Unarchive
-                            </button>
+                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveBatchModal{{ $batch->id }}">Unarchive</x-dropdown-item>
                             @else
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#archiveBatchModal{{ $batch->id }}">
-                                <i class="fas fa-archive me-1"></i> Archive
-                            </button>
+                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveBatchModal{{ $batch->id }}">Archive</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
                 @endforeach

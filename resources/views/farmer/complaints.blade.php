@@ -52,22 +52,29 @@
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-dark fw-medium" data-label="Subject">{{ $complaint->subject }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Submitted">{{ $complaint->created_at->format('M d, Y') }}</td>
-                    <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></td>
+                    <td class="px-4 px-md-6 py-4" data-label="Status">
+                        <x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" />
+                        @if($complaint->viewed_at)
+                        <i class="fas fa-eye text-muted ms-1" title="Viewed by manager on {{ $complaint->viewed_at->format('M d, Y g:ia') }}"></i>
+                        @endif
+                    </td>
                     <td class="px-4 px-md-6 py-4" data-label="Actions">
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $complaint->id }}"><i class="fas fa-eye"></i></button>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $complaint->id }}">View</x-dropdown-item>
                             @if($complaint->status == 'draft')
-                            <button class="btn btn-sm btn-outline-warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $complaint->id }}"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $complaint->id }}"><i class="fas fa-trash"></i></button>
+                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $complaint->id }}">Edit</x-dropdown-item>
+                            <x-dropdown-item icon="fa-trash" color="danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $complaint->id }}">Delete</x-dropdown-item>
                             @endif
                             @if($complaint->status == 'resolved')
-                            <form action="{{ route('farmer.complaints.reopen', $complaint->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Reopen"><i class="fas fa-rotate-left"></i></button>
-                            </form>
+                            <li>
+                                <form action="{{ route('farmer.complaints.reopen', $complaint->id) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="dropdown-item"><i class="fas fa-rotate-left me-2 fa-fw text-secondary"></i>Reopen</button>
+                                </form>
+                            </li>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
 
@@ -86,6 +93,9 @@
                                 <p>{{ $complaint->description }}</p>
                                 <label class="text-muted small">Status</label>
                                 <p><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></p>
+                                @if($complaint->viewed_at)
+                                <p class="text-muted small"><i class="fas fa-eye me-1"></i>Viewed by the manager on {{ $complaint->viewed_at->format('M d, Y g:ia') }}</p>
+                                @endif
                                 @if($complaint->manager_response)
                                 <label class="text-muted small">Manager Response</label>
                                 <p class="mb-0">{{ $complaint->manager_response }}</p>

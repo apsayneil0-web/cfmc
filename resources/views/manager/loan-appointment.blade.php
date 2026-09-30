@@ -91,28 +91,25 @@
                     </td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($appt->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex align-items-center gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View Details" data-bs-toggle="modal" data-bs-target="#viewModal{{ $appt->id }}" />
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $appt->id }}">View Details</x-dropdown-item>
 
                             @if($appt->status === 'pending')
-                            <div class="vr mx-1"></div>
-                            <x-icon-button icon="fa-check" color="success" title="Approve Appointment" data-bs-toggle="modal" data-bs-target="#approveModal{{ $appt->id }}" />
+                            <x-dropdown-item icon="fa-check" color="success" data-bs-toggle="modal" data-bs-target="#approveModal{{ $appt->id }}">Approve Appointment</x-dropdown-item>
                             @endif
 
                             @if($appt->status === 'approved' && $appt->requested_amount && ! $appt->loan_request_id)
-                            <div class="vr mx-1"></div>
                                 @if($appt->user->farmer)
-                                <x-icon-button icon="fa-paper-plane" color="info" title="Submit Loan Request to Admin" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}" />
+                                <x-dropdown-item icon="fa-paper-plane" color="info" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}">Submit Loan Request to Admin</x-dropdown-item>
                                 @else
-                                <span class="icon-btn text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle"></i></span>
+                                <li><span class="dropdown-item disabled text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle me-2 fa-fw"></i>Submit Loan Request to Admin</span></li>
                                 @endif
                             @endif
 
                             @if($appt->status !== 'cancelled' && ! $appt->loan_request_id)
-                            <div class="vr mx-1"></div>
-                            <x-icon-button icon="fa-calendar-alt" color="warning" title="Reschedule Appointment" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $appt->id }}" />
+                            <x-dropdown-item icon="fa-calendar-alt" color="warning" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $appt->id }}">Reschedule Appointment</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
 

@@ -131,7 +131,8 @@
                                     @csrf
                                     @method('PATCH')
                                     <label class="form-label fw-semibold small">Reason for Denial <span class="text-muted">(required if denying, applied to all members)</span></label>
-                                    <textarea name="denial_reason" class="form-control" rows="2" placeholder="Explain why this batch does not meet the cooperative's lending criteria..."></textarea>
+                                    <textarea name="denial_reason" class="form-control" rows="2" maxlength="1000" placeholder="Explain why this batch does not meet the cooperative's lending criteria..."></textarea>
+                                    <div class="invalid-feedback">Please provide a reason for the denial.</div>
                                 </form>
                                 <form id="approveFormBatch{{ $batch->id }}" action="{{ route('admin.loan-approval.batch-approve', $batch) }}" method="POST" class="d-none">
                                     @csrf
@@ -259,7 +260,8 @@
                                     @csrf
                                     @method('PATCH')
                                     <label class="form-label fw-semibold small">Reason for Denial <span class="text-muted">(required if denying)</span></label>
-                                    <textarea name="denial_reason" class="form-control" rows="2" placeholder="Explain why this request does not meet the cooperative's lending criteria..."></textarea>
+                                    <textarea name="denial_reason" class="form-control" rows="2" maxlength="1000" placeholder="Explain why this request does not meet the cooperative's lending criteria..."></textarea>
+                                    <div class="invalid-feedback">Please provide a reason for the denial.</div>
                                 </form>
                                 <form id="approveForm{{ $req->id }}" action="{{ route('admin.loan-approval.approve', $req) }}" method="POST" class="d-none">
                                     @csrf

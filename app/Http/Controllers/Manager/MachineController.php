@@ -15,14 +15,17 @@ class MachineController extends Controller
      */
     public function index(Request $request)
     {
-        $machines = Machine::whereNull('archived_at')->get();
+        $activeMachines = Machine::whereNull('archived_at')->get();
+        $showArchived = $request->boolean('archived');
 
         $stats = [
-            'total' => $machines->count(),
-            'total_units' => $machines->sum('quantity'),
-            'with_operator' => $machines->whereNotNull('assigned_operator')->count(),
+            'total' => $activeMachines->count(),
+            'total_units' => $activeMachines->sum('quantity'),
+            'with_operator' => $activeMachines->whereNotNull('assigned_operator')->count(),
             'archived' => Machine::whereNotNull('archived_at')->count(),
         ];
+
+        $machines = $showArchived ? Machine::whereNotNull('archived_at')->get() : $activeMachines;
 
         if ($request->filled('type')) {
             $machines = $machines->where('type', $request->string('type'));
@@ -45,16 +48,19 @@ class MachineController extends Controller
         // one at save time, so a stale preview here is harmless.
         $serialPreview = $existingTypes->mapWithKeys(fn ($type) => [$type => Machine::generateSerialNumber($type)]);
 
-        return view('manager.machinery', compact('machines', 'stats', 'existingTypes', 'serialPreview'));
+        return view('manager.machinery', compact('machines', 'stats', 'existingTypes', 'serialPreview', 'showArchived'));
     }
 
     public function store(Request $request)
     {
-        $validated = $this->validateRequest($request);
+        // Serial number is auto-generated and not editable on the Add form.
+        // Drop whatever the (read-only) field submitted before validating,
+        // so a stale client-side preview can never trip the uniqueness
+        // check — the real value is always computed fresh below.
+        $request->merge(['serial_number' => null]);
 
-        if (empty($validated['serial_number'])) {
-            $validated['serial_number'] = Machine::generateSerialNumber($validated['type']);
-        }
+        $validated = $this->validateRequest($request);
+        $validated['serial_number'] = Machine::generateSerialNumber($validated['type']);
 
         Machine::create($validated);
 
@@ -78,6 +84,27 @@ class MachineController extends Controller
 
         return redirect()->route('manager.machinery')
             ->with('success', "{$machine->name} archived.");
+    }
+
+    /**
+     * Restore an archived machine back into the active fleet, unless another
+     * active machine has since taken the same name.
+     */
+    public function unarchive(Machine $machine)
+    {
+        $nameTaken = Machine::whereNull('archived_at')
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower(trim($machine->name))])
+            ->exists();
+
+        if ($nameTaken) {
+            return redirect()->route('manager.machinery', ['archived' => 1])
+                ->withErrors(['name' => "Cannot restore {$machine->name}: an active machine already uses that name. Rename or archive it first."]);
+        }
+
+        $machine->update(['archived_at' => null]);
+
+        return redirect()->route('manager.machinery', ['archived' => 1])
+            ->with('success', "{$machine->name} restored to the active fleet.");
     }
 
     private function validateRequest(Request $request, ?int $excludeId = null): array

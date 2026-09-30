@@ -13,6 +13,11 @@ class Complaint extends Model
         'description',
         'status',
         'manager_response',
+        'viewed_at',
+    ];
+
+    protected $casts = [
+        'viewed_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

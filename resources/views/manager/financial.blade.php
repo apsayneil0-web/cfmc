@@ -149,11 +149,10 @@
                         <input type="date" name="expense_date" class="form-control" value="{{ now()->toDateString() }}" required>
                     </div>
                     <div>
-                        <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
-                        <select name="status" class="form-select" required>
-                            <option value="paid">Paid</option>
-                            <option value="pending">Pending</option>
-                        </select>
+                        <label class="form-label fw-semibold">Status</label>
+                        <input type="text" class="form-control" value="Pending" disabled>
+                        <input type="hidden" name="status" value="pending">
+                        <div class="form-text">New expenses are recorded as Pending.</div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

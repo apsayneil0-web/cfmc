@@ -54,10 +54,10 @@
                     <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucfirst($appointment->status)" /></td>
                     <td class="px-4 px-md-6 py-4" data-label="Actions">
                         @if($appointment->status == 'pending')
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-warning" title="Reschedule" data-bs-toggle="modal" data-bs-target="#editModal{{ $appointment->id }}"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" title="Cancel" data-bs-toggle="modal" data-bs-target="#cancelModal{{ $appointment->id }}"><i class="fas fa-times"></i></button>
-                        </div>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $appointment->id }}">Reschedule</x-dropdown-item>
+                            <x-dropdown-item icon="fa-times" color="danger" data-bs-toggle="modal" data-bs-target="#cancelModal{{ $appointment->id }}">Cancel</x-dropdown-item>
+                        </x-action-dropdown>
                         @else
                         <span class="text-muted small">—</span>
                         @endif

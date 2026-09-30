@@ -145,18 +145,18 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$req->member_type === 'member' ? 'Member' : 'Non-member'" /></td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $req->id }}" />
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $req->id }}">View</x-dropdown-item>
                             @if($showArchived)
-                            <x-icon-button icon="fa-box-open" color="success" title="Restore" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $req->id }}" />
+                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $req->id }}">Restore</x-dropdown-item>
                             @else
-                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}" />
+                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}">Edit</x-dropdown-item>
                             @if($req->status === 'approved')
-                            <x-icon-button icon="fa-clipboard-check" color="success" title="Complete & Record Yield" data-bs-toggle="modal" data-bs-target="#completeModal{{ $req->id }}" />
+                            <x-dropdown-item icon="fa-clipboard-check" color="success" data-bs-toggle="modal" data-bs-target="#completeModal{{ $req->id }}">Complete & Record Yield</x-dropdown-item>
                             @endif
-                            <x-icon-button icon="fa-archive" color="danger" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}" />
+                            <x-dropdown-item icon="fa-archive" color="danger" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}">Archive</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
 

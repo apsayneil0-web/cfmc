@@ -185,10 +185,10 @@
                                 <td class="small text-muted">{{ $member->purpose }}</td>
                                 <td class="small text-muted">{{ $member->repayment_terms_months }} months</td>
                                 <td class="small">
-                                    <div class="d-flex gap-1">
-                                        <button type="button" class="btn btn-sm btn-outline-warning" title="Edit" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'editModal{{ $member->id }}')"><i class="fas fa-edit"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Remove from batch" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'removeMemberModal{{ $member->id }}')"><i class="fas fa-user-minus"></i></button>
-                                    </div>
+                                    <x-action-dropdown>
+                                        <x-dropdown-item icon="fa-edit" color="warning" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'editModal{{ $member->id }}'); return false;">Edit</x-dropdown-item>
+                                        <x-dropdown-item icon="fa-user-minus" color="danger" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'removeMemberModal{{ $member->id }}'); return false;">Remove from batch</x-dropdown-item>
+                                    </x-action-dropdown>
                                 </td>
                             </tr>
                             @empty
@@ -248,6 +248,7 @@
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="denied" {{ request('status') == 'denied' ? 'selected' : '' }}>Denied</option>
+                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'status']))
@@ -326,13 +327,17 @@
                         <td class="small text-muted">{{ $member->repayment_terms_months }} months</td>
                         <td class="small"><x-status-badge :status="ucfirst($member->status)" /></td>
                         <td class="small">
-                            <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-sm btn-outline-primary" title="View" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'viewModal{{ $member->id }}')"><i class="fas fa-eye"></i></button>
+                            <x-action-dropdown>
+                                <x-dropdown-item icon="fa-eye" color="primary" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'viewModal{{ $member->id }}'); return false;">View</x-dropdown-item>
                                 @if($member->status === 'pending')
-                                <button type="button" class="btn btn-sm btn-outline-warning" title="Edit" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'editModal{{ $member->id }}')"><i class="fas fa-edit"></i></button>
+                                <x-dropdown-item icon="fa-edit" color="warning" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'editModal{{ $member->id }}'); return false;">Edit</x-dropdown-item>
                                 @endif
-                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Archive" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'archiveModal{{ $member->id }}')"><i class="fas fa-archive"></i></button>
-                            </div>
+                                @if($member->archived_at)
+                                <x-dropdown-item icon="fa-box-open" color="success" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'unarchiveModal{{ $member->id }}'); return false;">Restore</x-dropdown-item>
+                                @elseif($member->status === 'denied')
+                                <x-dropdown-item icon="fa-archive" color="secondary" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'archiveModal{{ $member->id }}'); return false;">Archive</x-dropdown-item>
+                                @endif
+                            </x-action-dropdown>
                         </td>
                     </tr>
                     @endforeach
@@ -386,7 +391,11 @@
                             @if($req->status === 'approved' && !$req->loan)
                             <x-icon-button icon="fa-file-invoice-dollar" color="success" title="Finalize into Loan" data-bs-toggle="modal" data-bs-target="#finalizeModal{{ $req->id }}" />
                             @endif
+                            @if($req->archived_at)
+                            <x-icon-button icon="fa-box-open" color="success" title="Restore" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $req->id }}" />
+                            @elseif($req->status === 'denied')
                             <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}" />
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -436,7 +445,7 @@
                                 <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Edit Loan Request</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <form action="{{ route('manager.loan-request.update', $req) }}" method="POST">
+                            <form action="{{ route('manager.loan-request.update', $req) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 <input type="hidden" name="source_modal" value="editModal{{ $req->id }}">
@@ -499,6 +508,17 @@
                                             <label class="form-label fw-semibold">Collateral</label>
                                             <input type="text" name="collateral" class="form-control" value="{{ $req->collateral }}">
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label class="form-label fw-semibold">Collateral Proof</label>
+                                        <input type="file" name="documents" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+                                        @if($req->documents_path)
+                                        <div class="form-text">
+                                            Current file: <a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank">View Photo</a>. Choosing a new file will replace it.
+                                        </div>
+                                        @else
+                                        <div class="form-text">No file attached yet.</div>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-light">
@@ -576,6 +596,31 @@
                         </div>
                     </div>
                 </div>
+
+                @if($req->archived_at)
+                <!-- Unarchive (Restore) Modal -->
+                <div class="modal fade" id="unarchiveModal{{ $req->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold"><i class="fas fa-box-open me-2"></i>Restore Loan Request</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">Restore LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }} for {{ $req->farmer->full_name }}? It will reappear on the active list as a denied request.</p>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="{{ route('manager.loan-request.unarchive', $req) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-success">Restore</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
     @endforeach
 </div>
 

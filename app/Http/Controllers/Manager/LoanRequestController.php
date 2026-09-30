@@ -11,6 +11,7 @@ use App\Models\LoanRequest;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class LoanRequestController extends Controller
 {
@@ -33,11 +34,20 @@ class LoanRequestController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch'])
-            ->whereNull('archived_at');
+        $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
+        // Archived requests are hidden unless the manager explicitly filters
+        // for "Archived". Only denied requests can be archived; pending batch
+        // members removed from a batch also carry archived_at but are not
+        // archived records, so they stay out of this view.
+        if ($request->input('status') === 'archived') {
+            $query->whereNotNull('archived_at')->where('status', 'denied');
+        } else {
+            $query->whereNull('archived_at');
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->string('status'));
+            }
         }
 
         if ($request->filled('search')) {
@@ -203,6 +213,15 @@ class LoanRequestController extends Controller
 
         $validated = $this->validateRequest($request, $loan_request->id);
 
+        $documentsPath = $loan_request->documents_path;
+        if ($request->hasFile('documents')) {
+            if ($documentsPath) {
+                Storage::disk('public')->delete($documentsPath);
+            }
+            $document = $request->file('documents');
+            $documentsPath = $document->storeAs('loan_documents', time().'_'.$document->getClientOriginalName(), 'public');
+        }
+
         $loan_request->update([
             'farmer_id' => $validated['farmer_id'],
             'type' => $validated['type'],
@@ -211,6 +230,7 @@ class LoanRequestController extends Controller
             'purpose' => $validated['purpose'],
             'repayment_terms_months' => $validated['repayment_terms_months'],
             'collateral' => $validated['collateral'] ?? null,
+            'documents_path' => $documentsPath,
         ]);
 
         return redirect()->route('manager.loan-request')
@@ -335,10 +355,25 @@ class LoanRequestController extends Controller
 
     public function archive(LoanRequest $loan_request)
     {
+        abort_if($loan_request->status !== 'denied', 422, 'Only denied/rejected loan requests can be archived.');
+
         $loan_request->update(['archived_at' => now()]);
 
         return redirect()->route('manager.loan-request')
             ->with('success', 'Loan request archived.');
+    }
+
+    /**
+     * Restore an archived (denied) loan request back onto the active list.
+     */
+    public function unarchive(LoanRequest $loan_request)
+    {
+        abort_if($loan_request->status !== 'denied' || ! $loan_request->archived_at, 422, 'Only archived denied/rejected loan requests can be restored.');
+
+        $loan_request->update(['archived_at' => null]);
+
+        return redirect()->route('manager.loan-request', ['status' => 'archived'])
+            ->with('success', 'Loan request restored.');
     }
 
     /**

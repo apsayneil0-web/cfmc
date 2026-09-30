@@ -38,6 +38,9 @@
     <x-table-toolbar>
         <x-slot:filters>
             <form method="GET" action="{{ route('manager.machinery') }}" class="d-flex flex-wrap align-items-center gap-3">
+                @if($showArchived)
+                <input type="hidden" name="archived" value="1">
+                @endif
                 <div class="position-relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
@@ -50,11 +53,20 @@
                 </select>
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'type']))
-                <a href="{{ route('manager.machinery') }}" class="btn btn-link btn-sm">Clear</a>
+                <a href="{{ route('manager.machinery', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
         </x-slot:filters>
         <x-slot:actions>
+            @if($showArchived)
+            <a href="{{ route('manager.machinery', request()->except('archived')) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="fas fa-arrow-left"></i><span>Back to Active</span>
+            </a>
+            @else
+            <a href="{{ route('manager.machinery', array_merge(request()->query(), ['archived' => 1])) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="fas fa-box-archive"></i><span>View Archived</span>
+            </a>
+            @endif
             <a href="{{ route('manager.machine-usage') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
                 <i class="fas fa-chart-line"></i><span>Usage Monitor</span>
             </a>
@@ -91,16 +103,20 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->daily_hectare_limit }} ha/day</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->assigned_operator ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewMachineModal{{ $machine->id }}" />
-                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editMachineModal{{ $machine->id }}" />
-                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveMachineModal{{ $machine->id }}" />
-                        </div>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewMachineModal{{ $machine->id }}">View</x-dropdown-item>
+                            @if($showArchived)
+                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveMachineModal{{ $machine->id }}">Restore</x-dropdown-item>
+                            @else
+                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editMachineModal{{ $machine->id }}">Edit</x-dropdown-item>
+                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveMachineModal{{ $machine->id }}">Archive</x-dropdown-item>
+                            @endif
+                        </x-action-dropdown>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">No machinery on record yet.</td>
+                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived machinery.' : 'No machinery on record yet.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -226,6 +242,31 @@
         </div>
     </div>
 </div>
+
+@if($machine->archived_at)
+<!-- Unarchive (Restore) Modal -->
+<div class="modal fade" id="unarchiveMachineModal{{ $machine->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-box-open me-2"></i>Restore Machine</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Restore MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }} ({{ $machine->name }})? It will return to the active fleet and become bookable again.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ route('manager.machinery.unarchive', $machine) }}" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-success">Restore</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @endforeach
 
 <!-- Add Machine Modal -->
@@ -262,8 +303,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Serial Number</label>
-                            <input type="text" name="serial_number" id="addSerialNumber" class="form-control" placeholder="Auto-generated if left blank" value="{{ old('serial_number') }}">
-                            <small class="text-muted">Format: CFMC-[code]-[year]-[number], e.g. CFMC-HV-{{ now()->year }}-001.</small>
+                            <input type="text" name="serial_number" id="addSerialNumber" class="form-control" placeholder="Auto-generated" value="{{ old('serial_number') }}" readonly>
+                            <small class="text-muted">Automatically generated (CFMC-[code]-[year]-[number]) — cannot be edited.</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
@@ -356,30 +397,16 @@
             return type.trim().substring(0, 2).toUpperCase();
         }
 
-        var serialEditedByHand = false;
-
-        serialInput.addEventListener('input', function () {
-            if (!serialInput.dataset.syncing) {
-                serialEditedByHand = true;
-            }
-        });
-
         function updateSerialPreview() {
             var type = typeInput.value.trim();
 
             if (!type) {
-                serialInput.placeholder = 'Auto-generated if left blank';
+                serialInput.placeholder = 'Auto-generated';
+                serialInput.value = '';
                 return;
             }
 
-            var preview = SERIAL_PREVIEW[type] || ('CFMC-' + guessTypeCode(type) + '-' + CURRENT_YEAR + '-001');
-            serialInput.placeholder = 'Auto: ' + preview;
-
-            if (!serialEditedByHand) {
-                serialInput.dataset.syncing = '1';
-                serialInput.value = preview;
-                delete serialInput.dataset.syncing;
-            }
+            serialInput.value = SERIAL_PREVIEW[type] || ('CFMC-' + guessTypeCode(type) + '-' + CURRENT_YEAR + '-001');
         }
 
         typeInput.addEventListener('input', updateSerialPreview);

@@ -118,12 +118,14 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::post('/manager/loan-request/{loan_request}/finalize', [LoanRequestController::class, 'finalize'])->name('manager.loan-request.finalize');
     Route::post('/manager/loan-request/batch/{batch}/finalize', [LoanRequestController::class, 'finalizeBatch'])->name('manager.loan-request.batch-finalize');
     Route::patch('/manager/loan-request/{loan_request}/archive', [LoanRequestController::class, 'archive'])->name('manager.loan-request.archive');
+    Route::patch('/manager/loan-request/{loan_request}/unarchive', [LoanRequestController::class, 'unarchive'])->name('manager.loan-request.unarchive');
     Route::patch('/manager/loan-request/{loan_request}/remove-from-batch', [LoanRequestController::class, 'removeBatchMember'])->name('manager.loan-request.remove-batch-member');
 
     Route::get('/manager/loan-management', [LoanManagementController::class, 'index'])->name('manager.loan-management');
     Route::put('/manager/loan-management/{loan}', [LoanManagementController::class, 'update'])->name('manager.loan-management.update');
     Route::patch('/manager/loan-management/{loan}/disburse', [LoanManagementController::class, 'disburse'])->name('manager.loan-management.disburse');
     Route::patch('/manager/loan-management/{loan}/archive', [LoanManagementController::class, 'archive'])->name('manager.loan-management.archive');
+    Route::patch('/manager/loan-management/{loan}/unarchive', [LoanManagementController::class, 'unarchive'])->name('manager.loan-management.unarchive');
 
     Route::get('/manager/batch-loan-management', [BatchLoanManagementController::class, 'index'])->name('manager.batch-loan-management');
 
@@ -143,16 +145,19 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::post('/manager/machinery', [MachineController::class, 'store'])->name('manager.machinery.store');
     Route::put('/manager/machinery/{machine}', [MachineController::class, 'update'])->name('manager.machinery.update');
     Route::patch('/manager/machinery/{machine}/archive', [MachineController::class, 'archive'])->name('manager.machinery.archive');
+    Route::patch('/manager/machinery/{machine}/unarchive', [MachineController::class, 'unarchive'])->name('manager.machinery.unarchive');
 
     Route::get('/manager/machine-usage', [MachineUsageController::class, 'index'])->name('manager.machine-usage');
 
     Route::get('/manager/complaints', [ManagerComplaintController::class, 'index'])->name('manager.complaints');
     Route::patch('/manager/complaints/{complaint}/respond', [ManagerComplaintController::class, 'respond'])->name('manager.complaints.respond');
+    Route::patch('/manager/complaints/{complaint}/mark-viewed', [ManagerComplaintController::class, 'markViewed'])->name('manager.complaints.mark-viewed');
 
     Route::get('/manager/announcement', [AnnouncementController::class, 'index'])->name('manager.announcement');
     Route::post('/manager/announcement', [AnnouncementController::class, 'store'])->name('manager.announcement.store');
     Route::put('/manager/announcement/{announcement}', [AnnouncementController::class, 'update'])->name('manager.announcement.update');
     Route::patch('/manager/announcement/{announcement}/archive', [AnnouncementController::class, 'archive'])->name('manager.announcement.archive');
+    Route::patch('/manager/announcement/{announcement}/unarchive', [AnnouncementController::class, 'unarchive'])->name('manager.announcement.unarchive');
 
     Route::get('/manager/reporting', [ReportController::class, 'index'])->name('manager.reporting');
     Route::get('/manager/reporting/export', [ReportController::class, 'export'])->name('manager.reporting.export');

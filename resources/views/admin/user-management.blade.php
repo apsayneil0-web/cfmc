@@ -95,27 +95,27 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
+                        <x-action-dropdown>
                             @if($user->roleID != 1)
-                            <button class="btn btn-sm btn-outline-primary" title="View" onclick="viewUser({{ $user->id }})"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-sm btn-outline-warning" title="Edit" onclick="editUser({{ $user->id }})"><i class="fas fa-edit"></i></button>
+                            <x-dropdown-item icon="fa-eye" color="primary" onclick="viewUser({{ $user->id }}); return false;">View</x-dropdown-item>
+                            <x-dropdown-item icon="fa-edit" color="warning" onclick="editUser({{ $user->id }}); return false;">Edit</x-dropdown-item>
                             @endif
                             @if($user->roleID != 1)
-                            <button class="btn btn-sm btn-outline-primary" title="Change Password" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }})"><i class="fas fa-key"></i></button>
+                            <x-dropdown-item icon="fa-key" color="primary" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }}); return false;">Change Password</x-dropdown-item>
                             @endif
                             @if($user->roleID != 1 && in_array($user->status, ['active', 'inactive']))
                                 @if($user->status === 'active')
-                                <button class="btn btn-sm btn-outline-secondary" title="Deactivate" onclick="toggleUserStatus({{ $user->id }}, 'active')"><i class="fas fa-user-slash"></i></button>
+                                <x-dropdown-item icon="fa-user-slash" color="secondary" onclick="toggleUserStatus({{ $user->id }}, 'active'); return false;">Deactivate</x-dropdown-item>
                                 @else
-                                <button class="btn btn-sm btn-outline-success" title="Activate" onclick="toggleUserStatus({{ $user->id }}, 'inactive')"><i class="fas fa-user-check"></i></button>
+                                <x-dropdown-item icon="fa-user-check" color="success" onclick="toggleUserStatus({{ $user->id }}, 'inactive'); return false;">Activate</x-dropdown-item>
                                 @endif
                             @endif
                             @if($user->status === 'archived')
-                            <button class="btn btn-sm btn-outline-success" title="Unarchive" onclick="unarchiveUser({{ $user->id }})"><i class="fas fa-box-open"></i></button>
+                            <x-dropdown-item icon="fa-box-open" color="success" onclick="unarchiveUser({{ $user->id }}); return false;">Unarchive</x-dropdown-item>
                             @else
-                            <button class="btn btn-sm btn-outline-warning" title="Archive" onclick="archiveUser({{ $user->id }})"><i class="fas fa-archive"></i></button>
+                            <x-dropdown-item icon="fa-archive" color="warning" onclick="archiveUser({{ $user->id }}); return false;">Archive</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
                 @empty

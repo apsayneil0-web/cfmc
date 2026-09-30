@@ -143,6 +143,17 @@ class LoanManagementController extends Controller
     }
 
     /**
+     * Restore an archived loan back onto the active list.
+     */
+    public function unarchive(Loan $loan)
+    {
+        $loan->update(['archived_at' => null]);
+
+        return redirect()->route($this->redirectRouteFor($loan), ['status' => 'archived'])
+            ->with('success', 'Loan restored.');
+    }
+
+    /**
      * Batch loans are managed from their own grouped page, so an action on a
      * loan there should return the manager to that page rather than to the
      * regular-loans list.

@@ -19,10 +19,18 @@ class AnnouncementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Announcement::withCount('recipients')->whereNull('archived_at');
+        $query = Announcement::withCount('recipients');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
+        // Archived announcements are hidden unless the manager explicitly
+        // filters for "Archived".
+        if ($request->input('status') === 'archived') {
+            $query->whereNotNull('archived_at');
+        } else {
+            $query->whereNull('archived_at');
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->string('status'));
+            }
         }
 
         if ($request->filled('search')) {
@@ -104,6 +112,20 @@ class AnnouncementController extends Controller
 
         return redirect()->route('manager.announcement')
             ->with('success', 'Announcement archived.');
+    }
+
+    /**
+     * Restore an archived announcement as a draft. Its pre-archive status
+     * isn't kept, and restoring straight to published would silently re-push
+     * it into farmers' notification bells — the manager re-publishes it via
+     * Edit once it's reviewed, which resyncs notifications as usual.
+     */
+    public function unarchive(Announcement $announcement)
+    {
+        $announcement->update(['archived_at' => null, 'status' => 'draft']);
+
+        return redirect()->route('manager.announcement', ['status' => 'archived'])
+            ->with('success', "\"{$announcement->title}\" restored as a draft. Edit it and set it to Published to notify farmers again.");
     }
 
     /**

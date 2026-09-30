@@ -39,7 +39,7 @@
     <x-table-toolbar>
         <x-slot:filters>
             <div class="position-relative">
-                <input type="text" placeholder="Search payments..." class="form-control ps-5" style="min-width: 220px;">
+                <input type="text" id="paymentSearchInput" placeholder="Search payments..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
                 <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
             </div>
             <select id="paymentTypeFilter" class="form-select" style="width: auto;">
@@ -50,7 +50,7 @@
                 <option value="Operational Expense">Operational Expense</option>
                 <option value="Replaceable Parts">Replaceable Parts</option>
             </select>
-            <input type="date" class="form-control" style="width: auto;">
+            <input type="date" id="paymentDateFilter" class="form-control" style="width: auto;">
         </x-slot:filters>
         <x-slot:actions>
             <div class="dropdown">
@@ -99,7 +99,7 @@
             </thead>
             <tbody id="paymentsTableBody">
                 @forelse($payments as $payment)
-                <tr data-filter-category="{{ $payment->filter_category }}">
+                <tr data-filter-category="{{ $payment->filter_category }}" data-date="{{ $payment->date->format('Y-m-d') }}">
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $payment->transaction_code }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $payment->date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $payment->payer }}</td>
@@ -108,12 +108,12 @@
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($payment->amount) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->status_label" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewPaymentModal{{ $payment->kind }}{{ $payment->id }}" />
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewPaymentModal{{ $payment->kind }}{{ $payment->id }}">View</x-dropdown-item>
                             @if($payment->kind === 'loan')
-                            <a href="{{ route('manager.payment.receipt', $payment->id) }}" target="_blank" class="icon-btn text-secondary" title="Receipt"><i class="fas fa-receipt"></i></a>
+                            <x-dropdown-item icon="fa-receipt" color="secondary" href="{{ route('manager.payment.receipt', $payment->id) }}" target="_blank">Receipt</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
                 @empty
@@ -122,7 +122,7 @@
                 </tr>
                 @endforelse
                 <tr id="paymentsNoFilterMatch" class="d-none">
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments match this type.</td>
+                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments match your filters.</td>
                 </tr>
             </tbody>
         </table>
@@ -516,26 +516,47 @@
     document.getElementById('harvestAmountInput')?.addEventListener('input', updateHarvestPreview);
     document.getElementById('harvestCalculateBtn')?.addEventListener('click', updateHarvestPreview);
 
-    // "All Types" filter: purely client-side, since the whole feed is
-    // already rendered — toggles row visibility by the category each row
-    // was tagged with server-side (data-filter-category).
-    document.getElementById('paymentTypeFilter')?.addEventListener('change', function () {
-        var selected = this.value;
-        var rows = document.querySelectorAll('#paymentsTableBody tr[data-filter-category]');
-        var visibleCount = 0;
+    // Search / Type / Date filters: purely client-side, since the whole feed
+    // is already rendered — toggles row visibility using the category each
+    // row was tagged with server-side (data-filter-category/data-date), and
+    // a plain text match against the row's own visible content for search.
+    (function () {
+        var searchInput = document.getElementById('paymentSearchInput');
+        var typeFilter = document.getElementById('paymentTypeFilter');
+        var dateFilter = document.getElementById('paymentDateFilter');
 
-        rows.forEach(function (row) {
-            var matches = !selected || row.getAttribute('data-filter-category') === selected;
-            row.classList.toggle('d-none', !matches);
-            if (matches) {
-                visibleCount++;
+        function applyPaymentFilters() {
+            var search = (searchInput?.value || '').trim().toLowerCase();
+            var type = typeFilter?.value || '';
+            var date = dateFilter?.value || '';
+            var rows = document.querySelectorAll('#paymentsTableBody tr[data-filter-category]');
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var matchesType = !type || row.getAttribute('data-filter-category') === type;
+                var matchesDate = !date || row.getAttribute('data-date') === date;
+                var matchesSearch = !search || row.textContent.toLowerCase().includes(search);
+                var matches = matchesType && matchesDate && matchesSearch;
+
+                row.classList.toggle('d-none', !matches);
+                if (matches) {
+                    visibleCount++;
+                }
+            });
+
+            var noMatchRow = document.getElementById('paymentsNoFilterMatch');
+            if (noMatchRow) {
+                noMatchRow.classList.toggle('d-none', visibleCount !== 0 || rows.length === 0);
             }
-        });
-
-        var noMatchRow = document.getElementById('paymentsNoFilterMatch');
-        if (noMatchRow) {
-            noMatchRow.classList.toggle('d-none', visibleCount !== 0 || rows.length === 0);
         }
-    });
+
+        var searchTimeout;
+        searchInput?.addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(applyPaymentFilters, 200);
+        });
+        typeFilter?.addEventListener('change', applyPaymentFilters);
+        dateFilter?.addEventListener('change', applyPaymentFilters);
+    })();
 </script>
 @endsection

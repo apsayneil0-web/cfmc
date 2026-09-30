@@ -90,11 +90,13 @@
                         @endif
                     </td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}" />
-                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}" />
-                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}" />
-                        </div>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}">View</x-dropdown-item>
+                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}">Edit</x-dropdown-item>
+                            @if($farmer->account && $farmer->account->status === 'inactive')
+                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
+                            @endif
+                        </x-action-dropdown>
                     </td>
                 </tr>
 
@@ -184,11 +186,11 @@
                 <div class="modal fade" id="editModal{{ $farmer->id }}" tabindex="-1" aria-labelledby="editModalLabel{{ $farmer->id }}" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content">
-                            <div class="modal-header bg-warning">
-                                <h5 class="modal-title fw-bold text-dark" id="editModalLabel{{ $farmer->id }}">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title fw-bold" id="editModalLabel{{ $farmer->id }}">
                                     <i class="fas fa-edit me-2"></i>Edit Farmer Profile
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <form action="{{ route('manager.membership.update', $farmer->id) }}" method="POST" enctype="multipart/form-data" class="modal-form-flex">
                                 @csrf
@@ -299,7 +301,7 @@
                                 </div>
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-warning">Save Changes</button>
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
                                 </div>
                             </form>
                         </div>

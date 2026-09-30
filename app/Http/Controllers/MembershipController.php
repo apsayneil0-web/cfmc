@@ -20,20 +20,21 @@ class MembershipController extends Controller
 
         $query = Farmer::with('crops');
 
-        // Default: hide archived records unless specifically filtered
-        if (!$request->has('status') || $request->status == '') {
+        // Default to Pending when no status filter is chosen yet — that's the
+        // actionable list a manager lands on this page to work through.
+        // Explicitly picking "All Status" still excludes archived records.
+        $status = $request->filled('status') ? $request->status : 'pending';
+
+        if ($status === 'all') {
             $query->where('status', '!=', 'archived');
+        } else {
+            $query->where('status', $status);
         }
 
         // Search functionality
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"]);
-        }
-
-        // Filter by status
-        if ($request->has('status') && $request->status != '') {
-            $query->where('status', $request->status);
         }
 
         $farmers = $query->orderBy('created_at', 'desc')->get();

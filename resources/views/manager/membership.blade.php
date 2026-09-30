@@ -47,8 +47,8 @@
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 <select id="filterStatus" class="form-select py-2" style="width: auto;">
-                    <option value="">All Status</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
+                    <option value="pending" {{ !request()->has('status') || request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
@@ -93,15 +93,15 @@
                         <x-status-badge :status="ucfirst($farmer->status)" />
                     </td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}"><i class="fas fa-eye"></i></button>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}">View</x-dropdown-item>
                             @if($farmer->status == 'pending')
-                            <button class="btn btn-sm btn-outline-warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-outline-secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}"><i class="fas fa-archive"></i></button>
+                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}">Edit</x-dropdown-item>
+                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
                             @elseif($farmer->status == 'archived')
-                            <button class="btn btn-sm btn-outline-success" title="Unarchive" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $farmer->id }}"><i class="fas fa-box-open"></i></button>
+                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $farmer->id }}">Unarchive</x-dropdown-item>
                             @endif
-                        </div>
+                        </x-action-dropdown>
                     </td>
                 </tr>
 
