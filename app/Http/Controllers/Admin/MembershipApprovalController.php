@@ -155,6 +155,8 @@ class MembershipApprovalController extends Controller
     {
         $validated = $request->validate([
             'rejection_reason' => 'required|string|max:1000',
+        ], [
+            'rejection_reason.required' => 'A reason is required to reject a membership application.',
         ]);
 
         $farmer->update([

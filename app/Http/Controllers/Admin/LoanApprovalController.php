@@ -169,6 +169,8 @@ class LoanApprovalController extends Controller
 
         $validated = $request->validate([
             'denial_reason' => 'required|string|max:1000',
+        ], [
+            'denial_reason.required' => 'A reason is required to deny a loan request.',
         ]);
 
         $loan_request->update(['status' => 'denied', 'denial_reason' => $validated['denial_reason']]);
@@ -213,6 +215,8 @@ class LoanApprovalController extends Controller
 
         $validated = $request->validate([
             'denial_reason' => 'required|string|max:1000',
+        ], [
+            'denial_reason.required' => 'A reason is required to deny a loan request.',
         ]);
 
         LoanRequest::whereIn('id', $pendingRequests->pluck('id'))->update(['status' => 'denied', 'denial_reason' => $validated['denial_reason']]);

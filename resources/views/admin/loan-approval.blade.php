@@ -12,6 +12,16 @@
 </div>
 @endif
 
+@if($errors->any())
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    @foreach($errors->all() as $error)
+    <div>{{ $error }}</div>
+    @endforeach
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <x-stat-card label="Pending Requests" value="{{ $requests->count() + $batchGroups->sum(fn($b) => $b->loanRequests->count()) }}" icon="fa-hourglass-half" color="warning" />
@@ -340,7 +350,10 @@
         var isApprove = type === 'approve';
 
         if (!isApprove) {
-            var reasonField = document.querySelector('#denyForm' + idSuffix + ' textarea[name="denial_reason"]');
+            // Look the field up via form.elements rather than a descendant selector:
+            // these modals sit inside the table body, where the browser empties the
+            // <form> and only links its fields back through the form owner.
+            var reasonField = document.getElementById('denyForm' + idSuffix).elements['denial_reason'];
             if (!reasonField.value.trim()) {
                 reasonField.classList.add('is-invalid');
                 reasonField.focus();

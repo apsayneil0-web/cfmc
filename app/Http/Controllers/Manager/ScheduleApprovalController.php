@@ -93,6 +93,8 @@ class ScheduleApprovalController extends Controller
 
         $validated = $request->validate([
             'denial_reason' => 'required|string|max:1000',
+        ], [
+            'denial_reason.required' => 'A reason is required to deny a schedule request.',
         ]);
 
         $schedule->update([

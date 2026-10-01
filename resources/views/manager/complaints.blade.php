@@ -90,19 +90,6 @@
                                     <label class="text-muted small">Description</label>
                                     <p>{{ $complaint->description }}</p>
 
-                                    @if($complaint->viewed_at)
-                                    <p class="text-muted small mb-3"><i class="fas fa-eye me-1"></i>Viewed on {{ $complaint->viewed_at->format('M d, Y g:ia') }} &mdash; the farmer has been notified.</p>
-                                    @else
-                                    <div class="form-check mb-3">
-                                        <input type="checkbox" class="form-check-input" id="markViewed{{ $complaint->id }}" onchange="if(this.checked){ document.getElementById('markViewedForm{{ $complaint->id }}').submit(); }">
-                                        <label class="form-check-label" for="markViewed{{ $complaint->id }}">Mark as viewed (notifies the farmer their complaint has been seen)</label>
-                                    </div>
-                                    <form id="markViewedForm{{ $complaint->id }}" action="{{ route('manager.complaints.mark-viewed', $complaint->id) }}" method="POST" class="d-none">
-                                        @csrf
-                                        @method('PATCH')
-                                    </form>
-                                    @endif
-
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Status</label>
                                         <select name="status" class="form-select" required>
@@ -114,6 +101,19 @@
                                         <label class="form-label fw-semibold">Response to Farmer</label>
                                         <textarea name="manager_response" class="form-control" rows="4" placeholder="Explain the action taken..." required>{{ $complaint->manager_response }}</textarea>
                                     </div>
+
+                                    @if($complaint->viewed_at)
+                                    <p class="text-muted small mb-0"><i class="fas fa-eye me-1"></i>Viewed on {{ $complaint->viewed_at->format('M d, Y g:ia') }} &mdash; the farmer has been notified.</p>
+                                    @else
+                                    <div class="form-check mb-0">
+                                        <input type="checkbox" class="form-check-input" id="markViewed{{ $complaint->id }}" onchange="if(this.checked){ document.getElementById('markViewedForm{{ $complaint->id }}').submit(); }">
+                                        <label class="form-check-label" for="markViewed{{ $complaint->id }}">Mark as viewed (notifies the farmer their complaint has been seen)</label>
+                                    </div>
+                                    <form id="markViewedForm{{ $complaint->id }}" action="{{ route('manager.complaints.mark-viewed', $complaint->id) }}" method="POST" class="d-none">
+                                        @csrf
+                                        @method('PATCH')
+                                    </form>
+                                    @endif
                                 </div>
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

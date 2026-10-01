@@ -12,6 +12,16 @@
 </div>
 @endif
 
+@if($errors->any())
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    @foreach($errors->all() as $error)
+    <div>{{ $error }}</div>
+    @endforeach
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+
 @if(session('error'))
 <div class="alert alert-danger alert-dismissible fade show" role="alert">
     <i class="fas fa-exclamation-triangle me-2"></i>
@@ -184,7 +194,7 @@
                                 <h5 class="modal-title fw-bold"><i class="fas fa-times-circle me-2"></i>Deny Schedule</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <form action="{{ route('manager.schedule-approval.deny', $req) }}" method="POST">
+                            <form action="{{ route('manager.schedule-approval.deny', $req) }}" method="POST" onsubmit="return requireDenialReason(this)">
                                 @csrf
                                 @method('PATCH')
                                 <div class="modal-body">
@@ -192,6 +202,7 @@
                                     <div class="mb-0">
                                         <label class="form-label fw-semibold">Reason for denial <span class="text-danger">*</span></label>
                                         <textarea name="denial_reason" rows="2" class="form-control" maxlength="1000" placeholder="e.g. Machinery unavailable / scheduling conflict" required></textarea>
+                                        <div class="invalid-feedback">Please provide a reason for denying this schedule request.</div>
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-light">
@@ -212,4 +223,21 @@
         </table>
     </div>
 </div>
+<script>
+    // Blocks a deny submission whose reason is empty or only whitespace (the
+    // browser's own `required` check lets whitespace through). The field is
+    // read via form.elements because this modal sits inside the table body,
+    // where the browser empties the <form> and only links fields back to it.
+    function requireDenialReason(form) {
+        var reasonField = form.elements['denial_reason'];
+        if (!reasonField.value.trim()) {
+            reasonField.value = '';
+            reasonField.classList.add('is-invalid');
+            reasonField.focus();
+            return false;
+        }
+        reasonField.classList.remove('is-invalid');
+        return true;
+    }
+</script>
 @endsection

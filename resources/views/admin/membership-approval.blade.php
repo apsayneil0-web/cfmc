@@ -12,6 +12,16 @@
 </div>
 @endif
 
+@if($errors->any())
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    @foreach($errors->all() as $error)
+    <div>{{ $error }}</div>
+    @endforeach
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+
 @php
     $isRejectedView = $status === 'rejected';
 @endphp
@@ -86,110 +96,6 @@
                         </div>
                     </td>
                 </tr>
-
-                <!-- Review Modal -->
-                <div class="modal fade" id="reviewModal{{ $application->id }}" tabindex="-1" aria-labelledby="reviewModalLabel{{ $application->id }}" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title fw-bold" id="reviewModalLabel{{ $application->id }}">
-                                    <i class="fas fa-user-check me-2"></i>Review Membership Application
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted small">Full Name</label>
-                                        <p class="fw-semibold mb-0">{{ $application->full_name }}</p>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted small">Contact Number</label>
-                                        <p class="fw-semibold mb-0">{{ $application->contact_number }}</p>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted small">Barangay</label>
-                                        <p class="fw-semibold mb-0">{{ $application->barangay ?? '—' }}</p>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted small">Municipality / Province</label>
-                                        <p class="fw-semibold mb-0">{{ $application->municipality }}, {{ $application->province }}</p>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted small">Crop Type</label>
-                                        <p class="fw-semibold mb-0">{{ $application->crops->pluck('name')->implode(', ') ?: '—' }}</p>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted small">Land Area</label>
-                                        <p class="fw-semibold mb-0">{{ $application->land_area }} hectares</p>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="text-muted small">Date Applied</label>
-                                        <p class="fw-semibold mb-0">{{ $application->created_at->format('M d, Y') }}</p>
-                                    </div>
-                                    @php
-                                        $reviewDocumentFields = [
-                                            ['path' => 'documents_path', 'label' => 'Valid ID'],
-                                            ['path' => 'certificate_of_title_path', 'label' => 'Certificate of Title'],
-                                            ['path' => 'barangay_certification_path', 'label' => 'Barangay Certification of Land Possession'],
-                                            ['path' => 'rsbsa_path', 'label' => 'RSBSA Number/ID'],
-                                        ];
-                                    @endphp
-                                    @foreach($reviewDocumentFields as $doc)
-                                    <div class="col-12 mb-3">
-                                        <label class="text-muted small">{{ $doc['label'] }}</label>
-                                        <div class="mt-2">
-                                            @if($application->{$doc['path']})
-                                                @php
-                                                    $extension = pathinfo($application->{$doc['path']}, PATHINFO_EXTENSION);
-                                                @endphp
-                                                @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                                    <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-image me-1"></i> View Image
-                                                    </a>
-                                                @elseif($extension == 'pdf')
-                                                    <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-danger">
-                                                        <i class="fas fa-file-pdf me-1"></i> View PDF
-                                                    </a>
-                                                @else
-                                                    <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                                        <i class="fas fa-file me-1"></i> View Document
-                                                    </a>
-                                                @endif
-                                            @else
-                                                <span class="text-muted">No document uploaded</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    @endforeach
-                                </div>
-
-                                <hr>
-
-                                <form id="rejectForm{{ $application->id }}" action="{{ route('admin.membership-approval.reject', $application->id) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <label class="form-label fw-semibold small">Reason for Rejection <span class="text-danger">*</span> <span class="text-muted">(required if rejecting)</span></label>
-                                    <textarea name="rejection_reason" class="form-control" rows="2" maxlength="1000" placeholder="Explain why this application does not meet the cooperative's requirements..."></textarea>
-                                    <div class="invalid-feedback">Please provide a reason for rejecting this application.</div>
-                                </form>
-                                <form id="approveForm{{ $application->id }}" action="{{ route('admin.membership-approval.approve', $application->id) }}" method="POST" class="d-none">
-                                    @csrf
-                                    @method('PATCH')
-                                </form>
-                            </div>
-                            <div class="modal-footer bg-light">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                <button type="button" class="btn btn-danger" onclick="confirmMembershipAction('reject', {{ $application->id }}, {{ Js::from($application->full_name) }})">
-                                    <i class="fas fa-times me-1"></i> Reject
-                                </button>
-                                <button type="button" class="btn btn-success" onclick="confirmMembershipAction('approve', {{ $application->id }}, {{ Js::from($application->full_name) }})">
-                                    <i class="fas fa-check me-1"></i> Approve
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 @empty
                 <tr>
                     <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No pending membership applications.</td>
@@ -198,6 +104,116 @@
             </tbody>
         </table>
     </div>
+
+    {{-- Review modals rendered outside <tbody>: a <div> is not valid directly
+         inside a table body, and browsers "correct" that by ejecting it from the
+         table. A <form> parsed in table context is emptied in the process, which
+         left the rejection reason textarea outside rejectForm. --}}
+    @foreach($applications as $application)
+    <!-- Review Modal -->
+    <div class="modal fade" id="reviewModal{{ $application->id }}" tabindex="-1" aria-labelledby="reviewModalLabel{{ $application->id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="reviewModalLabel{{ $application->id }}">
+                        <i class="fas fa-user-check me-2"></i>Review Membership Application
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Full Name</label>
+                            <p class="fw-semibold mb-0">{{ $application->full_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Contact Number</label>
+                            <p class="fw-semibold mb-0">{{ $application->contact_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Barangay</label>
+                            <p class="fw-semibold mb-0">{{ $application->barangay ?? '—' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Municipality / Province</label>
+                            <p class="fw-semibold mb-0">{{ $application->municipality }}, {{ $application->province }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Crop Type</label>
+                            <p class="fw-semibold mb-0">{{ $application->crops->pluck('name')->implode(', ') ?: '—' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Land Area</label>
+                            <p class="fw-semibold mb-0">{{ $application->land_area }} hectares</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Date Applied</label>
+                            <p class="fw-semibold mb-0">{{ $application->created_at->format('M d, Y') }}</p>
+                        </div>
+                        @php
+                            $reviewDocumentFields = [
+                                ['path' => 'documents_path', 'label' => 'Valid ID'],
+                                ['path' => 'certificate_of_title_path', 'label' => 'Certificate of Title'],
+                                ['path' => 'barangay_certification_path', 'label' => 'Barangay Certification of Land Possession'],
+                                ['path' => 'rsbsa_path', 'label' => 'RSBSA Number/ID'],
+                            ];
+                        @endphp
+                        @foreach($reviewDocumentFields as $doc)
+                        <div class="col-12 mb-3">
+                            <label class="text-muted small">{{ $doc['label'] }}</label>
+                            <div class="mt-2">
+                                @if($application->{$doc['path']})
+                                    @php
+                                        $extension = pathinfo($application->{$doc['path']}, PATHINFO_EXTENSION);
+                                    @endphp
+                                    @if(in_array($extension, ['jpg', 'jpeg', 'png']))
+                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-image me-1"></i> View Image
+                                        </a>
+                                    @elseif($extension == 'pdf')
+                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-file-pdf me-1"></i> View PDF
+                                        </a>
+                                    @else
+                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-file me-1"></i> View Document
+                                        </a>
+                                    @endif
+                                @else
+                                    <span class="text-muted">No document uploaded</span>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <hr>
+
+                    <form id="rejectForm{{ $application->id }}" action="{{ route('admin.membership-approval.reject', $application->id) }}" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <label class="form-label fw-semibold small">Reason for Rejection <span class="text-danger">*</span> <span class="text-muted">(required if rejecting)</span></label>
+                        <textarea name="rejection_reason" class="form-control" rows="2" maxlength="1000" placeholder="Explain why this application does not meet the cooperative's requirements..."></textarea>
+                        <div class="invalid-feedback">Please provide a reason for rejecting this application.</div>
+                    </form>
+                    <form id="approveForm{{ $application->id }}" action="{{ route('admin.membership-approval.approve', $application->id) }}" method="POST" class="d-none">
+                        @csrf
+                        @method('PATCH')
+                    </form>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmMembershipAction('reject', {{ $application->id }}, {{ Js::from($application->full_name) }})">
+                        <i class="fas fa-times me-1"></i> Reject
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmMembershipAction('approve', {{ $application->id }}, {{ Js::from($application->full_name) }})">
+                        <i class="fas fa-check me-1"></i> Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endforeach
     @endif
 </div>
 
@@ -249,7 +265,7 @@
         var isApprove = type === 'approve';
 
         if (!isApprove) {
-            var reasonField = document.querySelector('#rejectForm' + applicationId + ' textarea[name="rejection_reason"]');
+            var reasonField = document.getElementById('rejectForm' + applicationId).elements['rejection_reason'];
             if (!reasonField.value.trim()) {
                 reasonField.classList.add('is-invalid');
                 reasonField.focus();
