@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Farmer;
 use App\Models\Notification;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AnnouncementController extends Controller
@@ -167,6 +170,26 @@ class AnnouncementController extends Controller
         if (!empty($rows)) {
             Notification::insert($rows);
         }
+
+        $this->textNewFarmers($announcement, $newUserIds);
+    }
+
+    /**
+     * Text only farmers who are newly notified, so editing an announcement
+     * doesn't re-send the same SMS to everyone already reached.
+     */
+    private function textNewFarmers(Announcement $announcement, Collection $userIds): void
+    {
+        if ($userIds->isEmpty()) {
+            return;
+        }
+
+        $message = Str::limit("{$announcement->title}: {$announcement->notification_message}", 150);
+
+        Farmer::whereIn('account_user_id', $userIds)
+            ->whereNotNull('contact_number')
+            ->pluck('contact_number')
+            ->each(fn ($number) => app(SmsService::class)->send($number, $message));
     }
 
     private function validateAnnouncement(Request $request): array

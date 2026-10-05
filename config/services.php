@@ -35,12 +35,10 @@ return [
         ],
     ],
 
-    // Texts non-member farmers, who have no account to receive in-app
-    // notifications. Not configured yet — set SEMAPHORE_API_KEY when ready;
-    // App\Services\SmsService falls back to logging until then.
-    'semaphore' => [
-        'api_key' => env('SEMAPHORE_API_KEY'),
-        'sender_name' => env('SEMAPHORE_SENDER_NAME'),
+    // Texts farmers (member-account credentials, OTPs, announcements). Falls back
+    // to logging in App\Services\SmsService when the token isn't set.
+    'iprog' => [
+        'api_token' => env('IPROG_API_TOKEN'),
     ],
 
 ];
