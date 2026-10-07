@@ -1309,23 +1309,25 @@ body.bg-light {
 /* Dark mode: deep forest ground, with a lighter Field Green so buttons and
    active states stay visible. Only tokens change; components follow. */
 :root[data-bs-theme="dark"] {
-    --brand-primary: #6fa27a;
-    --brand-primary-hover: #80b28a;
-    --brand-primary-active: #5f9069;
-    --brand-primary-light: #1f3324;
-    --brand-primary-border: #2f4a35;
-    --brand-primary-text: #9cc8a5;
-    --brand-on-primary: #0f1712;
+    /* Same dark palette as the landing page (values in palette.css):
+       deep forest ground, cream text, sage green accents. */
+    --brand-primary: var(--palette-field);
+    --brand-primary-hover: var(--palette-field-hover);
+    --brand-primary-active: #7d9e6b;
+    --brand-primary-light: var(--palette-sprout);
+    --brand-primary-border: var(--palette-sprout-border);
+    --brand-primary-text: var(--palette-field-light);
+    --brand-on-primary: var(--palette-paper);
 
-    --brand-accent: #2a4431;
-    --brand-accent-light: #1f3324;
+    --brand-accent: #2c3b2a;
+    --brand-accent-light: var(--palette-sprout);
 
-    --brand-success: #6fa27a;
-    --brand-success-hover: #80b28a;
-    --brand-success-active: #5f9069;
-    --brand-success-light: #1f3324;
-    --brand-success-border: #2f4a35;
-    --brand-success-text: #9cc8a5;
+    --brand-success: var(--palette-field);
+    --brand-success-hover: var(--palette-field-hover);
+    --brand-success-active: #7d9e6b;
+    --brand-success-light: var(--palette-sprout);
+    --brand-success-border: var(--palette-sprout-border);
+    --brand-success-text: var(--palette-field-light);
 
     --brand-danger: #c86a54;
     --brand-danger-hover: #d27a64;
@@ -1334,13 +1336,13 @@ body.bg-light {
     --brand-danger-border: #6a3a2e;
     --brand-danger-text: #eba08d;
 
-    --brand-warning: #d9b75e;
-    --brand-warning-hover: #e2c474;
-    --brand-warning-active: #c4a24f;
-    --brand-warning-light: #352c15;
-    --brand-warning-border: #67552a;
-    --brand-warning-text: #e5c878;
-    --brand-on-warning: #141a16;
+    --brand-warning: var(--palette-wheat);
+    --brand-warning-hover: #e0c47d;
+    --brand-warning-active: #c4a556;
+    --brand-warning-light: var(--palette-wheat-tint);
+    --brand-warning-border: #5f5129;
+    --brand-warning-text: var(--palette-wheat-text);
+    --brand-on-warning: var(--palette-paper);
 
     --brand-info: #6f948e;
     --brand-info-hover: #80a49e;
@@ -1349,28 +1351,28 @@ body.bg-light {
     --brand-info-border: #375250;
     --brand-info-text: #a9c7c2;
 
-    --brand-purple: #7d8579;
-    --brand-purple-light: #262d27;
-    --brand-purple-text: #c3c9bf;
+    --brand-purple: var(--palette-muted-light);
+    --brand-purple-light: #222b22;
+    --brand-purple-text: var(--palette-text-secondary);
 
-    --brand-secondary: #6f776c;
-    --brand-secondary-hover: #7d8579;
-    --brand-secondary-active: #62695f;
-    --brand-secondary-light: #262d27;
-    --brand-secondary-text: #c3c9bf;
+    --brand-secondary: var(--palette-muted-light);
+    --brand-secondary-hover: #8d9586;
+    --brand-secondary-active: #6d7468;
+    --brand-secondary-light: #222b22;
+    --brand-secondary-text: var(--palette-text-secondary);
     --brand-on-tone: #ffffff;
 
-    --brand-bg: #141a16;
-    --brand-surface: #1b231d;
-    --brand-surface-muted: #171e19;
-    --brand-surface-hover: #222b24;
-    --brand-border: #2c362e;
-    --brand-input-border: #3a463c;
-    --brand-input-border-hover: #52604f;
-    --text-primary: #e9ece6;
-    --text-secondary: #b9c0b6;
-    --text-muted: #8e968b;
-    --focus-ring: rgba(111, 162, 122, 0.3);
+    --brand-bg: var(--palette-paper);
+    --brand-surface: var(--palette-surface);
+    --brand-surface-muted: var(--palette-surface-muted);
+    --brand-surface-hover: #202a20;
+    --brand-border: var(--palette-stone);
+    --brand-input-border: var(--palette-input-border);
+    --brand-input-border-hover: var(--palette-input-border-hover);
+    --text-primary: var(--palette-ink);
+    --text-secondary: var(--palette-text-secondary);
+    --text-muted: var(--palette-muted);
+    --focus-ring: rgba(143, 176, 124, 0.3);
     --focus-ring-danger: rgba(235, 160, 141, 0.25);
 
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -1383,23 +1385,34 @@ body.bg-light {
     --bs-secondary-rgb: 90, 96, 88;
     --bs-success-rgb: 61, 112, 72;
     --bs-danger-rgb: 181, 82, 59;
-    --bs-warning-rgb: 217, 183, 94;
+    --bs-warning-rgb: 214, 183, 101;
     --bs-info-rgb: 79, 111, 106;
-    --bs-light-rgb: 23, 30, 25;
-    --bs-dark-rgb: 233, 236, 230;
-    --bs-dark-bg-subtle: #262d27;
-    --bs-dark-border-subtle: #3a463c;
-    --bs-body-color-rgb: 233, 236, 230;
-    --bs-body-bg-rgb: 27, 35, 29;
+    --bs-light-rgb: 23, 32, 25;
+    --bs-dark-rgb: 241, 237, 226;
+    --bs-dark-bg-subtle: #222b22;
+    --bs-dark-border-subtle: var(--palette-input-border);
+    --bs-body-color-rgb: 241, 237, 226;
+    --bs-body-bg-rgb: 26, 35, 27;
     --bs-emphasis-color: #ffffff;
     --bs-emphasis-color-rgb: 255, 255, 255;
-    --bs-secondary-color-rgb: 142, 150, 139;
-    --bs-secondary-bg-rgb: 23, 30, 25;
-    --bs-tertiary-bg-rgb: 23, 30, 25;
-    --bs-border-color-translucent: rgba(233, 236, 230, 0.12);
-    --bs-link-color-rgb: 156, 200, 165;
-    --bs-link-hover-color-rgb: 184, 220, 192;
+    --bs-secondary-color-rgb: 154, 162, 147;
+    --bs-secondary-bg-rgb: 23, 32, 25;
+    --bs-tertiary-bg-rgb: 23, 32, 25;
+    --bs-border-color-translucent: rgba(241, 237, 226, 0.12);
+    --bs-link-color-rgb: 169, 199, 154;
+    --bs-link-hover-color-rgb: 196, 218, 184;
     color-scheme: dark;
+}
+
+/* Like the landing page header: the sidebar and top bar sit on the page
+   ground in dark mode, with cards and tables raised one step above it. */
+:root[data-bs-theme="dark"] .app-sidebar,
+:root[data-bs-theme="dark"] .app-topbar {
+    background-color: var(--brand-bg) !important;
+}
+:root[data-bs-theme="dark"] .modal-backdrop {
+    --bs-backdrop-bg: #000;
+    --bs-backdrop-opacity: 0.6;
 }
 
 :root[data-bs-theme="dark"] .form-select {

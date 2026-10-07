@@ -30,27 +30,10 @@
             --ease: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Dark mode: deep forest ground, cream text, sage green accents.
-           Shares the dashboard's saved theme (localStorage "cfmc-theme"). */
+        /* Dark mode: the dark palette itself lives in palette.css (shared with
+           the dashboards via the saved "cfmc-theme"); only page tweaks here. */
         :root[data-bs-theme="dark"] {
             color-scheme: dark;
-            --palette-paper: #141b15;
-            --palette-surface: #1a231b;
-            --palette-surface-muted: #172019;
-            --palette-stone: #2c382d;
-            --palette-input-border: #3a473a;
-            --palette-input-border-hover: #536352;
-            --palette-ink: #f1ede2;
-            --palette-text-secondary: #c4c8ba;
-            --palette-muted: #9aa293;
-            --palette-muted-light: #7d8577;
-            --palette-field: #8fb07c;
-            --palette-field-light: #a9c79a;
-            --palette-field-hover: #a2c190;
-            --palette-sprout: #243023;
-            --palette-sprout-border: #33432f;
-            --palette-wheat: #d6b765;
-            --palette-wheat-deep: #d6b765;
             --shadow-color: #000;
         }
         :root[data-bs-theme="dark"] header { background: var(--palette-paper); }
@@ -472,7 +455,7 @@
                             @auth
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="btn btn-solid">Sign in</button>
+                                    <button type="submit" class="btn btn-solid">Get Started</button>
                                 </form>
                             @else
                                 <a href="{{ route('login') }}" class="btn btn-solid">

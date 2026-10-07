@@ -40,3 +40,33 @@
     /* Info — muted sage (kept quiet on purpose; no blue) */
     --palette-info: #4f6f6a;
 }
+
+/* -------------------------------------------------------------------------
+   Dark mode — deep forest ground, cream text, sage green accents.
+   Applied wherever <html data-bs-theme="dark"> is set (dashboards and the
+   landing page share the saved "cfmc-theme" choice). Status tones (clay,
+   info) and --palette-field-deep stay as-is: they're used on dark overlays.
+   ------------------------------------------------------------------------- */
+:root[data-bs-theme="dark"] {
+    --palette-paper: #141b15;
+    --palette-surface: #1a231b;
+    --palette-surface-muted: #172019;
+    --palette-stone: #2c382d;
+    --palette-input-border: #3a473a;
+    --palette-input-border-hover: #536352;
+    --palette-ink: #f1ede2;
+    --palette-text-secondary: #c4c8ba;
+    --palette-muted: #9aa293;
+    --palette-muted-light: #7d8577;
+
+    --palette-field: #8fb07c;
+    --palette-field-light: #a9c79a;
+    --palette-field-hover: #a2c190;
+    --palette-sprout: #243023;
+    --palette-sprout-border: #33432f;
+
+    --palette-wheat: #d6b765;
+    --palette-wheat-deep: #d6b765;
+    --palette-wheat-tint: #352d16;
+    --palette-wheat-text: #e2c97f;
+}
