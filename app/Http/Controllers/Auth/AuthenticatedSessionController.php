@@ -20,6 +20,14 @@ class AuthenticatedSessionController extends Controller
     private const MAX_FARMER_LOGIN_ATTEMPTS = 3;
 
     /**
+     * Failed attempts an Admin/Manager account is allowed before it's
+     * temporarily blocked. Unlike the farmer lock above, this clears itself
+     * after STAFF_LOCKOUT_MINUTES — no manual unlock needed or possible.
+     */
+    private const MAX_STAFF_LOGIN_ATTEMPTS = 3;
+    private const STAFF_LOCKOUT_MINUTES = 4;
+
+    /**
      * Display the login view.
      */
     public function create()
@@ -48,6 +56,24 @@ class AuthenticatedSessionController extends Controller
             return back()->withErrors([
                 'username' => 'This account has been locked after too many failed login attempts. Please contact your cooperative manager to have it unlocked.',
             ])->onlyInput('username');
+        }
+
+        // Admin/Manager temporary lockout. Checked before the password is
+        // even evaluated, so a correct password during the window still
+        // doesn't get through. Once LockedUntil has passed, it's cleared
+        // here along with the attempt counter — a fresh set of attempts,
+        // not a half-used one — and the request falls through to the
+        // normal credential check below.
+        if ($user && in_array((int) $user->roleID, [1, 2], true) && $user->LockedUntil) {
+            if (now()->lessThan($user->LockedUntil)) {
+                ActivityLogger::log($user, 'auth.login_blocked', "{$user->name} tried to log in during a temporary lockout.", $user);
+
+                return back()->withErrors([
+                    'username' => 'Too many failed login attempts. Please try again in 4 minutes.',
+                ])->onlyInput('username');
+            }
+
+            $user->update(['LockedUntil' => null, 'FailedLoginAttemps' => 0]);
         }
 
         // "inactive" also covers a brand-new account that has never logged in yet
@@ -113,6 +139,7 @@ class AuthenticatedSessionController extends Controller
                     'isloggedin' => true,
                     'firstTimelogin' => false,
                     'FailedLoginAttemps' => 0,
+                    'LockedUntil' => null,
                 ]);
             }
 
@@ -146,6 +173,33 @@ class AuthenticatedSessionController extends Controller
 
             return back()->withErrors([
                 'username' => "The provided credentials do not match our records. {$remaining} attempt(s) remaining before this account is locked.",
+            ])->onlyInput('username');
+        }
+
+        if ($user && in_array((int) $user->roleID, [1, 2], true)) {
+            $attempts = $user->FailedLoginAttemps + 1;
+
+            if ($attempts >= self::MAX_STAFF_LOGIN_ATTEMPTS) {
+                $user->update([
+                    'FailedLoginAttemps' => $attempts,
+                    'LockedUntil' => now()->addMinutes(self::STAFF_LOCKOUT_MINUTES),
+                ]);
+
+                ActivityLogger::log($user, 'auth.account_locked', "{$user->name}'s account was temporarily locked for ".self::STAFF_LOCKOUT_MINUTES." minutes after {$attempts} failed login attempts.", $user);
+
+                return back()->withErrors([
+                    'username' => 'Too many failed login attempts. Please try again in '.self::STAFF_LOCKOUT_MINUTES.' minutes.',
+                ])->onlyInput('username');
+            }
+
+            $user->update(['FailedLoginAttemps' => $attempts]);
+
+            $remaining = self::MAX_STAFF_LOGIN_ATTEMPTS - $attempts;
+
+            ActivityLogger::log($user, 'auth.login_failed', "Failed login attempt for {$user->name} ({$attempts}/".self::MAX_STAFF_LOGIN_ATTEMPTS.').', $user);
+
+            return back()->withErrors([
+                'username' => "The provided credentials do not match our records. {$remaining} attempt(s) remaining before this account is temporarily locked.",
             ])->onlyInput('username');
         }
 

@@ -20,26 +20,27 @@ class PasswordResetController extends Controller
     }
 
     /**
-     * Generate an OTP for a staff account and email it.
+     * Generate an OTP for a staff account and email it. Looked up by email
+     * alone — it's unique per account, so it already identifies exactly
+     * which user (and therefore which role) without asking for anything else.
      */
     public function sendOtp(Request $request)
     {
         $request->validate([
-            'username' => ['required', 'string'],
             'email' => ['required', 'string', 'email'],
         ]);
 
-        $user = User::where('username', $request->username)
+        $user = User::where('email', $request->email)
             ->whereIn('roleID', [1, 2])
             ->first();
 
-        // Staff only, and the submitted email must match the one on file for
-        // that account. The error is intentionally generic so we don't reveal
-        // which of "account exists" / "email matches" failed.
-        if (! $user || ! $user->email || strcasecmp($user->email, $request->email) !== 0) {
+        // Staff only. The error is intentionally generic so we don't reveal
+        // whether the email exists but isn't a staff account, or doesn't
+        // exist at all.
+        if (! $user) {
             return back()->withErrors([
-                'email' => 'We could not find a staff account matching that username and email.',
-            ])->onlyInput('username', 'email');
+                'email' => 'We could not find a staff account with that email address.',
+            ])->onlyInput('email');
         }
 
         $otp = (string) random_int(100000, 999999);

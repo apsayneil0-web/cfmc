@@ -9,15 +9,85 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
     @vite('resources/css/palette.css')
+    <script>
+        document.documentElement.classList.add('js');
+        // Same saved theme as the dashboards; applied before paint so there's no flash.
+        (function () {
+            var saved = null;
+            try { saved = localStorage.getItem('cfmc-theme'); } catch (e) {}
+            var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
     <style>
         :root {
             --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
             --sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
             --sprout-soft: color-mix(in srgb, var(--palette-sprout) 60%, var(--palette-paper));
-            --shadow-card: 0 1px 2px color-mix(in srgb, var(--palette-ink) 4%, transparent);
-            --shadow-photo: 0 24px 48px -24px color-mix(in srgb, var(--palette-ink) 35%, transparent);
+            --shadow-color: var(--palette-ink);
+            --shadow-card: 0 1px 2px color-mix(in srgb, var(--shadow-color) 4%, transparent);
+            --shadow-photo: 0 24px 48px -24px color-mix(in srgb, var(--shadow-color) 35%, transparent);
             --ease: cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* Dark mode: deep forest ground, cream text, sage green accents.
+           Shares the dashboard's saved theme (localStorage "cfmc-theme"). */
+        :root[data-bs-theme="dark"] {
+            color-scheme: dark;
+            --palette-paper: #141b15;
+            --palette-surface: #1a231b;
+            --palette-surface-muted: #172019;
+            --palette-stone: #2c382d;
+            --palette-input-border: #3a473a;
+            --palette-input-border-hover: #536352;
+            --palette-ink: #f1ede2;
+            --palette-text-secondary: #c4c8ba;
+            --palette-muted: #9aa293;
+            --palette-muted-light: #7d8577;
+            --palette-field: #8fb07c;
+            --palette-field-light: #a9c79a;
+            --palette-field-hover: #a2c190;
+            --palette-sprout: #243023;
+            --palette-sprout-border: #33432f;
+            --palette-wheat: #d6b765;
+            --palette-wheat-deep: #d6b765;
+            --shadow-color: #000;
+        }
+        :root[data-bs-theme="dark"] header { background: var(--palette-paper); }
+        :root[data-bs-theme="dark"] .btn-solid { color: var(--palette-paper); }
+        :root[data-bs-theme="dark"] .btn-outline { border-color: color-mix(in srgb, var(--palette-ink) 70%, transparent); color: var(--palette-ink); }
+        :root[data-bs-theme="dark"] .btn-outline:hover { background: color-mix(in srgb, var(--palette-ink) 8%, transparent); }
+        :root[data-bs-theme="dark"] .btn-nav { border-color: var(--palette-field); color: var(--palette-field-light); }
+        :root[data-bs-theme="dark"] .service-card,
+        :root[data-bs-theme="dark"] .checklist { background: linear-gradient(160deg, #1d271e 0%, var(--palette-surface) 100%); }
+        :root[data-bs-theme="dark"] .facts { background: var(--palette-surface); border-color: var(--palette-stone); }
+        :root[data-bs-theme="dark"] .fact + .fact { border-color: var(--palette-stone); }
+        :root[data-bs-theme="dark"] .fact svg { color: var(--palette-field-light); }
+        :root[data-bs-theme="dark"] .trust-card { background: color-mix(in srgb, var(--palette-surface) 92%, transparent); backdrop-filter: blur(8px); }
+        :root[data-bs-theme="dark"] .hero-photo img,
+        :root[data-bs-theme="dark"] .story-media img { filter: brightness(0.92) saturate(0.95); }
+        :root[data-bs-theme="dark"] .cta { background: linear-gradient(120deg, #22301f 0%, #1c2a1c 100%); border: 1px solid var(--palette-sprout-border); }
+        :root[data-bs-theme="dark"] .btn-light { background: var(--palette-field); color: var(--palette-paper); }
+        :root[data-bs-theme="dark"] .btn-light:hover { background: var(--palette-field-hover); }
+
+        /* Theme toggle (sun / moon) */
+        .theme-toggle {
+            display: grid;
+            place-items: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 999px;
+            border: 1px solid var(--palette-stone);
+            background: transparent;
+            color: var(--palette-text-secondary);
+            cursor: pointer;
+            transition: background-color 160ms var(--ease), color 160ms var(--ease);
+        }
+        .theme-toggle:hover { background: var(--palette-sprout); color: var(--palette-field); }
+        .theme-toggle svg { width: 1.1rem; height: 1.1rem; }
+        .theme-toggle .icon-sun { display: none; }
+        :root[data-bs-theme="dark"] .theme-toggle .icon-sun { display: block; }
+        :root[data-bs-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
@@ -44,7 +114,7 @@
             border-bottom: 1px solid var(--palette-stone);
             transition: box-shadow 220ms var(--ease);
         }
-        header.is-scrolled { box-shadow: 0 6px 20px -14px color-mix(in srgb, var(--palette-ink) 35%, transparent); }
+        header.is-scrolled { box-shadow: 0 6px 20px -14px color-mix(in srgb, var(--shadow-color) 35%, transparent); }
         .navbar { display: flex; align-items: center; gap: 2rem; min-height: 5rem; }
         .brand { display: flex; align-items: center; gap: 0.65rem; }
         .brand svg { width: 2.25rem; height: 2.25rem; flex-shrink: 0; }
@@ -54,7 +124,7 @@
         .nav-links a { padding-block: 0.35rem; border-bottom: 2px solid transparent; transition: color 160ms var(--ease), border-color 160ms var(--ease); }
         .nav-links a:hover { color: var(--palette-ink); }
         .nav-links a.is-active { color: var(--palette-ink); font-weight: 600; border-color: var(--palette-field); }
-        .nav-actions { margin-left: auto; }
+        .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
         @media (min-width: 860px) { .nav-links { display: flex; } .nav-actions { margin-left: 1.5rem; } }
         @media (max-width: 480px) { .brand-sub { display: none; } .brand-name { font-size: 1.55rem; } }
 
@@ -123,7 +193,7 @@
             background: var(--palette-surface);
             border: 1px solid var(--palette-stone);
             border-radius: 0.9rem;
-            box-shadow: 0 16px 32px -18px color-mix(in srgb, var(--palette-ink) 40%, transparent);
+            box-shadow: 0 16px 32px -18px color-mix(in srgb, var(--shadow-color) 40%, transparent);
         }
         .trust-title { display: flex; align-items: center; gap: 0.65rem; font-weight: 600; font-size: 0.92rem; line-height: 1.25; }
         .trust-title span { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); flex-shrink: 0; }
@@ -196,6 +266,99 @@
         .facts-numbers .fact { padding-block: 1.75rem; }
         .facts-numbers .fact b { font-size: clamp(1.6rem, 3vw, 2rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 
+        /* ---------- Story rows (photo + text, alternating sides) ---------- */
+        .story-row {
+            display: grid;
+            gap: 2rem;
+            align-items: center;
+            margin-bottom: 5rem;
+        }
+        .story-row:last-child { margin-bottom: 0; }
+        @media (min-width: 860px) {
+            .story-row { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(2.5rem, 5vw, 4.5rem); }
+            .story-row.is-flipped { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
+            .story-row.is-flipped .story-media { order: 2; }
+        }
+        .story-media { position: relative; }
+        .story-media img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            border-radius: 1.1rem;
+            box-shadow: var(--shadow-photo);
+        }
+        .story-tag {
+            position: absolute;
+            left: 1rem;
+            bottom: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--palette-surface) 92%, transparent);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .story-tag::before { content: ""; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--palette-field); }
+        .story-step { font-family: var(--serif); font-style: italic; color: var(--palette-wheat-deep); font-size: 0.95rem; }
+        .story-copy h3 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.6rem, 2.8vw, 2rem); line-height: 1.15; letter-spacing: -0.015em; margin: 0.4rem 0 0.8rem; text-wrap: balance; }
+        .story-copy p { color: var(--palette-text-secondary); max-width: 52ch; }
+        .story-points { list-style: none; display: grid; gap: 0.6rem; margin-top: 1.25rem; }
+        .story-points li { display: flex; gap: 0.65rem; color: var(--palette-text-secondary); font-size: 0.95rem; }
+        .story-points svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; margin-top: 0.2rem; padding: 0.2rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); }
+
+        /* Photos slide in from their own side; text rises in just after.
+           Gated on .js so the page is fully visible if scripts don't run. */
+        .js .story-row .story-media { opacity: 0; transform: translateX(-2.5rem); transition: opacity 800ms var(--ease), transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+        .js .story-row.is-flipped .story-media { transform: translateX(2.5rem); }
+        .js .story-row .story-copy { opacity: 0; transform: translateY(1.5rem); transition: opacity 800ms var(--ease) 150ms, transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 150ms; }
+        .js .story-row.in-view .story-media,
+        .js .story-row.in-view .story-copy { opacity: 1; transform: none; }
+        @media (max-width: 859px) {
+            .js .story-row .story-media,
+            .js .story-row.is-flipped .story-media { transform: translateY(1.5rem); }
+        }
+
+        /* ---------- Photo banner (parallax) ---------- */
+        .photo-banner {
+            position: relative;
+            overflow: hidden;
+            height: clamp(20rem, 55vh, 32rem);
+            border-radius: 1.4rem;
+        }
+        .photo-banner img {
+            position: absolute;
+            inset: -12% 0;
+            width: 100%;
+            height: 124%;
+            object-fit: cover;
+            will-change: transform;
+        }
+        .photo-banner::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                color-mix(in srgb, var(--palette-field-deep) 85%, transparent) 0%,
+                color-mix(in srgb, var(--palette-field-deep) 40%, transparent) 55%,
+                transparent 100%);
+        }
+        .photo-banner-copy {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            max-width: 36rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-inline: clamp(1.5rem, 5vw, 4rem);
+            color: #fff;
+        }
+        .photo-banner blockquote { font-family: var(--serif); font-weight: 500; font-size: clamp(1.6rem, 3.2vw, 2.4rem); line-height: 1.2; letter-spacing: -0.01em; }
+        .photo-banner blockquote em { color: var(--palette-sprout); }
+        .photo-banner cite { margin-top: 1rem; font-style: normal; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+
         /* ---------- About ---------- */
         .about-grid { display: grid; gap: 2.5rem; align-items: start; }
         @media (min-width: 960px) { .about-grid { grid-template-columns: 1.1fr 1fr; gap: 4rem; } }
@@ -244,6 +407,8 @@
             html { scroll-behavior: auto; }
             .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
             .btn svg, .service-link svg { transition: none !important; }
+            .js .story-row .story-media, .js .story-row .story-copy { opacity: 1 !important; transform: none !important; transition: none !important; }
+            .photo-banner img { transform: none !important; }
         }
     </style>
 </head>
@@ -266,12 +431,16 @@
                 <a href="#contact">Contact</a>
             </nav>
 
-            @if (Route::has('login'))
-                <div class="nav-actions">
+            <div class="nav-actions">
+                <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode" title="Toggle dark mode">
+                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                </button>
+                @if (Route::has('login'))
                     @auth
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="btn btn-outline btn-nav">Log Out</button>
+                            <button type="submit" class="btn btn-outline btn-nav">Login</button>
                         </form>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-outline btn-nav">
@@ -279,8 +448,8 @@
                             Login
                         </a>
                     @endauth
-                </div>
-            @endif
+                @endif
+            </div>
         </div>
     </header>
 
@@ -303,7 +472,7 @@
                             @auth
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="btn btn-solid">Log Out</button>
+                                    <button type="submit" class="btn btn-solid">Sign in</button>
                                 </form>
                             @else
                                 <a href="{{ route('login') }}" class="btn btn-solid">
@@ -440,6 +609,81 @@
             </div>
         </section>
 
+        <!-- Story Section: the cooperative in action -->
+        <section id="stories" class="section">
+            <div class="container">
+                <div class="section-head reveal">
+                    <div class="eyebrow">Our cooperative in action</div>
+                    <h2 class="section-title" style="margin-top: 0.75rem;">From the field <em style="font-style: italic; font-weight: 500; color: var(--palette-field-light);">to the market,</em> together.</h2>
+                    <p class="section-sub">A look at what Centrala members do every season, and how the cooperative helps along the way.</p>
+                </div>
+
+                <article class="story-row">
+                    <div class="story-media">
+                        <img src="{{ asset('images/harvest-hauling.jpg') }}" width="1200" height="900" loading="lazy" decoding="async"
+                             alt="Farmers loading sacks of harvested palay onto the cooperative truck while a carabao cart brings more from the field">
+                        <span class="story-tag">Harvest season</span>
+                    </div>
+                    <div class="story-copy">
+                        <span class="story-step">01 &middot; Marketing</span>
+                        <h3>From field to market</h3>
+                        <p>When the harvest comes in, members bring their palay straight from the field to the cooperative truck, by hand and by carabao cart, to be sold together at a fair price.</p>
+                        <ul class="story-points">
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Harvest payments recorded for every member</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Fair pricing through collective marketing</li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="story-row is-flipped">
+                    <div class="story-media">
+                        <img src="{{ asset('images/member-seminar.jpg') }}" width="960" height="720" loading="lazy" decoding="async"
+                             alt="Cooperative members attending a seminar on cooperativism beside a Kubota combine harvester">
+                        <span class="story-tag">Member seminar</span>
+                    </div>
+                    <div class="story-copy">
+                        <span class="story-step">02 &middot; Membership</span>
+                        <h3>Learning and growing together</h3>
+                        <p>Members meet regularly for seminars on cooperativism, farm practices and how to use the cooperative's services, including this system.</p>
+                        <ul class="story-points">
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Membership registration and approval online</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Announcements sent to every member</li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="story-row">
+                    <div class="story-media">
+                        <img src="{{ asset('images/rcef-harvester.jpg') }}" width="1200" height="675" loading="lazy" decoding="async"
+                             alt="A new Yanmar AW70V combine harvester on a trailer pulled by a tractor, from the RCEF Mechanization Program">
+                        <span class="story-tag">RCEF Mechanization Program</span>
+                    </div>
+                    <div class="story-copy">
+                        <span class="story-step">03 &middot; Machinery</span>
+                        <h3>Modern machines for every member</h3>
+                        <p>Through the RCEF Mechanization Program, the cooperative now has combine harvesters and tractors that members can book for their own fields.</p>
+                        <ul class="story-points">
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>See which machines are available</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Request a schedule and track it on the calendar</li>
+                        </ul>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Photo Banner -->
+        <section aria-label="Cooperative motto">
+            <div class="container">
+                <div class="photo-banner reveal">
+                    <img id="bannerPhoto" src="{{ asset('images/harvest-hauling.jpg') }}" alt="" loading="lazy" decoding="async">
+                    <div class="photo-banner-copy">
+                        <blockquote>&ldquo;Stronger <em>together</em> than any one of us alone.&rdquo;</blockquote>
+                        <cite>Centrala Farmers Marketing Cooperative</cite>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- About Section -->
         <section id="about" class="section">
             <div class="container about-grid">
@@ -494,7 +738,7 @@
                         @auth
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="btn btn-light">Log Out</button>
+                                <button type="submit" class="btn btn-light">Sign in</button>
                             </form>
                         @else
                             <a href="{{ route('login') }}" class="btn btn-light">
@@ -547,6 +791,56 @@
                 revealEls.forEach(function (el) { observer.observe(el); });
             } else {
                 revealEls.forEach(function (el) { el.classList.add('in-view'); });
+            }
+
+            // Story rows: photo slides in from its side, text follows.
+            var storyRows = document.querySelectorAll('.story-row');
+            if ('IntersectionObserver' in window && storyRows.length) {
+                var storyObserver = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in-view');
+                            storyObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.2 });
+                storyRows.forEach(function (el) { storyObserver.observe(el); });
+            } else {
+                storyRows.forEach(function (el) { el.classList.add('in-view'); });
+            }
+
+            // Banner photo drifts slightly slower than the page (parallax).
+            var bannerPhoto = document.getElementById('bannerPhoto');
+            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (bannerPhoto && !reduceMotion) {
+                var banner = bannerPhoto.parentElement;
+                var ticking = false;
+                function moveBanner() {
+                    var rect = banner.getBoundingClientRect();
+                    var progress = (rect.top + rect.height / 2 - window.innerHeight / 2) / window.innerHeight;
+                    bannerPhoto.style.transform = 'translateY(' + (progress * -40) + 'px)';
+                    ticking = false;
+                }
+                window.addEventListener('scroll', function () {
+                    if (!ticking) { ticking = true; window.requestAnimationFrame(moveBanner); }
+                }, { passive: true });
+                moveBanner();
+            }
+
+            // Light / dark toggle, saved under the same key the dashboards use.
+            var themeToggle = document.getElementById('themeToggle');
+            function syncToggleLabel() {
+                var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+                themeToggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+            }
+            if (themeToggle) {
+                syncToggleLabel();
+                themeToggle.addEventListener('click', function () {
+                    var next = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-bs-theme', next);
+                    try { localStorage.setItem('cfmc-theme', next); } catch (e) {}
+                    syncToggleLabel();
+                });
             }
 
             // Highlight the nav link for the section in view.
