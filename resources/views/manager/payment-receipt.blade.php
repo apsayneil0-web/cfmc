@@ -5,17 +5,18 @@
     @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt LNPAY-{{ str_pad($payment->id, 3, '0', STR_PAD_LEFT) }} - CFMC</title>
+    @vite('resources/css/palette.css')
     <style>
         :root {
-            --brand-primary: #1f6f5c;
-            --brand-border: #e6e9ef;
-            --brand-surface-muted: #f8fafc;
+            --brand-primary: var(--palette-field);
+            --brand-border: var(--palette-stone);
+            --brand-surface-muted: var(--palette-paper);
         }
         * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background: var(--brand-surface-muted);
-            color: #1e293b;
+            color: var(--palette-ink);
             margin: 0;
             padding: 32px 16px;
         }
@@ -43,7 +44,7 @@
         .receipt-header p {
             margin: 0;
             font-size: 13px;
-            color: #64748b;
+            color: var(--palette-text-secondary);
         }
         .receipt-badge {
             font-size: 13px;
@@ -62,7 +63,7 @@
             font-size: 18px;
             letter-spacing: 0.05em;
             text-transform: uppercase;
-            color: #1e293b;
+            color: var(--palette-ink);
         }
         .grid {
             display: grid;
@@ -76,14 +77,14 @@
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: #94a3b8;
+            color: var(--palette-muted);
             margin-bottom: 2px;
         }
         .field p {
             margin: 0;
             font-size: 15px;
             font-weight: 600;
-            color: #1e293b;
+            color: var(--palette-ink);
         }
         .amount-box {
             background: var(--brand-surface-muted);
@@ -97,7 +98,7 @@
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: #64748b;
+            color: var(--palette-text-secondary);
         }
         .amount-box .amount {
             font-size: 32px;
@@ -109,7 +110,7 @@
             border-top: 1px solid var(--brand-border);
             padding-top: 16px;
             font-size: 12px;
-            color: #94a3b8;
+            color: var(--palette-muted);
             text-align: center;
         }
         .print-bar {

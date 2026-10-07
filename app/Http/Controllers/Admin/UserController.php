@@ -203,7 +203,7 @@ class UserController extends Controller
 
             app(SmsService::class)->send(
                 $validated['contact_number'],
-                "Welcome to CFMC! Your account is ready. Username: {$result['username']} Password: {$result['password']} Please log in and change your password."
+                "Your account has been created successfully.\nUsername: {$result['username']}\nPassword: {$result['password']}.\nYou may now log in to the CFMC Management System. Please keep your login credentials secure."
             );
 
             ActivityLogger::log(Auth::user(), 'user.created', "Created and approved {$result['name']}'s farmer account.", $result['user']);

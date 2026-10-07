@@ -383,8 +383,8 @@
 <style>
     .btn-check:checked + .card {
         border-color: var(--brand-primary) !important;
-        background-color: rgba(31, 111, 92, 0.05);
-        box-shadow: 0 0 0 3px rgba(31, 111, 92, 0.12);
+        background-color: var(--brand-primary-light);
+        box-shadow: 0 0 0 3px var(--focus-ring);
     }
     .btn-check:checked + .card i {
         color: var(--brand-primary) !important;

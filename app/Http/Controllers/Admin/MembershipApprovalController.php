@@ -87,7 +87,7 @@ class MembershipApprovalController extends Controller
             if ($farmer->contact_number) {
                 app(SmsService::class)->send(
                     $farmer->contact_number,
-                    "Welcome to CFMC! Your account is ready. Username: {$credentials['username']} Password: {$credentials['password']} Please log in and change your password."
+                    "Your account has been created successfully.\nUsername: {$credentials['username']}\nPassword: {$credentials['password']}.\nYou may now log in to the CFMC Management System. Please keep your login credentials secure."
                 );
             }
         }

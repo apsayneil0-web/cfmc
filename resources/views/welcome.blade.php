@@ -4,724 +4,523 @@
     <meta charset="utf-8">
     @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>CFMC - Cooperative Management System</title>
+    <title>Centrala Farmers Marketing Cooperative - CFMC</title>
+    <meta name="description" content="The cooperative management system of Centrala Farmers Marketing Cooperative: membership, farmer loans, CBU and machine rental in one place.">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=outfit:600,700,800" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
+    @vite('resources/css/palette.css')
     <style>
         :root {
-            --brand-primary: #2f8f78;
-            --brand-primary-dark: #1f6f5c;
-            --brand-success: #1f6f5c;
-            --brand-success-dark: #123f34;
-            --brand-success-light: #e4f1ee;
-            --brand-amber: #d97706;
-            --brand-purple: #7c3aed;
-            --brand-pink: #db2777;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-muted: #94a3b8;
-            --surface: #ffffff;
-            --surface-muted: #f8fafc;
-            --border: #e6e9ef;
-            --radius-lg: 1rem;
-            --radius-xl: 1.5rem;
-            --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-            --shadow-md: 0 4px 16px -4px rgba(15, 23, 42, 0.1), 0 2px 6px -2px rgba(15, 23, 42, 0.06);
-            --shadow-lg: 0 24px 48px -16px rgba(15, 23, 42, 0.18), 0 8px 16px -8px rgba(15, 23, 42, 0.08);
-            --shadow-glow: 0 12px 32px -8px rgba(31, 111, 92, 0.35);
+            --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+            --sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+            --sprout-soft: color-mix(in srgb, var(--palette-sprout) 60%, var(--palette-paper));
+            --shadow-card: 0 1px 2px color-mix(in srgb, var(--palette-ink) 4%, transparent);
+            --shadow-photo: 0 24px 48px -24px color-mix(in srgb, var(--palette-ink) 35%, transparent);
             --ease: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body {
-            font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-            background-color: var(--surface);
-            color: var(--text-primary);
-            -webkit-font-smoothing: antialiased;
+            font-family: var(--sans);
+            background-color: var(--palette-paper);
+            color: var(--palette-ink);
             line-height: 1.6;
-            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
         a { color: inherit; text-decoration: none; }
-        h1, h2, h3 {
-            font-family: 'Outfit', 'Instrument Sans', sans-serif;
-            letter-spacing: -0.03em;
-            line-height: 1.15;
-        }
-        button { font-family: inherit; }
+        section[id], footer[id] { scroll-margin-top: 5.5rem; }
+        img { max-width: 100%; display: block; }
+        :focus-visible { outline: 2px solid var(--palette-field); outline-offset: 3px; border-radius: 6px; }
 
-        a:focus-visible, button:focus-visible {
-            outline: 2px solid var(--brand-success);
-            outline-offset: 3px;
-            border-radius: 4px;
-        }
-
-        /* ---------- Layout ---------- */
-        .max-w-6xl { max-width: 72rem; margin-inline: auto; }
-        .max-w-4xl { max-width: 56rem; margin-inline: auto; }
-        .max-w-2xl { max-width: 42rem; margin-inline: auto; }
-        .px-4 { padding-inline: 1.25rem; }
-        .section { padding-block: 6.5rem; position: relative; }
-        @media (max-width: 767px) { .section { padding-block: 4rem; } }
+        .container { max-width: 88rem; margin-inline: auto; padding-inline: clamp(1rem, 4vw, 3.5rem); }
 
         /* ---------- Header ---------- */
         header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
+            position: sticky;
+            top: 0;
             z-index: 100;
-            background: rgba(255, 255, 255, 0.72);
-            backdrop-filter: blur(16px) saturate(160%);
-            -webkit-backdrop-filter: blur(16px) saturate(160%);
-            border-bottom: 1px solid transparent;
-            transition: border-color 260ms var(--ease), box-shadow 260ms var(--ease);
+            background: var(--palette-surface);
+            border-bottom: 1px solid var(--palette-stone);
+            transition: box-shadow 220ms var(--ease);
         }
-        header.is-scrolled {
-            border-bottom-color: var(--border);
-            box-shadow: var(--shadow-sm);
-        }
-        nav.navbar {
-            max-width: 72rem;
-            margin-inline: auto;
-            padding: 0.9rem 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            font-family: 'Outfit', sans-serif;
-            font-weight: 700;
-            font-size: 1.35rem;
-            color: var(--text-primary);
-        }
-        .brand-mark {
-            display: grid;
-            place-items: center;
-            width: 2.35rem;
-            height: 2.35rem;
-            border-radius: 0.8rem;
-            background: linear-gradient(135deg, var(--brand-success), #175b4b 55%, var(--brand-primary));
-            box-shadow: var(--shadow-glow);
-            color: #fff;
-        }
-        .brand-mark svg { width: 1.3rem; height: 1.3rem; }
-        .brand .accent { color: var(--brand-success); }
+        header.is-scrolled { box-shadow: 0 6px 20px -14px color-mix(in srgb, var(--palette-ink) 35%, transparent); }
+        .navbar { display: flex; align-items: center; gap: 2rem; min-height: 5rem; }
+        .brand { display: flex; align-items: center; gap: 0.65rem; }
+        .brand svg { width: 2.25rem; height: 2.25rem; flex-shrink: 0; }
+        .brand-name { font-family: var(--serif); font-weight: 600; font-size: 1.85rem; line-height: 1; color: var(--palette-field); letter-spacing: -0.01em; }
+        .brand-sub { display: block; margin-top: 0.3rem; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--palette-muted); }
+        .nav-links { display: none; gap: 2.25rem; margin-left: auto; font-size: 0.92rem; color: var(--palette-text-secondary); }
+        .nav-links a { padding-block: 0.35rem; border-bottom: 2px solid transparent; transition: color 160ms var(--ease), border-color 160ms var(--ease); }
+        .nav-links a:hover { color: var(--palette-ink); }
+        .nav-links a.is-active { color: var(--palette-ink); font-weight: 600; border-color: var(--palette-field); }
+        .nav-actions { margin-left: auto; }
+        @media (min-width: 860px) { .nav-links { display: flex; } .nav-actions { margin-left: 1.5rem; } }
+        @media (max-width: 480px) { .brand-sub { display: none; } .brand-name { font-size: 1.55rem; } }
 
-        .nav-links { display: none; align-items: center; gap: 2.25rem; }
-        .nav-links a {
-            position: relative;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            padding-block: 0.25rem;
-            transition: color 200ms var(--ease);
-        }
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            left: 0; bottom: -2px;
-            width: 0; height: 2px;
-            background: var(--brand-success);
-            transition: width 220ms var(--ease);
-            border-radius: 2px;
-        }
-        .nav-links a:hover { color: var(--text-primary); }
-        .nav-links a:hover::after { width: 100%; }
-
+        /* ---------- Buttons ---------- */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            font-weight: 600;
+            gap: 0.6rem;
+            border-radius: 999px;
+            padding: 0.8rem 1.6rem;
+            font-family: inherit;
             font-size: 0.95rem;
-            border-radius: 0.75rem;
-            border: none;
+            font-weight: 600;
+            border: 1.5px solid transparent;
             cursor: pointer;
-            transition: transform 200ms var(--ease), box-shadow 200ms var(--ease), background-color 200ms var(--ease), color 200ms var(--ease);
             white-space: nowrap;
+            transition: background-color 160ms var(--ease), color 160ms var(--ease), border-color 160ms var(--ease);
         }
-        .btn:active { transform: translateY(0) scale(0.98); }
-        .btn-sm { padding: 0.55rem 1.25rem; }
-        .btn-lg { padding: 0.85rem 1.9rem; font-size: 1.02rem; }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--brand-success);
-            border: 1.5px solid var(--brand-success);
-        }
-        .btn-outline:hover { background: var(--brand-success-light); transform: translateY(-2px); }
-
-        .btn-solid {
-            background: linear-gradient(135deg, var(--brand-success), var(--brand-success-dark));
-            color: #fff;
-            box-shadow: var(--shadow-glow);
-        }
-        .btn-solid:hover { transform: translateY(-2px); box-shadow: 0 16px 36px -8px rgba(31, 111, 92, 0.45); }
-
-        .btn-ghost {
-            background: rgba(15, 23, 42, 0.04);
-            color: var(--text-primary);
-        }
-        .btn-ghost:hover { background: rgba(15, 23, 42, 0.08); transform: translateY(-2px); }
-
-        .btn-danger {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-        .btn-danger:hover { background: #fee2e2; transform: translateY(-2px); }
-
-        .btn-white {
-            background: #fff;
-            color: var(--brand-success-dark);
-        }
-        .btn-white:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .btn svg { width: 1rem; height: 1rem; transition: transform 160ms var(--ease); }
+        .btn:hover svg.arrow { transform: translateX(3px); }
+        .btn-solid { background: var(--palette-field); color: #fff; }
+        .btn-solid:hover { background: var(--palette-field-hover); }
+        .btn-outline { border-color: var(--palette-field); color: var(--palette-field); background: transparent; }
+        .btn-outline:hover { background: var(--palette-sprout); }
+        .btn-nav { border-radius: 0.65rem; padding: 0.55rem 1.2rem; font-size: 0.9rem; }
 
         /* ---------- Hero ---------- */
-        .hero {
-            position: relative;
-            padding-top: 9.5rem;
-            padding-bottom: 6rem;
-            overflow: hidden;
-            background: linear-gradient(180deg, #f2f9f7 0%, #ffffff 65%);
-        }
-        .hero-blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(70px);
-            opacity: 0.55;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .hero-blob.b1 { width: 26rem; height: 26rem; top: -8rem; left: -6rem; background: radial-gradient(circle, #a7e8d9, transparent 70%); }
-        .hero-blob.b2 { width: 22rem; height: 22rem; top: -4rem; right: -8rem; background: radial-gradient(circle, #fdecc0, transparent 70%); }
-        .hero-blob.b3 { width: 18rem; height: 18rem; bottom: -6rem; left: 40%; background: radial-gradient(circle, #d7ede7, transparent 70%); opacity: 0.4; }
-
-        .hero-inner { position: relative; z-index: 1; text-align: center; }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4rem 1rem;
-            border-radius: 999px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-sm);
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--brand-success-dark);
-            margin-bottom: 1.75rem;
-        }
-        .eyebrow .dot {
-            width: 0.45rem; height: 0.45rem;
-            border-radius: 50%;
-            background: var(--brand-success);
-            box-shadow: 0 0 0 3px var(--brand-success-light);
-        }
-
+        .hero { position: relative; padding-block: 4rem 3rem; overflow: hidden; }
+        .hero-grid { display: grid; gap: 3rem; align-items: center; }
+        @media (min-width: 1200px) { .hero-grid { gap: 5rem; } }
+        @media (min-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
+        .eyebrow { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--palette-text-secondary); }
+        .eyebrow i { font-style: normal; color: var(--palette-wheat); }
         .hero h1 {
-            font-size: 3.1rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 1.5rem;
+            font-family: var(--serif);
+            font-weight: 600;
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            line-height: 1.04;
+            letter-spacing: -0.025em;
+            margin: 1.1rem 0 1.25rem;
+            text-wrap: balance;
         }
-        .hero h1 .gradient-text {
-            background: linear-gradient(120deg, var(--brand-success), #175b4b 45%, var(--brand-primary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        @media (min-width: 768px) { .hero h1 { font-size: 4.25rem; } }
+        .hero h1 em { font-style: italic; font-weight: 500; color: var(--palette-field-light); }
+        .hero .lead { color: var(--palette-text-secondary); font-size: 1.05rem; max-width: 46ch; margin-bottom: 2rem; }
+        .hero-actions { display: flex; flex-wrap: wrap; gap: 0.85rem; }
+        .hero-actions form { display: contents; }
+        .hero-leaf { position: absolute; left: -0.5rem; bottom: 1rem; width: 5rem; opacity: 0.5; pointer-events: none; }
 
-        .hero p.lead {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            max-width: 40rem;
-            margin: 0 auto 2.5rem;
+        .hero-photo { position: relative; }
+        .hero-photo img {
+            width: 100%;
+            aspect-ratio: 735 / 479;
+            object-fit: cover;
+            border-radius: 1.25rem;
+            box-shadow: var(--shadow-photo);
         }
+        .trust-card {
+            position: absolute;
+            right: 1rem;
+            bottom: -1.5rem;
+            display: grid;
+            gap: 0.6rem;
+            min-width: 13.5rem;
+            padding: 0.9rem 1rem;
+            background: var(--palette-surface);
+            border: 1px solid var(--palette-stone);
+            border-radius: 0.9rem;
+            box-shadow: 0 16px 32px -18px color-mix(in srgb, var(--palette-ink) 40%, transparent);
+        }
+        .trust-title { display: flex; align-items: center; gap: 0.65rem; font-weight: 600; font-size: 0.92rem; line-height: 1.25; }
+        .trust-title span { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); flex-shrink: 0; }
+        .trust-title svg { width: 1rem; height: 1rem; }
+        .trust-place { display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem; color: var(--palette-muted); }
+        .trust-place svg { width: 0.9rem; height: 0.9rem; color: var(--palette-field); flex-shrink: 0; }
+        @media (max-width: 520px) { .trust-card { right: 0.75rem; left: 0.75rem; min-width: 0; } }
 
-        .hero-actions {
+        /* ---------- Sections ---------- */
+        .section { padding-block: 4.5rem; }
+        .section-head { max-width: 46rem; margin-bottom: 2.5rem; }
+        .section-head .eyebrow { margin-bottom: 0.75rem; }
+        .section-title { font-family: var(--serif); font-weight: 600; font-size: clamp(1.9rem, 3.5vw, 2.5rem); line-height: 1.12; letter-spacing: -0.02em; text-wrap: balance; }
+        .section-sub { margin-top: 0.75rem; color: var(--palette-text-secondary); }
+
+        /* ---------- Services ---------- */
+        .services-grid { display: grid; gap: 1.25rem; }
+        @media (min-width: 860px) { .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        .service-card {
+            position: relative;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 3.5rem;
+            gap: 0.75rem;
+            padding: 1.75rem;
+            background: var(--palette-surface);
+            border: 1px solid var(--palette-stone);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-card);
+            transition: border-color 200ms var(--ease);
         }
-        @media (min-width: 640px) { .hero-actions { flex-direction: row; } }
+        .service-card:hover { border-color: var(--palette-sprout-border); }
+        .service-card::after {
+            content: "";
+            position: absolute;
+            right: -1.5rem;
+            bottom: -1.5rem;
+            width: 6.5rem;
+            height: 6.5rem;
+            border-radius: 999px;
+            background: var(--sprout-soft);
+            pointer-events: none;
+        }
+        .service-icon { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); }
+        .service-icon svg { width: 1.5rem; height: 1.5rem; }
+        .service-card h3 { font-family: var(--serif); font-weight: 600; font-size: 1.45rem; letter-spacing: -0.01em; margin-top: 0.35rem; }
+        .service-card p { color: var(--palette-text-secondary); font-size: 0.95rem; }
+        .service-link { position: relative; z-index: 1; margin-top: auto; padding-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.92rem; color: var(--palette-field); }
+        .service-link svg { width: 1rem; height: 1rem; transition: transform 160ms var(--ease); }
+        .service-link:hover svg { transform: translateX(3px); }
 
-        .trust-row {
+        /* ---------- Facts strip ---------- */
+        .facts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            background: var(--sprout-soft);
+            border: 1px solid var(--palette-sprout-border);
+            border-radius: 1rem;
+        }
+        @media (min-width: 860px) { .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .fact { display: grid; justify-items: center; gap: 0.35rem; padding: 1.6rem 1rem; text-align: center; }
+        .fact + .fact { border-left: 1px solid var(--palette-sprout-border); }
+        @media (max-width: 859px) {
+            .fact:nth-child(3) { border-left: 0; }
+            .fact:nth-child(n+3) { border-top: 1px solid var(--palette-sprout-border); }
+        }
+        .fact svg { width: 1.6rem; height: 1.6rem; color: var(--palette-field); }
+        .fact b { font-size: 1.05rem; font-weight: 600; }
+        .fact span { font-size: 0.85rem; color: var(--palette-text-secondary); }
+        .facts-numbers .fact { padding-block: 1.75rem; }
+        .facts-numbers .fact b { font-size: clamp(1.6rem, 3vw, 2rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+
+        /* ---------- About ---------- */
+        .about-grid { display: grid; gap: 2.5rem; align-items: start; }
+        @media (min-width: 960px) { .about-grid { grid-template-columns: 1.1fr 1fr; gap: 4rem; } }
+        .about-copy p { color: var(--palette-text-secondary); margin-top: 1rem; max-width: 60ch; }
+        .checklist { display: grid; gap: 0.25rem; padding: 0.5rem 1.5rem; background: var(--palette-surface); border: 1px solid var(--palette-stone); border-radius: 1rem; }
+        .check-item { display: flex; gap: 0.9rem; padding-block: 1rem; }
+        .check-item + .check-item { border-top: 1px solid var(--palette-stone); }
+        .check-badge { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); flex-shrink: 0; }
+        .check-badge svg { width: 0.9rem; height: 0.9rem; }
+        .check-item h3 { font-size: 1rem; font-weight: 600; }
+        .check-item p { font-size: 0.9rem; color: var(--palette-text-secondary); }
+
+        /* ---------- CTA ---------- */
+        .cta {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            justify-content: center;
-            gap: 0.6rem 2rem;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        .trust-row span { display: inline-flex; align-items: center; gap: 0.4rem; }
-        .trust-row svg { width: 1rem; height: 1rem; color: var(--brand-success); flex-shrink: 0; }
-
-        /* ---------- Section headings ---------- */
-        .section-eyebrow {
-            display: block;
-            text-align: center;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--brand-success);
-            margin-bottom: 0.75rem;
-        }
-        .section-title {
-            font-size: 2.35rem;
-            font-weight: 800;
-            text-align: center;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
-        .section-subtitle {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 1.08rem;
-            max-width: 36rem;
-            margin: 0 auto 3.75rem;
-        }
-
-        /* ---------- Feature cards ---------- */
-        .grid { display: grid; gap: 1.75rem; }
-        .grid-features { grid-template-columns: 1fr; }
-        @media (min-width: 768px) { .grid-features { grid-template-columns: repeat(3, 1fr); } }
-
-        .feature-card {
-            padding: 2rem;
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--border);
-            background: var(--surface);
-            transition: transform 260ms var(--ease), box-shadow 260ms var(--ease), border-color 260ms var(--ease);
-        }
-        .feature-card:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--shadow-lg);
-            border-color: transparent;
-        }
-        .feature-icon {
-            display: grid;
-            place-items: center;
-            width: 3.1rem;
-            height: 3.1rem;
-            border-radius: 0.9rem;
-            margin-bottom: 1.4rem;
+            justify-content: space-between;
+            gap: 1.5rem;
+            padding: 2.25rem 2.5rem;
+            background: var(--palette-field);
+            border-radius: 1.25rem;
             color: #fff;
         }
-        .feature-icon svg { width: 1.5rem; height: 1.5rem; }
-        .feature-icon.c1 { background: linear-gradient(135deg, #2f8f78, #1f6f5c); }
-        .feature-icon.c2 { background: linear-gradient(135deg, #1f6f5c, #123f34); }
-        .feature-icon.c3 { background: linear-gradient(135deg, #4fb49a, #2f8f78); }
-        .feature-icon.c4 { background: linear-gradient(135deg, #175b4b, #0d2e27); }
-        .feature-icon.c5 { background: linear-gradient(135deg, #3fa78d, #1f6f5c); }
-        .feature-icon.c6 { background: linear-gradient(135deg, #1a5c4f, #123f34); }
-
-        .feature-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--text-primary); }
-        .feature-card p { color: var(--text-secondary); font-size: 0.97rem; }
-
-        /* ---------- Stats ---------- */
-        .stats-section {
-            position: relative;
-            background: linear-gradient(120deg, #123f34, #1f6f5c 45%, #2f8f78);
-            overflow: hidden;
-        }
-        .stats-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 40%),
-                               radial-gradient(circle at 80% 60%, rgba(255,255,255,0.1), transparent 45%);
-            pointer-events: none;
-        }
-        .grid-stats { grid-template-columns: repeat(2, 1fr); position: relative; z-index: 1; }
-        @media (min-width: 768px) { .grid-stats { grid-template-columns: repeat(4, 1fr); } }
-        .stat-tile {
-            text-align: center;
-            padding: 1.75rem 1rem;
-            border-radius: var(--radius-lg);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(6px);
-        }
-        .stat-tile .num { font-size: 2.5rem; font-weight: 800; color: #fff; font-family: 'Outfit', sans-serif; }
-        .stat-tile .label { color: rgba(255,255,255,0.85); font-size: 0.92rem; margin-top: 0.35rem; }
-
-        /* ---------- About ---------- */
-        .about-section { background: var(--surface-muted); }
-        .grid-about { grid-template-columns: 1fr; align-items: center; }
-        @media (min-width: 768px) { .grid-about { grid-template-columns: 1fr 1fr; gap: 3.5rem; } }
-        .about-copy h2 { font-size: 2.1rem; font-weight: 800; margin-bottom: 1.25rem; }
-        .about-copy p { color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 1rem; }
-
-        .about-card {
-            background: var(--surface);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border);
-            padding: 2rem;
-            margin-top: 2.5rem;
-        }
-        @media (min-width: 768px) { .about-card { margin-top: 0; } }
-        .checklist-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding-block: 0.9rem;
-            border-bottom: 1px solid var(--border);
-        }
-        .checklist-item:last-child { border-bottom: none; }
-        .check-badge {
-            flex-shrink: 0;
-            display: grid;
-            place-items: center;
-            width: 2.1rem;
-            height: 2.1rem;
-            border-radius: 50%;
-            background: var(--brand-success-light);
-            color: var(--brand-success-dark);
-        }
-        .check-badge svg { width: 1.1rem; height: 1.1rem; }
-        .checklist-item h3 { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.15rem; }
-        .checklist-item p { color: var(--text-secondary); font-size: 0.92rem; }
-
-        /* ---------- CTA ---------- */
-        .cta-section { background: var(--surface); }
-        .cta-panel {
-            position: relative;
-            max-width: 64rem;
-            margin-inline: auto;
-            padding: 4rem 2rem;
-            border-radius: var(--radius-xl);
-            background: linear-gradient(135deg, #1f6f5c, #123f34 55%, #0d2e27);
-            text-align: center;
-            color: #fff;
-            overflow: hidden;
-            box-shadow: var(--shadow-lg);
-        }
-        .cta-panel::before, .cta-panel::after {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(50px);
-        }
-        .cta-panel::before { width: 16rem; height: 16rem; background: rgba(255,255,255,0.15); top: -6rem; right: -4rem; }
-        .cta-panel::after { width: 14rem; height: 14rem; background: rgba(255,255,255,0.1); bottom: -6rem; left: -4rem; }
-        .cta-panel h2 { font-size: 2.1rem; font-weight: 800; margin-bottom: 0.9rem; position: relative; }
-        .cta-panel p { font-size: 1.08rem; opacity: 0.92; margin-bottom: 2rem; position: relative; }
-        .cta-panel .btn { position: relative; }
+        .cta h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.15; letter-spacing: -0.015em; }
+        .cta p { color: color-mix(in srgb, #fff 80%, transparent); margin-top: 0.4rem; }
+        .cta form { display: contents; }
+        .btn-light { background: var(--palette-surface); color: var(--palette-field); }
+        .btn-light:hover { background: var(--palette-sprout); }
+        @media (max-width: 640px) { .cta { padding: 1.75rem 1.5rem; } }
 
         /* ---------- Footer ---------- */
-        footer { background: var(--text-primary); color: #cbd5e1; padding-block: 4rem 2rem; }
-        .footer-grid { grid-template-columns: 1.4fr repeat(3, 1fr); gap: 2.5rem; margin-bottom: 3rem; }
-        @media (max-width: 767px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
-        .footer-brand .brand { color: #fff; margin-bottom: 0.75rem; }
-        .footer-brand p { font-size: 0.92rem; color: #94a3b8; max-width: 20rem; }
-        footer h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #fff; margin-bottom: 1rem; }
-        footer ul { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
-        footer ul a { font-size: 0.92rem; color: #94a3b8; transition: color 200ms var(--ease); }
-        footer ul a:hover { color: #5cc9ae; }
-        .footer-bottom {
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            align-items: center;
-            text-align: center;
-            font-size: 0.85rem;
-            color: #64748b;
-        }
-        @media (min-width: 640px) { .footer-bottom { flex-direction: row; justify-content: space-between; text-align: left; } }
+        footer { padding-block: 2.25rem 2.5rem; border-top: 1px solid var(--palette-stone); }
+        .footer-band { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.25rem; }
+        .footer-band svg { width: 2.5rem; height: 2.5rem; flex-shrink: 0; }
+        .footer-mid b { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; color: var(--palette-text-secondary); }
+        .footer-mid i { font-size: 0.82rem; color: var(--palette-muted); }
+        .footer-meta { margin-left: auto; text-align: right; font-size: 0.82rem; color: var(--palette-muted); }
+        @media (max-width: 640px) { .footer-meta { margin-left: 0; text-align: left; width: 100%; } }
 
         /* ---------- Reveal-on-scroll ---------- */
-        .reveal { opacity: 0; transform: translateY(20px); transition: opacity 640ms var(--ease), transform 640ms var(--ease); }
+        .reveal { opacity: 0; transform: translateY(16px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
         .reveal.in-view { opacity: 1; transform: translateY(0); }
-
-        @keyframes fade-in-up {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .hero-inner { animation: fade-in-up 640ms var(--ease); }
 
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
-            .hero-inner, .reveal { animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important; }
-            .btn:hover, .feature-card:hover { transform: none !important; }
+            .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+            .btn svg, .service-link svg { transition: none !important; }
         }
-
-        @media (min-width: 768px) { .nav-links { display: flex; } }
     </style>
 </head>
 <body>
     <!-- Navigation Header -->
     <header id="siteHeader">
-        <nav class="navbar">
-            <div class="brand">
-                <span class="brand-mark">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.97 0 9-4.03 9-9-4.97 0-9 4.03-9 9Z"/><path d="M12 22c-4.97 0-9-4.03-9-9 4.97 0 9 4.03 9 9Z"/><path d="M12 22V8"/><path d="M12 8c0-3.31 2.69-6 6-6-.5 3-2.5 5.5-6 6Z"/><path d="M12 8C12 4.69 9.31 2 6 2c.5 3 2.5 5.5 6 6Z"/></svg>
+        <div class="container navbar">
+            <a href="#top" class="brand" aria-label="Centrala Farmers Marketing Cooperative home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--palette-field)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V9"/><path d="M12 14c-4.2 0-7.2-3-7.2-7.2 4.2 0 7.2 3 7.2 7.2Z" fill="var(--palette-sprout)"/><path d="M12 14c4.2 0 7.2-3 7.2-7.2-4.2 0-7.2 3-7.2 7.2Z" fill="var(--palette-sprout)"/><path d="M12 9c0-3 1.4-5.2 3-6.6.9 2.6-.1 5.2-3 6.6Z"/></svg>
+                <span>
+                    <span class="brand-name">Centrala</span>
+                    <span class="brand-sub">Farmers Marketing Cooperative</span>
                 </span>
-                CFMC
-            </div>
+            </a>
 
-            <div class="nav-links">
-                <a href="#features">Features</a>
+            <nav class="nav-links" aria-label="Main">
+                <a href="#top" class="is-active">Home</a>
                 <a href="#about">About</a>
-                <a href="#stats">Stats</a>
-            </div>
+                <a href="#services">Services</a>
+                <a href="#contact">Contact</a>
+            </nav>
 
             @if (Route::has('login'))
-                <div style="display:flex; align-items:center; gap:1rem;">
+                <div class="nav-actions">
                     @auth
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="btn btn-outline btn-sm">Log In</button>
+                            <button type="submit" class="btn btn-outline btn-nav">Log Out</button>
                         </form>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline btn-sm">Log In</a>
+                        <a href="{{ route('login') }}" class="btn btn-outline btn-nav">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
+                            Login
+                        </a>
                     @endauth
                 </div>
             @endif
-        </nav>
+        </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-blob b1"></div>
-        <div class="hero-blob b2"></div>
-        <div class="hero-blob b3"></div>
+    <main>
+        <!-- Hero Section -->
+        <section class="hero" id="top">
+            <svg class="hero-leaf" viewBox="0 0 70 120" aria-hidden="true"><path d="M10 110C10 60 30 30 60 10 55 50 40 85 10 110Z" fill="var(--palette-sprout-border)"/><path d="M5 115C20 85 25 70 22 40" stroke="var(--palette-sprout-border)" stroke-width="2" fill="none"/></svg>
 
-        <div class="max-w-4xl px-4 hero-inner">
-            <span class="eyebrow"><span class="dot"></span> Built for cooperative growth</span>
+            <div class="container hero-grid">
+                <div>
+                    <div class="eyebrow">Together <i>&bull;</i> Farmers <i>&bull;</i> Stronger <i>&bull;</i> Tomorrow</div>
+                    <h1>Growing <em>together,</em><br>managing better.</h1>
+                    <p class="lead">
+                        The unified cooperative management system for Centrala farmers. Apply for loans,
+                        track your CBU, book machinery and keep your membership up to date, all in one place.
+                    </p>
 
-            <h1>Welcome to <span class="gradient-text">CFMC</span></h1>
-            <p class="lead">
-                Empower your cooperative with modern management solutions. Streamline operations,
-                connect members, and grow together.
-            </p>
+                    <div class="hero-actions">
+                        @if (Route::has('login'))
+                            @auth
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-solid">Log Out</button>
+                                </form>
+                            @else
+                                <a href="{{ route('login') }}" class="btn btn-solid">
+                                    Get Started
+                                    <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </a>
+                            @endauth
+                        @endif
+                        <a href="#services" class="btn btn-outline">Learn More</a>
+                    </div>
+                </div>
 
-            <div class="hero-actions">
-                @if (Route::has('login'))
-                    @auth
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="btn btn-solid btn-lg">Sign In</button>
-                        </form>
-                    @else
-                        <a href="{{ route('login') }}" class="btn btn-solid btn-lg">
-                            Sign In
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:1.05rem;height:1.05rem;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                        </a>
-                    @endauth
+                <div class="hero-photo">
+                    <img src="{{ asset('images/hero-harvest.jpg') }}" width="735" height="479"
+                         alt="Cooperative farmers loading sacks of harvested rice onto a combine harvester in a Centrala rice field">
+                    <div class="trust-card">
+                        <div class="trust-title">
+                            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 16-9 17Z"/><path d="M4 21c4-6 8-9 12-11"/></svg></span>
+                            Trusted by<br>local farmers
+                        </div>
+                        <div class="trust-place">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                            Centrala, Surallah, South Cotabato
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="section">
+            <div class="container">
+                <div class="section-head reveal">
+                    <div class="eyebrow">Services</div>
+                    <h2 class="section-title">Everything a member needs, in one system</h2>
+                </div>
+
+                <div class="services-grid">
+                    <article class="service-card reveal">
+                        <div class="service-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3"/><circle cx="5" cy="10" r="2.2"/><circle cx="19" cy="10" r="2.2"/><path d="M7 19c0-3 2.2-5 5-5s5 2 5 5"/><path d="M1.5 18c0-2 1.5-3.5 3.5-3.5"/><path d="M22.5 18c0-2-1.5-3.5-3.5-3.5"/></svg>
+                        </div>
+                        <h3>Member Registration</h3>
+                        <p>Register as a cooperative member and keep your farmer profile and records organized and secure.</p>
+                        @if (Route::has('login'))
+                            <a href="{{ route('login') }}" class="service-link">Learn more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+                        @endif
+                    </article>
+
+                    <article class="service-card reveal">
+                        <div class="service-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M12 5v4"/><path d="M2 17h4l4 2h5a2 2 0 0 0 0-4h-3"/><path d="M6 14l3-1.5h3"/><path d="M15 15l5-2a1.6 1.6 0 0 1 1.5 2.6L16 20"/></svg>
+                        </div>
+                        <h3>Farmer Loans</h3>
+                        <p>Apply for loans, follow your repayment schedule, view your CBU and pay on time, all from one place.</p>
+                        @if (Route::has('login'))
+                            <a href="{{ route('login') }}" class="service-link">Learn more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+                        @endif
+                    </article>
+
+                    <article class="service-card reveal">
+                        <div class="service-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="18" cy="18" r="2"/><path d="M4 14V8h7l2 5h5a2 2 0 0 1 2 2v3"/><path d="M10 17h6"/><path d="M7 8V5h3"/></svg>
+                        </div>
+                        <h3>Machine Rental</h3>
+                        <p>Check tractor and harvester availability, request a schedule, and see your bookings on the calendar.</p>
+                        @if (Route::has('login'))
+                            <a href="{{ route('login') }}" class="service-link">Learn more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+                        @endif
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Facts Strip -->
+        <section aria-label="Cooperative at a glance">
+            <div class="container">
+                @if (!empty($stats))
+                    @php
+                        // Compact peso amount: ₱4.8M, ₱350K, ₱9,500.
+                        $loaned = $stats['loaned'];
+                        $loanedLabel = $loaned >= 1000000
+                            ? '₱' . rtrim(rtrim(number_format($loaned / 1000000, 1), '0'), '.') . 'M'
+                            : ($loaned >= 1000
+                                ? '₱' . rtrim(rtrim(number_format($loaned / 1000, 1), '0'), '.') . 'K'
+                                : '₱' . number_format($loaned));
+                    @endphp
+                    <div class="facts facts-numbers reveal">
+                        <div class="fact">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 16-9 17Z"/><path d="M4 21c4-6 8-9 12-11"/></svg>
+                            <b>{{ number_format($stats['farmers']) }}</b>
+                            <span>Registered Farmers</span>
+                        </div>
+                        <div class="fact">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3"/><circle cx="5" cy="10" r="2.2"/><circle cx="19" cy="10" r="2.2"/><path d="M7 19c0-3 2.2-5 5-5s5 2 5 5"/><path d="M1.5 18c0-2 1.5-3.5 3.5-3.5"/><path d="M22.5 18c0-2-1.5-3.5-3.5-3.5"/></svg>
+                            <b>{{ number_format($stats['members']) }}</b>
+                            <span>Active Members</span>
+                        </div>
+                        <div class="fact">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="18" cy="18" r="2"/><path d="M4 14V8h7l2 5h5a2 2 0 0 1 2 2v3"/><path d="M10 17h6"/><path d="M7 8V5h3"/></svg>
+                            <b>{{ number_format($stats['machines']) }}</b>
+                            <span>Available Machines</span>
+                        </div>
+                        <div class="fact">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 12h7"/><path d="M9 16h5"/></svg>
+                            <b>{{ $loanedLabel }}</b>
+                            <span>Total Loaned Amount</span>
+                        </div>
+                    </div>
+                @else
+                <div class="facts reveal">
+                    <div class="fact">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 16-9 17Z"/><path d="M4 21c4-6 8-9 12-11"/></svg>
+                        <b>Member-owned</b>
+                        <span>Run by and for local farmers</span>
+                    </div>
+                    <div class="fact">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
+                        <b>Loans &amp; CBU</b>
+                        <span>Track balances and payments</span>
+                    </div>
+                    <div class="fact">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="18" cy="18" r="2"/><path d="M4 14V8h7l2 5h5a2 2 0 0 1 2 2v3"/><path d="M10 17h6"/></svg>
+                        <b>Shared machinery</b>
+                        <span>Book tractors and harvesters</span>
+                    </div>
+                    <div class="fact">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                        <b>Open anytime</b>
+                        <span>On your phone or computer</span>
+                    </div>
+                </div>
                 @endif
-                <a href="#features" class="btn btn-ghost btn-lg">Explore Features</a>
             </div>
+        </section>
 
-            <div class="trust-row">
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Member management</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Financial transparency</span>
-                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Built for every device</span>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="section">
-        <div class="max-w-6xl px-4">
-            <span class="section-eyebrow reveal">Capabilities</span>
-            <h2 class="section-title reveal">Key Features</h2>
-            <p class="section-subtitle reveal">Everything your cooperative needs to operate smoothly, in one connected system.</p>
-
-            <div class="grid grid-features">
-                <div class="feature-card reveal">
-                    <div class="feature-icon c1">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </div>
-                    <h3>Member Management</h3>
-                    <p>Easily manage member profiles, roles, and permissions. Keep your cooperative organized and connected.</p>
-                </div>
-
-                <div class="feature-card reveal">
-                    <div class="feature-icon c2">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-                    </div>
-                    <h3>Analytics Dashboard</h3>
-                    <p>Get real-time insights with powerful analytics. Make data-driven decisions for your cooperative.</p>
-                </div>
-
-                <div class="feature-card reveal">
-                    <div class="feature-icon c3">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.38-1.34-2.5-3-2.5s-3 1.12-3 2.5S10.34 12 12 12s3 1.12 3 2.5-1.34 2.5-3 2.5-3-1.12-3-2.5"/></svg>
-                    </div>
-                    <h3>Financial Tracking</h3>
-                    <p>Track transactions, manage budgets, and maintain financial transparency across your organization.</p>
-                </div>
-
-                <div class="feature-card reveal">
-                    <div class="feature-icon c4">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
-                    </div>
-                    <h3>Event Planning</h3>
-                    <p>Schedule meetings, organize events, and keep members informed with integrated event management.</p>
-                </div>
-
-                <div class="feature-card reveal">
-                    <div class="feature-icon c5">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></svg>
-                    </div>
-                    <h3>Mobile Friendly</h3>
-                    <p>Access your cooperative management tools on any device. Work anytime, anywhere.</p>
-                </div>
-
-                <div class="feature-card reveal">
-                    <div class="feature-icon c6">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
-                    </div>
-                    <h3>Secure &amp; Reliable</h3>
-                    <p>Enterprise-grade security ensures your cooperative data is always protected and backed up.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Statistics Section -->
-    <section id="stats" class="section stats-section">
-        <div class="max-w-6xl px-4">
-            <div class="grid grid-stats reveal">
-                <div class="stat-tile">
-                    <div class="num">100+</div>
-                    <p class="label">Active Cooperatives</p>
-                </div>
-                <div class="stat-tile">
-                    <div class="num">10K+</div>
-                    <p class="label">Total Members</p>
-                </div>
-                <div class="stat-tile">
-                    <div class="num">99.9%</div>
-                    <p class="label">Uptime</p>
-                </div>
-                <div class="stat-tile">
-                    <div class="num">24/7</div>
-                    <p class="label">Support</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="section about-section">
-        <div class="max-w-6xl px-4">
-            <div class="grid grid-about">
+        <!-- About Section -->
+        <section id="about" class="section">
+            <div class="container about-grid">
                 <div class="about-copy reveal">
-                    <span class="section-eyebrow" style="text-align:left;">Why CFMC</span>
-                    <h2>About CFMC</h2>
-                    <p>CFMC is a comprehensive cooperative management system designed to help organizations like yours succeed in the digital age.</p>
-                    <p>We provide tools for member management, financial tracking, event planning, and much more. Our mission is to empower cooperatives with technology that brings members together and drives growth.</p>
-                    <p>Whether you're just starting out or scaling an established cooperative, CFMC has the features you need to thrive.</p>
+                    <div class="eyebrow">About CFMC</div>
+                    <h2 class="section-title" style="margin-top: 0.75rem;">A cooperative that grows with its farmers</h2>
+                    <p>Centrala Farmers Marketing Cooperative brings farmers in Centrala, Surallah together to share resources, access fair financing and market their harvest.</p>
+                    <p>This system puts the cooperative's everyday work online: membership records, loan applications and payments, capital build-up, machinery schedules and announcements, so members and staff spend less time on paperwork.</p>
                 </div>
-                <div class="about-card reveal">
-                    <div class="checklist-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>
+                <div class="checklist reveal">
+                    <div class="check-item">
+                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
                         <div>
-                            <h3>Easy to Use</h3>
-                            <p>Intuitive interface designed for all skill levels</p>
+                            <h3>Easy to use</h3>
+                            <p>Simple screens designed for every member</p>
                         </div>
                     </div>
-                    <div class="checklist-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>
+                    <div class="check-item">
+                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
                         <div>
-                            <h3>Scalable</h3>
-                            <p>Grows with your cooperative's needs</p>
+                            <h3>Transparent</h3>
+                            <p>See your loans, payments and CBU anytime</p>
                         </div>
                     </div>
-                    <div class="checklist-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>
+                    <div class="check-item">
+                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
                         <div>
-                            <h3>Community Focused</h3>
-                            <p>Built with cooperative values in mind</p>
+                            <h3>Community focused</h3>
+                            <p>Built around cooperative values</p>
                         </div>
                     </div>
-                    <div class="checklist-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>
+                    <div class="check-item">
+                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
                         <div>
-                            <h3>Dedicated Support</h3>
-                            <p>Expert assistance when you need it</p>
+                            <h3>Secure</h3>
+                            <p>Your records are protected and private</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- CTA Section -->
-    <section class="section cta-section">
-        <div class="px-4">
-            <div class="cta-panel reveal">
-                <h2>Ready to Transform Your Cooperative?</h2>
-                <p>Join CFMC and start managing your cooperative today.</p>
-
-                @if (Route::has('login'))
-                    @auth
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="btn btn-white btn-lg">Log Out</button>
-                        </form>
-                    @else
-                        <a href="{{ route('login') }}" class="btn btn-white btn-lg">Sign In</a>
-                    @endauth
-                @endif
+        <!-- CTA Section -->
+        <section class="section" style="padding-top: 0;">
+            <div class="container">
+                <div class="cta reveal">
+                    <div>
+                        <h2>Ready to get started?</h2>
+                        <p>Sign in to manage your membership, loans and machine schedules.</p>
+                    </div>
+                    @if (Route::has('login'))
+                        @auth
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="btn btn-light">Log Out</button>
+                            </form>
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-light">
+                                Sign In
+                                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                            </a>
+                        @endauth
+                    @endif
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
     <!-- Footer -->
-    <footer>
-        <div class="max-w-6xl px-4">
-            <div class="grid footer-grid">
-                <div class="footer-brand">
-                    <div class="brand">
-                        <span class="brand-mark">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.97 0 9-4.03 9-9-4.97 0-9 4.03-9 9Z"/><path d="M12 22c-4.97 0-9-4.03-9-9 4.97 0 9 4.03 9 9Z"/><path d="M12 22V8"/><path d="M12 8c0-3.31 2.69-6 6-6-.5 3-2.5 5.5-6 6Z"/><path d="M12 8C12 4.69 9.31 2 6 2c.5 3 2.5 5.5 6 6Z"/></svg>
-                        </span>
-                        CFMC
-                    </div>
-                    <p>Modern management software for cooperatives who want to move faster, together.</p>
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-band">
+                <svg viewBox="0 0 44 44" aria-hidden="true"><path d="M8 40C14 26 22 18 36 12" stroke="var(--palette-sprout-border)" stroke-width="1.5" fill="none"/><path d="M18 26c-6-1-9-6-8-11 6 1 9 6 8 11Z" fill="var(--palette-sprout-border)"/><path d="M26 20c1-6 6-9 11-8-1 6-6 9-11 8Z" fill="var(--palette-sprout-border)"/></svg>
+                <div class="footer-mid">
+                    <b>CENTRALA FARMERS MARKETING COOPERATIVE</b>
+                    <i>Supporting our farmers. Building a stronger tomorrow.</i>
                 </div>
-                <div>
-                    <h4>Product</h4>
-                    <ul>
-                        <li><a href="#features">Features</a></li>
-                        <li><a href="#stats">Stats</a></li>
-                        <li><a href="#about">About</a></li>
-                    </ul>
+                <div class="footer-meta">
+                    <p>Centrala, Surallah, South Cotabato</p>
+                    <p>&copy; {{ date('Y') }} CFMC. All rights reserved.</p>
                 </div>
-                <div>
-                    <h4>Company</h4>
-                    <ul>
-                        <li><a href="#about">About Us</a></li>
-                        <li><a href="#">Contact</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4>Legal</h4>
-                    <ul>
-                        <li><a href="#">Privacy</a></li>
-                        <li><a href="#">Terms</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 CFMC - Cooperative Management System. All rights reserved.</p>
-                <p>Made for cooperatives that grow together.</p>
             </div>
         </div>
     </footer>
@@ -748,6 +547,31 @@
                 revealEls.forEach(function (el) { observer.observe(el); });
             } else {
                 revealEls.forEach(function (el) { el.classList.add('in-view'); });
+            }
+
+            // Highlight the nav link for the section in view.
+            var navLinks = document.querySelectorAll('.nav-links a');
+            var sections = ['top', 'about', 'services', 'contact']
+                .map(function (id) { return document.getElementById(id); })
+                .filter(Boolean);
+            function setActive(id) {
+                navLinks.forEach(function (link) {
+                    link.classList.toggle('is-active', link.getAttribute('href') === '#' + id);
+                });
+            }
+            if ('IntersectionObserver' in window && sections.length) {
+                var navObserver = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) setActive(entry.target.id);
+                    });
+                }, { rootMargin: '-45% 0px -50% 0px' });
+                sections.forEach(function (el) { navObserver.observe(el); });
+
+                // The footer is too short to reach the middle of the screen,
+                // so mark Contact active once the page is scrolled to the end.
+                window.addEventListener('scroll', function () {
+                    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) setActive('contact');
+                }, { passive: true });
             }
         })();
     </script>

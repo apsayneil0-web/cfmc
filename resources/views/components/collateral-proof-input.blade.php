@@ -38,7 +38,7 @@
         height: 68px;
         border-radius: 50%;
         background: #fff;
-        border: 4px solid #198754;
+        border: 4px solid var(--brand-primary);
         padding: 0;
         display: flex;
         align-items: center;
@@ -48,7 +48,7 @@
         width: 52px;
         height: 52px;
         border-radius: 50%;
-        background: #198754;
+        background: var(--brand-primary);
     }
     .collateral-round-btn {
         width: 52px;

@@ -1,0 +1,42 @@
+/* =========================================================================
+   CFMC palette — "Field & Grain"
+   Single source of truth for the system's colors. Imported by app.css (the
+   dashboards) and loaded directly by the standalone pages (landing, login,
+   OTP, password reset, printable receipt) that don't use app.css.
+   ========================================================================= */
+:root {
+    /* Neutrals */
+    --palette-paper: #f7f6f2;          /* Rice Paper — page background */
+    --palette-surface: #ffffff;        /* White — cards, tables, modals */
+    --palette-surface-muted: #f9f8f5;  /* Table headers, card headers */
+    --palette-stone: #e4e2da;          /* Stone — borders, dividers */
+    --palette-input-border: #d6d3c9;
+    --palette-input-border-hover: #b9b6aa;
+    --palette-ink: #1f2a22;            /* Forest Ink — main text */
+    --palette-text-secondary: #4a5249;
+    --palette-muted: #6b7069;          /* Sage Gray — labels, muted text */
+    --palette-muted-light: #a3a69e;
+
+    /* Primary — Field Green */
+    --palette-field: #2f5d3a;
+    --palette-field-light: #3f7a4d;
+    --palette-field-hover: #264c30;
+    --palette-field-deep: #1d3b25;
+    --palette-sprout: #e6eee7;         /* Sprout — selected / active tint */
+    --palette-sprout-border: #c3d4c6;
+
+    /* Accent — Wheat Gold (pending, highlights; use sparingly) */
+    --palette-wheat: #c8a24a;
+    --palette-wheat-deep: #a8853a;
+    --palette-wheat-tint: #f6efdc;
+    --palette-wheat-text: #7a5f1c;
+
+    /* Danger — Clay */
+    --palette-clay: #b5523b;
+    --palette-clay-tint: #f6e5e0;
+    --palette-clay-border: #e8c3b8;
+    --palette-clay-text: #9c4532;
+
+    /* Info — muted sage (kept quiet on purpose; no blue) */
+    --palette-info: #4f6f6a;
+}

@@ -1,11 +1,20 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-B5ISe6Bt.css",
+    "file": "assets/app-BcXeKZoj.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
     "names": [
       "app.css"
+    ]
+  },
+  "resources/css/palette.css": {
+    "file": "assets/palette-DFyjOAKd.css",
+    "src": "resources/css/palette.css",
+    "isEntry": true,
+    "name": "palette",
+    "names": [
+      "palette.css"
     ]
   },
   "resources/js/app.js": {

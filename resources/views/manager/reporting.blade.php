@@ -121,12 +121,12 @@
     <div class="d-flex align-items-center gap-3 mb-3">
         <div class="print-logo-circle"><i class="fas fa-seedling"></i></div>
         <div>
-            <h2 class="mb-0 fw-bold" style="color:#1f5c3a;">CENTRALA FARMERS MARKETING COOPERATIVE</h2>
+            <h2 class="mb-0 fw-bold" style="color: var(--palette-field);">CENTRALA FARMERS MARKETING COOPERATIVE</h2>
             <p class="mb-0 text-muted">Centrala, Surallah, South Cotabato</p>
         </div>
     </div>
 
-    <hr style="border-top: 2px solid #1f5c3a; margin: 1rem 0;">
+    <hr style="border-top: 2px solid var(--palette-field); margin: 1rem 0;">
 
     <h1 class="text-center fw-bold mb-1">{{ strtoupper($reportTitle) }}</h1>
     <p class="text-center text-muted mb-4">
@@ -467,7 +467,7 @@
 </div>
 
 <div class="print-only text-end mt-6">
-    <p class="mb-0" style="border-top:1px solid #333; display:inline-block; padding-top:4px; min-width:260px;">&nbsp;</p>
+    <p class="mb-0" style="border-top:1px solid var(--palette-ink); display:inline-block; padding-top:4px; min-width:260px;">&nbsp;</p>
     <p class="mb-0 mt-1">Prepared by:</p>
     <p class="mb-0 fw-bold">{{ auth()->user()->name }}</p>
     <p class="mb-0 text-muted">Centrala Farmers Marketing Cooperative</p>
@@ -502,7 +502,7 @@
         width: 64px;
         height: 64px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #2f7a4f, #1f5c3a);
+        background: linear-gradient(135deg, var(--palette-field-light), var(--palette-field));
         color: #fff;
         display: flex;
         align-items: center;
@@ -512,8 +512,8 @@
     }
 
     .print-filter-box {
-        background: #f3f9f5;
-        border: 1px solid #d7ead9;
+        background: var(--palette-surface-muted);
+        border: 1px solid var(--palette-stone);
         border-radius: 0.5rem;
         padding: 1rem 1.25rem;
     }

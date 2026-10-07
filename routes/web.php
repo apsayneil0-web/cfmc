@@ -37,7 +37,22 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
-    return view('welcome');
+    // Public headline numbers for the landing page. Cached briefly so every
+    // visit doesn't hit the database, and wrapped so a database hiccup never
+    // takes the landing page down — it just renders without the numbers.
+    try {
+        $stats = \Illuminate\Support\Facades\Cache::remember('landing.stats', now()->addMinutes(10), fn () => [
+            'farmers' => \App\Models\Farmer::where('status', '!=', 'archived')->count(),
+            'members' => \App\Models\Farmer::where('status', 'approved')->count(),
+            'machines' => (int) \App\Models\Machine::whereNull('archived_at')->sum('quantity'),
+            'loaned' => (float) \App\Models\Loan::whereNotNull('disbursed_at')->sum('principal_amount'),
+        ]);
+    } catch (\Throwable $e) {
+        report($e);
+        $stats = null;
+    }
+
+    return view('welcome', ['stats' => $stats]);
 })->name('welcome');
 
 // Dashboard routes

@@ -57,20 +57,20 @@
                 <span class="text-sm font-medium text-gray-700">New Membership</span>
             </a>
             <a href="{{ route('manager.schedule-approval') }}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
-                <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <i class="fas fa-calendar-check text-green-600"></i>
+                <div class="w-10 h-10 rounded-lg bg-success-subtle flex items-center justify-center">
+                    <i class="fas fa-calendar-check text-success"></i>
                 </div>
                 <span class="text-sm font-medium text-gray-700">Approve Schedule</span>
             </a>
             <a href="{{ route('manager.announcement') }}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
-                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <i class="fas fa-bullhorn text-purple-600"></i>
+                <div class="w-10 h-10 rounded-lg bg-warning-subtle flex items-center justify-center">
+                    <i class="fas fa-bullhorn text-warning"></i>
                 </div>
                 <span class="text-sm font-medium text-gray-700">Create Announcement</span>
             </a>
             <a href="{{ route('manager.reporting') }}" class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
-                <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                    <i class="fas fa-file-alt text-red-600"></i>
+                <div class="w-10 h-10 rounded-lg bg-danger-subtle flex items-center justify-center">
+                    <i class="fas fa-file-alt text-danger"></i>
                 </div>
                 <span class="text-sm font-medium text-gray-700">Generate Report</span>
             </a>

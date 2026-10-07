@@ -6,25 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - CFMC</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=outfit:600,700,800" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
+    @vite('resources/css/palette.css')
     <style>
         :root {
-            --brand-success: #1f6f5c;
-            --brand-success-dark: #123f34;
-            --brand-success-light: #e4f1ee;
-            --brand-primary: #2f8f78;
-            --brand-danger: #dc2626;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-muted: #94a3b8;
-            --border: #e5e7eb;
+            --brand-success: var(--palette-field);
+            --brand-success-dark: var(--palette-field-deep);
+            --brand-success-light: var(--palette-sprout);
+            --brand-primary: var(--palette-field-light);
+            --brand-danger: var(--palette-clay);
+            --text-primary: var(--palette-ink);
+            --text-secondary: var(--palette-text-secondary);
+            --text-muted: var(--palette-muted);
+            --border: var(--palette-stone);
             --ease: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-            background: linear-gradient(180deg, #f2f9f7 0%, #eef4f2 100%);
+            background: linear-gradient(180deg, var(--palette-paper) 0%, var(--palette-surface-muted) 100%);
             position: relative;
             display: flex;
             align-items: center;
@@ -35,12 +36,12 @@
             -webkit-font-smoothing: antialiased;
             overflow: hidden;
         }
-        h1, h2 { font-family: 'Outfit', 'Instrument Sans', sans-serif; letter-spacing: -0.02em; }
+        h1, h2 { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
 
         .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.55; pointer-events: none; z-index: 0; }
-        .bg-blob.b1 { width: 28rem; height: 28rem; top: -9rem; left: -8rem; background: radial-gradient(circle, #a7e8d9, transparent 70%); }
-        .bg-blob.b2 { width: 24rem; height: 24rem; bottom: -10rem; right: -8rem; background: radial-gradient(circle, #fdecc0, transparent 70%); }
-        .bg-blob.b3 { width: 16rem; height: 16rem; top: 40%; right: 12%; background: radial-gradient(circle, #d7ede7, transparent 70%); opacity: 0.35; }
+        .bg-blob.b1 { width: 28rem; height: 28rem; top: -9rem; left: -8rem; background: radial-gradient(circle, var(--palette-sprout), transparent 70%); }
+        .bg-blob.b2 { width: 24rem; height: 24rem; bottom: -10rem; right: -8rem; background: radial-gradient(circle, var(--palette-wheat-tint), transparent 70%); }
+        .bg-blob.b3 { width: 16rem; height: 16rem; top: 40%; right: 12%; background: radial-gradient(circle, var(--palette-sprout), transparent 70%); opacity: 0.35; }
 
         .container { max-width: 440px; width: 100%; position: relative; z-index: 1; }
         .card {
@@ -48,7 +49,7 @@
             backdrop-filter: blur(20px) saturate(160%);
             -webkit-backdrop-filter: blur(20px) saturate(160%);
             border-radius: 1.5rem;
-            box-shadow: 0 24px 48px -16px rgba(15, 23, 42, 0.18), 0 8px 16px -8px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 24px 48px -16px color-mix(in srgb, var(--palette-ink) 18%, transparent), 0 8px 16px -8px color-mix(in srgb, var(--palette-ink) 8%, transparent);
             border: 1px solid rgba(255, 255, 255, 0.6);
             padding: 2.75rem 2.5rem;
             animation: card-in 460ms var(--ease);
@@ -62,17 +63,35 @@
         .back-link {
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.6rem;
             margin-bottom: 1.75rem;
-            color: var(--brand-success-dark);
+            color: var(--text-muted);
             text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: gap 200ms var(--ease), color 200ms var(--ease);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 200ms var(--ease);
         }
-        .back-link svg { width: 1rem; height: 1rem; transition: transform 200ms var(--ease); }
-        .back-link:hover { color: var(--brand-success); gap: 0.6rem; }
+        .back-link-icon {
+            display: grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--palette-surface);
+            color: var(--text-primary);
+            transition: background-color 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+        }
+        .back-link svg { width: 0.95rem; height: 0.95rem; transition: transform 200ms var(--ease); }
+        .back-link:hover { color: var(--text-primary); }
+        .back-link:hover .back-link-icon {
+            background: var(--palette-sprout);
+            border-color: var(--palette-sprout-border);
+            color: var(--brand-success);
+        }
         .back-link:hover svg { transform: translateX(-2px); }
+        .back-link:focus-visible { outline: none; }
+        .back-link:focus-visible .back-link-icon { box-shadow: 0 0 0 3px var(--palette-sprout-border); }
 
         .header { text-align: center; margin-bottom: 2rem; }
         .brand-mark {
@@ -82,12 +101,12 @@
             height: 4rem;
             margin: 0 auto 1.25rem;
             border-radius: 1.1rem;
-            background: linear-gradient(135deg, var(--brand-success), #175b4b 55%, var(--brand-primary));
-            box-shadow: 0 12px 28px -8px rgba(31, 111, 92, 0.45);
+            background: linear-gradient(135deg, var(--brand-success), var(--palette-field-hover) 55%, var(--brand-primary));
+            box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--palette-field) 45%, transparent);
             color: #fff;
         }
         .brand-mark svg { width: 2rem; height: 2rem; }
-        .title { font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.4rem; }
+        .title { font-size: 2rem; font-weight: 600; line-height: 1.1; color: var(--text-primary); margin-bottom: 0.5rem; }
         .subtitle { color: var(--text-secondary); font-size: 0.95rem; }
 
         .form-group { margin-bottom: 1.4rem; }
@@ -120,15 +139,15 @@
             border-radius: 0.75rem;
             font-size: 0.95rem;
             font-family: inherit;
-            background-color: #fafafa;
+            background-color: var(--palette-surface-muted);
             transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease), background-color 150ms var(--ease);
         }
-        input[type="text"]:hover, input[type="password"]:hover { border-color: #d1d5db; }
+        input[type="text"]:hover, input[type="password"]:hover { border-color: var(--palette-input-border-hover); }
         input[type="text"]:focus, input[type="password"]:focus {
             outline: none;
             border-color: var(--brand-success);
-            background-color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(31, 111, 92, 0.12);
+            background-color: var(--palette-surface);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--palette-field) 12%, transparent);
         }
         input[type="text"]:focus ~ svg, input[type="password"]:focus ~ svg { color: var(--brand-success); }
 
@@ -147,7 +166,7 @@
             border-radius: 0.5rem;
             transition: color 150ms var(--ease), background-color 150ms var(--ease);
         }
-        .toggle-password:hover { color: var(--text-primary); background: rgba(15, 23, 42, 0.05); }
+        .toggle-password:hover { color: var(--text-primary); background: color-mix(in srgb, var(--palette-ink) 5%, transparent); }
         .toggle-password svg { width: 1.1rem; height: 1.1rem; }
 
         .error { color: var(--brand-danger); font-size: 0.85rem; margin-top: 0.4rem; }
@@ -155,7 +174,7 @@
         .checkbox-group { display: flex; align-items: center; gap: 0.55rem; font-size: 0.92rem; cursor: pointer; color: var(--text-secondary); font-weight: 500; }
         input[type="checkbox"] { width: 1.05rem; height: 1.05rem; cursor: pointer; accent-color: var(--brand-success); }
 
-        .forgot-password { text-align: right; margin-bottom: 1.75rem; }
+        .forgot-password { text-align: right; margin-top: 1rem; margin-bottom: 1.75rem; }
         .forgot-password a {
             color: var(--brand-success-dark);
             text-decoration: none;
@@ -184,10 +203,10 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--brand-success), var(--brand-success-dark));
             color: white;
-            box-shadow: 0 12px 24px -8px rgba(31, 111, 92, 0.5);
+            box-shadow: 0 12px 24px -8px color-mix(in srgb, var(--palette-field) 50%, transparent);
         }
         .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.04); }
-        .btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(31, 111, 92, 0.3); }
+        .btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 4px color-mix(in srgb, var(--palette-field) 30%, transparent); }
         .btn-primary:active { transform: translateY(0) scale(0.98); }
 
         .alert {
@@ -198,9 +217,9 @@
             border-radius: 0.75rem;
             margin-bottom: 1.5rem;
             font-size: 0.9rem;
-            background-color: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
+            background-color: var(--palette-clay-tint);
+            color: var(--palette-clay-text);
+            border: 1px solid var(--palette-clay-border);
             animation: card-in 300ms var(--ease);
         }
         .alert svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; margin-top: 0.1rem; color: var(--brand-danger); }
@@ -214,9 +233,11 @@
 
     <div class="container">
         <div class="card">
-            <a href="{{ route('welcome') }}" class="back-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                Back to Home
+            <a href="{{ route('welcome') }}" class="back-link" aria-label="Back to Home">
+                <span class="back-link-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                </span>
+                Home
             </a>
 
             <div class="header">
@@ -228,7 +249,7 @@
             </div>
 
             @if (session('status'))
-                <div class="alert" style="background-color: var(--brand-success-light); color: var(--brand-success-dark); border-color: #bfe3d9;">
+                <div class="alert" style="background-color: var(--brand-success-light); color: var(--brand-success-dark); border-color: var(--palette-sprout-border);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--brand-success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m22 4-10 10-3-3"/></svg>
                     <div>{{ session('status') }}</div>
                 </div>

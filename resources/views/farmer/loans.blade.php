@@ -269,7 +269,7 @@
         top: 16px;
         bottom: -6px;
         width: 2px;
-        background: #e2e8f0;
+        background: var(--brand-border);
     }
     .timeline-marker {
         position: absolute;
@@ -278,8 +278,8 @@
         width: 14px;
         height: 14px;
         border-radius: 50%;
-        border: 2px solid #cbd5e1;
-        background: #fff;
+        border: 2px solid var(--brand-input-border);
+        background: var(--brand-surface);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -287,20 +287,20 @@
         color: #fff;
     }
     .timeline-marker-paid {
-        background: #16a34a;
-        border-color: #16a34a;
+        background: var(--brand-success);
+        border-color: var(--brand-success);
     }
     .timeline-marker-late {
-        background: #dc2626;
-        border-color: #dc2626;
+        background: var(--brand-danger);
+        border-color: var(--brand-danger);
     }
     .timeline-marker-current {
-        background: #2563eb;
-        border-color: #2563eb;
+        background: var(--brand-warning);
+        border-color: var(--brand-warning);
     }
     .timeline-marker-upcoming {
-        background: #fff;
-        border-color: #cbd5e1;
+        background: var(--brand-surface);
+        border-color: var(--brand-input-border);
     }
 </style>
 

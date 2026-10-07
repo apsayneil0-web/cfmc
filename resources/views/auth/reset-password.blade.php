@@ -7,16 +7,17 @@
     <title>Reset Password - CFMC</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=outfit:600,700,800" rel="stylesheet" />
+    @vite('resources/css/palette.css')
     <style>
         :root {
-            --brand-success: #1f6f5c; --brand-success-dark: #123f34; --brand-primary: #2f8f78;
-            --brand-danger: #dc2626; --text-primary: #0f172a; --text-secondary: #475569;
-            --text-muted: #94a3b8; --border: #e5e7eb; --ease: cubic-bezier(0.4, 0, 0.2, 1);
+            --brand-success: var(--palette-field); --brand-success-dark: var(--palette-field-deep); --brand-primary: var(--palette-field-light);
+            --brand-danger: var(--palette-clay); --text-primary: var(--palette-ink); --text-secondary: var(--palette-text-secondary);
+            --text-muted: var(--palette-muted); --border: var(--palette-stone); --ease: cubic-bezier(0.4, 0, 0.2, 1);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-            background: linear-gradient(180deg, #f2f9f7 0%, #eef4f2 100%);
+            background: linear-gradient(180deg, var(--palette-paper) 0%, var(--palette-surface-muted) 100%);
             display: flex; align-items: center; justify-content: center;
             min-height: 100vh; color: var(--text-primary); padding: 1.5rem;
         }
@@ -24,14 +25,14 @@
         .container { max-width: 440px; width: 100%; }
         .card {
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px) saturate(160%);
-            border-radius: 1.5rem; box-shadow: 0 24px 48px -16px rgba(15, 23, 42, 0.18), 0 8px 16px -8px rgba(15, 23, 42, 0.08);
+            border-radius: 1.5rem; box-shadow: 0 24px 48px -16px color-mix(in srgb, var(--palette-ink) 18%, transparent), 0 8px 16px -8px color-mix(in srgb, var(--palette-ink) 8%, transparent);
             border: 1px solid rgba(255, 255, 255, 0.6); padding: 2.75rem 2.5rem;
         }
         .header { text-align: center; margin-bottom: 2rem; }
         .brand-mark {
             display: grid; place-items: center; width: 4rem; height: 4rem; margin: 0 auto 1.25rem;
-            border-radius: 1.1rem; background: linear-gradient(135deg, var(--brand-success), #175b4b 55%, var(--brand-primary));
-            box-shadow: 0 12px 28px -8px rgba(31, 111, 92, 0.45); color: #fff;
+            border-radius: 1.1rem; background: linear-gradient(135deg, var(--brand-success), var(--palette-field-hover) 55%, var(--brand-primary));
+            box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--palette-field) 45%, transparent); color: #fff;
         }
         .brand-mark svg { width: 2rem; height: 2rem; }
         .title { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.4rem; }
@@ -41,12 +42,12 @@
         .input-wrap { position: relative; }
         input[type="password"], input[type="text"].password-input {
             width: 100%; padding: 0.8rem 2.6rem 0.8rem 0.9rem; border: 1.5px solid var(--border); border-radius: 0.75rem;
-            font-size: 0.95rem; font-family: inherit; background-color: #fafafa;
+            font-size: 0.95rem; font-family: inherit; background-color: var(--palette-surface-muted);
             transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
         }
         input[type="password"]:focus, input[type="text"].password-input:focus {
-            outline: none; border-color: var(--brand-success); background-color: #fff;
-            box-shadow: 0 0 0 4px rgba(31, 111, 92, 0.12);
+            outline: none; border-color: var(--brand-success); background-color: var(--palette-surface);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--palette-field) 12%, transparent);
         }
         .toggle-password {
             position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
@@ -54,7 +55,7 @@
             padding: 0.4rem; display: grid; place-items: center; border-radius: 0.5rem;
             transition: color 150ms var(--ease), background-color 150ms var(--ease);
         }
-        .toggle-password:hover { color: var(--text-primary); background: rgba(15, 23, 42, 0.05); }
+        .toggle-password:hover { color: var(--text-primary); background: color-mix(in srgb, var(--palette-ink) 5%, transparent); }
         .toggle-password svg { width: 1.1rem; height: 1.1rem; }
         .error { color: var(--brand-danger); font-size: 0.85rem; margin-top: 0.4rem; }
         .btn {
@@ -64,12 +65,12 @@
         }
         .btn-primary {
             background: linear-gradient(135deg, var(--brand-success), var(--brand-success-dark));
-            color: white; box-shadow: 0 12px 24px -8px rgba(31, 111, 92, 0.5);
+            color: white; box-shadow: 0 12px 24px -8px color-mix(in srgb, var(--palette-field) 50%, transparent);
         }
         .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.04); }
         .alert {
             display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.9rem 1rem; border-radius: 0.75rem;
-            margin-bottom: 1.5rem; font-size: 0.9rem; background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca;
+            margin-bottom: 1.5rem; font-size: 0.9rem; background-color: var(--palette-clay-tint); color: var(--palette-clay-text); border: 1px solid var(--palette-clay-border);
         }
         .alert svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; margin-top: 0.1rem; color: var(--brand-danger); }
         .alert ul { margin-top: 0.35rem; margin-left: 1.1rem; }
