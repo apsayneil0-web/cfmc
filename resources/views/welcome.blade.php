@@ -11,6 +11,10 @@
     @vite('resources/css/palette.css')
     <script>
         document.documentElement.classList.add('js');
+        // Motion layer is opt-in: visitors who prefer reduced motion get a static page.
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.documentElement.classList.add('motion');
+        }
         // Same saved theme as the dashboards; applied before paint so there's no flash.
         (function () {
             var saved = null;
@@ -393,6 +397,120 @@
             .js .story-row .story-media, .js .story-row .story-copy { opacity: 1 !important; transform: none !important; transition: none !important; }
             .photo-banner img { transform: none !important; }
         }
+
+        /* =====================================================================
+           Motion layer — calm, smooth, nothing bouncy.
+           Every hidden state is scoped to html.motion, which JS adds only when
+           motion is allowed, so the page is complete without JS or with
+           reduced motion turned on.
+           ===================================================================== */
+        :root { --out: cubic-bezier(0.16, 1, 0.3, 1); --soft: cubic-bezier(0.33, 1, 0.68, 1); }
+
+        /* Scroll progress line under the header */
+        .scroll-progress {
+            position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+            background: var(--palette-field); transform: scaleX(0); transform-origin: left; pointer-events: none;
+        }
+
+        /* Sliding underline for the active nav link */
+        .nav-links { position: relative; }
+        .nav-links a.is-active { border-color: transparent; }
+        .nav-indicator {
+            position: absolute; left: 0; bottom: -2px; height: 2px; width: 0;
+            background: var(--palette-field); border-radius: 2px;
+            transition: transform 700ms var(--out), width 700ms var(--out);
+        }
+
+        /* Words that rise out of a mask */
+        .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.06em 0.12em 0; margin: 0 -0.06em -0.12em 0; }
+        .wi { display: inline-block; }
+        html.motion .wi { transform: translateY(110%); transition: transform 1100ms var(--out); transition-delay: calc(var(--i, 0) * 45ms + var(--base, 0ms)); }
+        html.motion .is-in .wi, html.motion .is-in.wi { transform: none; }
+
+        /* ---------- Hero intro ---------- */
+        html.motion header#siteHeader { transform: translateY(-100%); transition: transform 1000ms var(--out); }
+        html.motion.intro-go header#siteHeader { transform: none; }
+        html.motion .hero .eyebrow,
+        html.motion .hero .lead,
+        html.motion .hero .hero-actions { opacity: 0; transform: translateY(18px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
+        html.motion.intro-go .hero .eyebrow { opacity: 1; transform: none; transition-delay: 150ms; }
+        html.motion.intro-go .hero .lead { opacity: 1; transform: none; transition-delay: 650ms; }
+        html.motion.intro-go .hero .hero-actions { opacity: 1; transform: none; transition-delay: 780ms; }
+        html.motion .hero-photo img { clip-path: inset(0 0 0 100% round 1.25rem); transform: scale(1.12); transition: clip-path 1400ms var(--out) 250ms, transform 1800ms var(--out) 250ms; }
+        html.motion.intro-go .hero-photo img { clip-path: inset(0 0 0 0 round 1.25rem); transform: scale(1); }
+        html.motion .trust-card { opacity: 0; transform: translateY(24px); transition: opacity 900ms var(--soft) 1100ms, transform 1100ms var(--out) 1100ms; }
+        html.motion.intro-go .trust-card { opacity: 1; transform: none; }
+        .hero-photo { will-change: transform; }
+
+        /* ---------- Generic reveal: replaces the old simple fade ---------- */
+        html.motion .reveal { opacity: 0; transform: translateY(28px); transition: opacity 1000ms var(--soft), transform 1100ms var(--out); transition-delay: var(--d, 0ms); }
+        html.motion .reveal.in-view { opacity: 1; transform: none; }
+        /* Section heads animate word-by-word instead */
+        html.motion .section-head.reveal { opacity: 1; transform: none; }
+        html.motion .section-head .eyebrow,
+        html.motion .section-head .section-sub { opacity: 0; transform: translateY(14px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
+        html.motion .section-head.in-view .eyebrow { opacity: 1; transform: none; }
+        html.motion .section-head.in-view .section-sub { opacity: 1; transform: none; transition-delay: 350ms; }
+
+        /* ---------- Service cards ---------- */
+        html.motion .service-icon { transform: scale(0.6); opacity: 0; transition: transform 1000ms var(--out), opacity 700ms var(--soft); transition-delay: calc(var(--d, 0ms) + 250ms); }
+        html.motion .service-card.in-view .service-icon { transform: none; opacity: 1; }
+        .service-card { transition: border-color 300ms var(--soft), transform 600ms var(--out), box-shadow 600ms var(--out); }
+        .service-card:hover { transform: translateY(-6px); box-shadow: 0 22px 40px -28px color-mix(in srgb, var(--shadow-color, #1f2a22) 45%, transparent); }
+        .service-card::after { transition: transform 900ms var(--out); }
+        .service-card:hover::after { transform: scale(1.35); }
+        .service-card .service-icon svg { transition: transform 700ms var(--out); }
+        .service-card:hover .service-icon svg { transform: rotate(-8deg) scale(1.06); }
+
+        /* ---------- Numbers ---------- */
+        html.motion .facts .fact + .fact { border-left-color: transparent; position: relative; }
+        .facts .fact + .fact::before { content: ""; position: absolute; left: -1px; top: 18%; bottom: 18%; width: 1px; background: var(--palette-sprout-border); transform: scaleY(0); transition: transform 1000ms var(--out) 300ms; }
+        html:not(.motion) .facts .fact + .fact::before { display: none; }
+        html.motion .facts.in-view .fact + .fact::before { transform: none; }
+        .facts-numbers .fact b { font-variant-numeric: tabular-nums; }
+
+        /* ---------- Story rows: clip-path wipe + settling image ---------- */
+        html.motion .js .story-row .story-media, html.motion .story-row .story-media { opacity: 1 !important; transform: none !important; transition: none; }
+        html.motion .story-row .story-media img { clip-path: inset(0 100% 0 0 round 1.1rem); transform: scale(1.15); transition: clip-path 1400ms var(--out), transform 1900ms var(--out); }
+        html.motion .story-row.is-flipped .story-media img { clip-path: inset(0 0 0 100% round 1.1rem); }
+        html.motion .story-row.in-view .story-media img { clip-path: inset(0 0 0 0 round 1.1rem); transform: scale(1); }
+        html.motion .story-row .story-tag { opacity: 0; transform: translateY(10px); transition: opacity 700ms var(--soft) 900ms, transform 900ms var(--out) 900ms; }
+        html.motion .story-row.in-view .story-tag { opacity: 1; transform: none; }
+        html.motion .js .story-row .story-copy, html.motion .story-row .story-copy { opacity: 1 !important; transform: none !important; }
+        html.motion .story-copy > * { opacity: 0; transform: translateY(20px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
+        html.motion .story-row.in-view .story-copy > * { opacity: 1; transform: none; }
+        html.motion .story-row.in-view .story-copy > :nth-child(1) { transition-delay: 300ms; }
+        html.motion .story-row.in-view .story-copy > :nth-child(2) { transition-delay: 380ms; }
+        html.motion .story-row.in-view .story-copy > :nth-child(3) { transition-delay: 460ms; }
+        html.motion .story-row.in-view .story-copy > :nth-child(4) { transition-delay: 540ms; }
+        .story-media { overflow: hidden; border-radius: 1.1rem; }
+        .story-media img { transition: transform 1200ms var(--out); }
+        .story-row:hover .story-media img { transform: scale(1.03); }
+
+        /* ---------- Photo banner ---------- */
+        html.motion .photo-banner.reveal { transform: scale(0.97); }
+        html.motion .photo-banner.reveal.in-view { transform: none; }
+        html.motion .photo-banner cite { opacity: 0; transition: opacity 900ms var(--soft) 900ms; }
+        html.motion .photo-banner.in-view cite { opacity: 0.85; }
+
+        /* ---------- About checklist ---------- */
+        html.motion .check-item { opacity: 0; transform: translateX(18px); transition: opacity 800ms var(--soft), transform 1000ms var(--out); transition-delay: var(--d, 0ms); }
+        html.motion .checklist.in-view .check-item { opacity: 1; transform: none; }
+        html.motion .check-badge { transform: scale(0); transition: transform 800ms var(--out); transition-delay: calc(var(--d, 0ms) + 200ms); }
+        html.motion .checklist.in-view .check-badge { transform: none; }
+
+        /* ---------- CTA + footer ---------- */
+        html.motion .cta.reveal { transform: translateY(28px) scale(0.98); }
+        html.motion .cta.reveal.in-view { transform: none; }
+        .cta .btn svg.arrow { transition: transform 600ms var(--out); }
+        .cta .btn:hover svg.arrow { transform: translateX(4px); }
+        html.motion .footer-band > * { opacity: 0; transform: translateY(16px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
+        html.motion .footer-band.in-view > * { opacity: 1; transform: none; }
+        html.motion .footer-band.in-view > :nth-child(2) { transition-delay: 120ms; }
+        html.motion .footer-band.in-view > :nth-child(3) { transition-delay: 240ms; }
+
+        /* Buttons: a soft press */
+        .btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -849,6 +967,123 @@
                 window.addEventListener('scroll', function () {
                     if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) setActive('contact');
                 }, { passive: true });
+            }
+        })();
+    </script>
+    <script>
+        // Motion layer: hero intro, word reveals, staggered cards, count-up numbers,
+        // story-row wipes, scroll progress and the sliding nav underline.
+        (function () {
+            var root = document.documentElement;
+            if (!root.classList.contains('motion')) return; // reduced motion: page stays static
+
+            /* Split text into masked words, keeping inline tags like <em> */
+            function splitWords(el, baseMs) {
+                var i = 0;
+                (function walk(node) {
+                    Array.prototype.slice.call(node.childNodes).forEach(function (ch) {
+                        if (ch.nodeType === 3) {
+                            var frag = document.createDocumentFragment();
+                            ch.textContent.split(/(\s+)/).forEach(function (part) {
+                                if (!part) return;
+                                if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
+                                var w = document.createElement('span'); w.className = 'w';
+                                var wi = document.createElement('span'); wi.className = 'wi'; wi.textContent = part;
+                                wi.style.setProperty('--i', i++);
+                                if (baseMs) wi.style.setProperty('--base', baseMs + 'ms');
+                                w.appendChild(wi); frag.appendChild(w);
+                            });
+                            ch.replaceWith(frag);
+                        } else if (ch.nodeType === 1 && ch.tagName !== 'BR') {
+                            walk(ch);
+                        }
+                    });
+                })(el);
+                el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
+            }
+
+            /* ---------- Hero intro ---------- */
+            var heroTitle = document.querySelector('.hero h1');
+            if (heroTitle) splitWords(heroTitle, 300);
+            function startIntro() {
+                root.classList.add('intro-go');
+                if (heroTitle) heroTitle.classList.add('is-in');
+            }
+            requestAnimationFrame(function () { setTimeout(startIntro, 80); });
+
+            /* ---------- Word reveals for section titles and the banner quote ---------- */
+            document.querySelectorAll('.section-title, .photo-banner blockquote, .cta h2').forEach(function (el) { splitWords(el, 0); });
+
+            /* ---------- Stagger delays ---------- */
+            document.querySelectorAll('.services-grid .service-card').forEach(function (c, i) { c.style.setProperty('--d', (i * 110) + 'ms'); });
+            document.querySelectorAll('.checklist .check-item').forEach(function (c, i) { c.style.setProperty('--d', (i * 90) + 'ms'); });
+
+            /* ---------- One observer for everything that reveals on scroll ---------- */
+            var countDone = false;
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (!e.isIntersecting) return;
+                    var el = e.target;
+                    el.classList.add('in-view');
+                    el.querySelectorAll('.section-title, blockquote, h2').forEach(function (t) { t.classList.add('is-in'); });
+                    if (el.classList.contains('facts-numbers') && !countDone) { countDone = true; countUp(el); }
+                    io.unobserve(el);
+                });
+            }, { threshold: 0.18, rootMargin: '0px 0px -6% 0px' });
+            document.querySelectorAll('.reveal, .story-row, .footer-band, .checklist').forEach(function (el) { io.observe(el); });
+
+            /* ---------- Numbers count up (keeps ₱ and K/M) ---------- */
+            function countUp(strip) {
+                strip.querySelectorAll('.fact b').forEach(function (b, idx) {
+                    var m = b.textContent.trim().match(/^([^\d]*)([\d,.]+)(.*)$/);
+                    if (!m) return;
+                    var pre = m[1], raw = m[2], suf = m[3];
+                    var target = parseFloat(raw.replace(/,/g, '')), decimals = (raw.split('.')[1] || '').length;
+                    var start = null, dur = 1600, delay = idx * 120;
+                    b.textContent = pre + (0).toFixed(decimals) + suf;
+                    function frame(t) {
+                        if (start === null) start = t + delay;
+                        var p = Math.min(1, Math.max(0, (t - start) / dur));
+                        var eased = 1 - Math.pow(1 - p, 4);
+                        var v = target * eased;
+                        b.textContent = pre + (decimals ? v.toFixed(decimals) : Math.round(v).toLocaleString('en-US')) + suf;
+                        if (p < 1) requestAnimationFrame(frame);
+                    }
+                    requestAnimationFrame(frame);
+                });
+            }
+
+            /* ---------- Scroll-linked: progress line + hero parallax ---------- */
+            var header = document.getElementById('siteHeader');
+            var bar = document.createElement('div'); bar.className = 'scroll-progress';
+            if (header) header.appendChild(bar);
+            var heroPhoto = document.querySelector('.hero-photo');
+            var heroText = document.querySelector('.hero-grid > div:first-child');
+            var ticking = false;
+            function onScroll() {
+                var max = document.documentElement.scrollHeight - window.innerHeight;
+                bar.style.transform = 'scaleX(' + (max > 0 ? window.scrollY / max : 0) + ')';
+                var y = Math.min(window.scrollY, window.innerHeight);
+                if (heroPhoto) heroPhoto.style.transform = 'translateY(' + (y * 0.12) + 'px)';
+                if (heroText) { heroText.style.transform = 'translateY(' + (y * 0.05) + 'px)'; heroText.style.opacity = String(Math.max(0, 1 - y / (window.innerHeight * 0.9))); }
+                ticking = false;
+            }
+            window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+            onScroll();
+
+            /* ---------- Sliding underline under the active nav link ---------- */
+            var nav = document.querySelector('.nav-links');
+            if (nav) {
+                var ind = document.createElement('span'); ind.className = 'nav-indicator'; nav.appendChild(ind);
+                function moveIndicator() {
+                    var a = nav.querySelector('a.is-active');
+                    if (!a) { ind.style.width = '0'; return; }
+                    ind.style.width = a.offsetWidth + 'px';
+                    ind.style.transform = 'translateX(' + a.offsetLeft + 'px)';
+                }
+                new MutationObserver(moveIndicator).observe(nav, { attributes: true, subtree: true, attributeFilter: ['class'] });
+                window.addEventListener('resize', moveIndicator);
+                (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(moveIndicator);
             }
         })();
     </script>

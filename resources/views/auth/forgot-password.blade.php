@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password - CFMC</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=outfit:600,700,800" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
     @vite('resources/css/palette.css')
+    @include('partials.auth-motion')
     <style>
         :root {
             --brand-success: var(--palette-field);
@@ -29,7 +30,7 @@
             min-height: 100vh; color: var(--text-primary); padding: 1.5rem;
             -webkit-font-smoothing: antialiased;
         }
-        h1, h2 { font-family: 'Outfit', 'Instrument Sans', sans-serif; letter-spacing: -0.02em; }
+        h1, h2 { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
         .container { max-width: 440px; width: 100%; }
         .card {
             background: rgba(255, 255, 255, 0.85);
@@ -40,11 +41,37 @@
             padding: 2.75rem 2.5rem;
         }
         .back-link {
-            display: inline-flex; align-items: center; gap: 0.4rem; margin-bottom: 1.75rem;
-            color: var(--brand-success-dark); text-decoration: none; font-size: 0.9rem; font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.75rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 200ms var(--ease);
         }
-        .back-link svg { width: 1rem; height: 1rem; }
-        .back-link:hover { color: var(--brand-success); }
+        .back-link-icon {
+            display: grid;
+            place-items: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--palette-surface);
+            color: var(--text-primary);
+            transition: background-color 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+        }
+        .back-link svg { width: 0.95rem; height: 0.95rem; transition: transform 200ms var(--ease); }
+        .back-link:hover { color: var(--text-primary); }
+        .back-link:hover .back-link-icon {
+            background: var(--palette-sprout);
+            border-color: var(--palette-sprout-border);
+            color: var(--brand-success);
+        }
+        .back-link:hover svg { transform: translateX(-2px); }
+        .back-link:focus-visible { outline: none; }
+        .back-link:focus-visible .back-link-icon { box-shadow: 0 0 0 3px var(--palette-sprout-border); }
         .header { text-align: center; margin-bottom: 2rem; }
         .brand-mark {
             display: grid; place-items: center; width: 4rem; height: 4rem; margin: 0 auto 1.25rem;
@@ -53,7 +80,7 @@
             box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--palette-field) 45%, transparent); color: #fff;
         }
         .brand-mark svg { width: 2rem; height: 2rem; }
-        .title { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .title { font-size: 1.85rem; font-weight: 600; line-height: 1.1; margin-bottom: 0.5rem; }
         .subtitle { color: var(--text-secondary); font-size: 0.92rem; }
         .form-group { margin-bottom: 1.4rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
@@ -97,8 +124,10 @@
 <body>
     <div class="container">
         <div class="card">
-            <a href="{{ route('login') }}" class="back-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            <a href="{{ route('login') }}" class="back-link" aria-label="Back to Login">
+                <span class="back-link-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                </span>
                 Back to Login
             </a>
 

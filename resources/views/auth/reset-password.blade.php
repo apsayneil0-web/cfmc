@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - CFMC</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=outfit:600,700,800" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
     @vite('resources/css/palette.css')
+    @include('partials.auth-motion')
     <style>
         :root {
             --brand-success: var(--palette-field); --brand-success-dark: var(--palette-field-deep); --brand-primary: var(--palette-field-light);
@@ -21,7 +22,7 @@
             display: flex; align-items: center; justify-content: center;
             min-height: 100vh; color: var(--text-primary); padding: 1.5rem;
         }
-        h1, h2 { font-family: 'Outfit', 'Instrument Sans', sans-serif; letter-spacing: -0.02em; }
+        h1, h2 { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
         .container { max-width: 440px; width: 100%; }
         .card {
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px) saturate(160%);
@@ -35,7 +36,7 @@
             box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--palette-field) 45%, transparent); color: #fff;
         }
         .brand-mark svg { width: 2rem; height: 2rem; }
-        .title { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .title { font-size: 1.85rem; font-weight: 600; line-height: 1.1; margin-bottom: 0.5rem; }
         .subtitle { color: var(--text-secondary); font-size: 0.92rem; }
         .form-group { margin-bottom: 1.4rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
