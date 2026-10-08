@@ -24,7 +24,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Balance</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
@@ -34,7 +34,7 @@
             <tbody>
                 @forelse($farmers as $farmer)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($farmer->cbu->balance ?? 0) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$farmer->cbu->status ?? 'inactive'" /></td>
@@ -57,7 +57,7 @@
 @foreach($farmers as $farmer)
 <x-modal id="viewCbuModal{{ $farmer->id }}" title="{{ $farmer->full_name }} — CBU Ledger" size="modal-lg">
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-4"><label class="text-muted small d-block">Member ID</label><p class="fw-medium mb-0">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="d-none col-6 col-md-4"><label class="text-muted small d-block">Member ID</label><p class="fw-medium mb-0">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</p></div>
         <div class="col-6 col-md-4"><label class="text-muted small d-block">Current Balance</label><p class="fw-medium mb-0">{{ peso($farmer->cbu->balance ?? 0) }}</p></div>
         <div class="col-6 col-md-4"><label class="text-muted small d-block">Status</label><p class="fw-medium mb-0"><x-status-badge :status="$farmer->cbu->status ?? 'inactive'" /></p></div>
     </div>

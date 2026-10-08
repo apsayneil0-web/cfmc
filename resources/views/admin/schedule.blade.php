@@ -30,7 +30,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Schedule ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Schedule ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machinery</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
@@ -43,7 +43,7 @@
             <tbody>
                 @forelse($schedules as $schedule)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $schedule->display_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $schedule->machinery }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $schedule->scheduled_date->format('M d, Y') }}</td>
@@ -72,7 +72,7 @@
 @foreach($schedules as $schedule)
 <x-modal id="viewScheduleModal{{ $schedule->id }}" title="Schedule Details">
     <div class="row g-3">
-        <div class="col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="d-none col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Status</label><p class="fw-medium mb-0"><x-status-badge :status="ucfirst($schedule->status)" /></p></div>
         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $schedule->display_name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $schedule->machinery }}</p></div>

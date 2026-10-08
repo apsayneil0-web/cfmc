@@ -24,7 +24,7 @@
             </div>
             <div class="modal-body">
                 <div class="row g-3">
-                    <div class="col-6"><label class="text-muted small d-block">Schedule</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                    <div class="d-none col-6"><label class="text-muted small d-block">Schedule</label><p class="fw-medium mb-0">SCH-{{ str_pad($schedule->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                     <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $schedule->machinery }}</p></div>
                     <div class="col-6"><label class="text-muted small d-block">New Date</label><p class="fw-medium mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p></div>
                     <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</p></div>
@@ -52,7 +52,7 @@
             </div>
             <div class="modal-body">
                 <div class="row g-3">
-                    <div class="col-6"><label class="text-muted small d-block">Loan</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                    <div class="d-none col-6"><label class="text-muted small d-block">Loan</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                     <div class="col-6"><label class="text-muted small d-block">Farmer</label><p class="fw-medium mb-0">{{ $loan->loanRequest?->farmer?->full_name ?? '—' }}</p></div>
                     <div class="col-6"><label class="text-muted small d-block">Outstanding Balance</label><p class="fw-medium mb-0">&#8369;{{ number_format($loan->remaining_balance, 2) }}</p></div>
                     <div class="col-6"><label class="text-muted small d-block">Original Due Date</label><p class="fw-medium mb-0">{{ $loan->original_due_date?->format('M d, Y') ?? '—' }}</p></div>

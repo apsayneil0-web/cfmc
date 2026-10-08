@@ -61,6 +61,20 @@ class User extends Authenticatable
     }
 
     /**
+     * Which role layout a shared page (My Profile, Settings) should render
+     * inside, so one view file works for all three roles instead of three
+     * near-identical copies.
+     */
+    public function layoutView(): string
+    {
+        return match ((int) $this->roleID) {
+            1 => 'admin.layout',
+            2 => 'manager.layout',
+            default => 'farmer.layout',
+        };
+    }
+
+    /**
      * Get the profile picture URL, sourced from Staff (Admin/Manager) or
      * Farmer (Farmer), whichever this account is linked to.
      */

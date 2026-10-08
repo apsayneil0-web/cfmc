@@ -67,7 +67,7 @@
                             <x-avatar-initials :name="$farmer->full_name" color="primary" />
                             <div>
                                 <p class="mb-0 fw-medium text-dark">{{ $farmer->full_name }}</p>
-                                <p class="mb-0 text-muted small">Member ID: FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</p>
+                                <p class="d-none mb-0 text-muted small">Member ID: FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</p>
                             </div>
                         </div>
                     </td>
@@ -106,7 +106,7 @@
                         <h4 class="text-sm fw-semibold text-dark mb-3">Personal Information</h4>
                         <div class="row g-3">
                             <div class="col-md-4"><label class="text-muted small d-block">Full Name</label><p class="fw-medium mb-0">{{ $farmer->full_name }}</p></div>
-                            <div class="col-md-4"><label class="text-muted small d-block">Member ID</label><p class="fw-medium mb-0">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                            <div class="d-none col-md-4"><label class="text-muted small d-block">Member ID</label><p class="fw-medium mb-0">FM-{{ str_pad($farmer->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                             <div class="col-md-4"><label class="text-muted small d-block">Contact Number</label><p class="fw-medium mb-0">{{ $farmer->contact_number }}</p></div>
                             <div class="col-md-4"><label class="text-muted small d-block">Province</label><p class="fw-medium mb-0">{{ $farmer->province }}</p></div>
                             <div class="col-md-4"><label class="text-muted small d-block">Municipality</label><p class="fw-medium mb-0">{{ $farmer->municipality }}</p></div>

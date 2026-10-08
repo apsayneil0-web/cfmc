@@ -126,7 +126,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Schedule ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Schedule ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date & Time</th>
@@ -138,7 +138,7 @@
             <tbody>
                 @forelse($requests as $req)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $req->display_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->units_requested > 1 ? $req->units_requested.'× ' : '' }}{{ $req->machinery }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->scheduled_date->format('M d, Y') }} - {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }}</td>
@@ -163,7 +163,7 @@
                 <!-- View Modal -->
                 <x-modal id="viewModal{{ $req->id }}" title="Schedule Details">
                     <div class="row g-3">
-                        <div class="col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                        <div class="d-none col-6"><label class="text-muted small d-block">Schedule ID</label><p class="fw-medium mb-0">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $req->display_name }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $req->machinery }}{{ $req->units_requested > 1 ? ' ('.$req->units_requested.' units)' : '' }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-1">Member Status</label><x-status-badge :status="$req->member_type === 'member' ? 'Member' : 'Non-member'" /></div>

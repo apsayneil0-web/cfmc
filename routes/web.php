@@ -35,6 +35,7 @@ use App\Http\Controllers\Manager\AnnouncementController;
 use App\Http\Controllers\Manager\ComplaintController as ManagerComplaintController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SettingsController;
 
 Route::get('/', function () {
     // Public headline numbers for the landing page. Cached briefly so every
@@ -219,6 +220,11 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
 
     Route::post('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture.update');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
 
     // Pinged by the client-side inactivity timer while the user is
     // genuinely active, so the server-side timeout clock (see the

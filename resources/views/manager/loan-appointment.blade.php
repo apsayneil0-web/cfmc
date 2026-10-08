@@ -59,7 +59,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Appointment ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Appointment ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Time</th>
@@ -73,7 +73,7 @@
                 @forelse($appointments as $appt)
                 @php $farmerName = $appt->user->farmer?->full_name ?? $appt->user->name; @endphp
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">APT-{{ str_pad($appt->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">APT-{{ str_pad($appt->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $farmerName }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $appt->appointment_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ \Carbon\Carbon::parse($appt->appointment_time)->format('g:i A') }}</td>
@@ -116,7 +116,7 @@
                 <!-- View Modal -->
                 <x-modal id="viewModal{{ $appt->id }}" title="Appointment Details">
                     <div class="row g-3">
-                        <div class="col-6"><label class="text-muted small d-block">Appointment ID</label><p class="fw-medium mb-0">APT-{{ str_pad($appt->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                        <div class="d-none col-6"><label class="text-muted small d-block">Appointment ID</label><p class="fw-medium mb-0">APT-{{ str_pad($appt->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $farmerName }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $appt->appointment_date->format('M d, Y') }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($appt->appointment_time)->format('g:i A') }}</p></div>

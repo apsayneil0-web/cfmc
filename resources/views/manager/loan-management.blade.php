@@ -55,7 +55,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Principal</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Remaining Balance</th>
@@ -68,7 +68,7 @@
             <tbody>
                 @forelse($loans as $loan)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $loan->farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4">{{ peso($loan->principal_amount) }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
@@ -139,7 +139,7 @@
 <!-- View Modal (details + payment history) -->
 <x-modal id="viewModal{{ $loan->id }}" title="Loan Details" size="modal-lg modal-dialog-scrollable">
     <div class="row g-3 mb-3">
-        <div class="col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="d-none col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $loan->farmer->full_name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">Regular Loan</p></div>
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>

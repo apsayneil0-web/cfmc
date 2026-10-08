@@ -209,7 +209,7 @@
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">No.</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Principal</th>
@@ -226,7 +226,7 @@
                 @forelse($rows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $loop->iteration }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($row->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($row->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->farmer?->full_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->loanRequest?->purpose ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">{{ peso($row->principal_amount) }}</td>

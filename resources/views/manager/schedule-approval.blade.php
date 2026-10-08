@@ -59,7 +59,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Request ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Request ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
@@ -72,7 +72,7 @@
             <tbody>
                 @forelse($requests as $req)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $req->display_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->units_requested > 1 ? $req->units_requested.'× ' : '' }}{{ $req->machinery }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->scheduled_date->format('M d, Y') }}</td>
@@ -101,7 +101,7 @@
                 <!-- Details Modal -->
                 <x-modal id="scheduleModal{{ $req->id }}" title="Schedule Request Details">
                     <div class="row g-3 mb-3">
-                        <div class="col-6">
+                        <div class="d-none col-6">
                             <label class="text-muted small d-block">Request ID</label>
                             <p class="fw-medium mb-0">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</p>
                         </div>

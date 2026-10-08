@@ -358,7 +358,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Request ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Request ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan Amount</th>
@@ -372,7 +372,7 @@
             <tbody>
                 @forelse($regularRequests as $req)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $req->farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Regular</span>
@@ -415,7 +415,7 @@
                 <!-- View Modal -->
                 <x-modal id="viewModal{{ $req->id }}" title="Loan Request Details">
                     <div class="row g-3">
-                        <div class="col-6"><label class="text-muted small d-block">Request ID</label><p class="fw-medium mb-0">LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+                        <div class="d-none col-6"><label class="text-muted small d-block">Request ID</label><p class="fw-medium mb-0">LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $req->farmer->full_name }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $req->type === 'batch' ? ($req->batch?->label ?? 'Batch') : 'Regular Loan' }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block">Requested Amount</label><p class="fw-medium mb-0">{{ peso($req->requested_amount) }}</p></div>

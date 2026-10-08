@@ -109,7 +109,7 @@
         <table class="table table-sm table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="small">Loan ID</th>
+                    <th class="d-none small">Loan ID</th>
                     <th class="small">Farmer</th>
                     <th class="small">Principal</th>
                     <th class="small">Repayment Terms</th>
@@ -123,7 +123,7 @@
             <tbody>
                 @foreach($group->loans as $loan)
                 <tr>
-                    <td class="small fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none small fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="small">{{ $loan->farmer->full_name }}</td>
                     <td class="small">{{ peso($loan->principal_amount) }}</td>
                     <td class="small text-muted">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' (now '.$loan->current_installment_number.')' : '' }}</td>
@@ -166,7 +166,7 @@
 <!-- View Modal (details + payment history) -->
 <x-modal id="viewModal{{ $loan->id }}" title="Loan Details">
     <div class="row g-3 mb-3">
-        <div class="col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="d-none col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $loan->farmer->full_name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $group->batch->label }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>

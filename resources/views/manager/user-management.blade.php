@@ -33,11 +33,11 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">User ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">User ID</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Name</th>
-                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Phone</th>
-                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Temp Password</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Temp Password</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Created At</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Actions</th>
@@ -46,7 +46,7 @@
             <tbody class="divide-y">
                 @forelse($users as $user)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium">USR-{{ str_pad($user->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium">USR-{{ str_pad($user->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex align-items-center gap-3">
                             <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">{{ strtoupper(substr($user->name, 0, 2)) }}</div>
@@ -56,7 +56,7 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 px-md-6 py-4">
+                    <td class="d-none px-4 px-md-6 py-4">
                         @if($user->roleID == 2)
                         <span class="badge bg-purple text-white">Manager</span>
                         @else
@@ -64,7 +64,7 @@
                         @endif
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->Phonenumber ?? 'N/A' }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">
+                    <td class="d-none px-4 px-md-6 py-4 text-muted">
                         @if($user->temp_password)
                         <span class="d-flex align-items-center gap-2">
                             <span class="temp-password-mask" data-password="{{ $user->temp_password }}">••••••••••</span>

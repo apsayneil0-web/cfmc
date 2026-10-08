@@ -60,7 +60,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Usage Hours</th>
@@ -73,7 +73,7 @@
             <tbody>
                 @forelse($machines as $machine)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $machine->name }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucwords(str_replace('_', ' ', $machine->status))" /></td>
                     <td class="px-4 px-md-6 py-4">{{ $machine->usage_hours }} hrs</td>
@@ -97,7 +97,7 @@
 @foreach($machines as $machine)
 <x-modal id="viewUsageModal{{ $machine->id }}" title="Usage Details">
     <div class="row g-3">
-        <div class="col-6"><label class="text-muted small d-block">Machine ID</label><p class="fw-medium mb-0">MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }}</p></div>
+        <div class="d-none col-6"><label class="text-muted small d-block">Machine ID</label><p class="fw-medium mb-0">MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Machine Name</label><p class="fw-medium mb-0">{{ $machine->name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucwords(str_replace('_', ' ', $machine->status))" /></div>
         <div class="col-6"><label class="text-muted small d-block">Assigned Operator</label><p class="fw-medium mb-0">{{ $machine->assigned_operator ?? '—' }}</p></div>

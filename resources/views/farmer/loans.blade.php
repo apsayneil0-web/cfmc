@@ -129,7 +129,7 @@
         <table class="table table-hover mb-0 table-mobile-cards">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Principal</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Disbursed</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Paid Off</th>
@@ -141,7 +141,7 @@
             <tbody>
                 @foreach($paidLoans as $loan)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark" data-label="Loan ID">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark" data-label="Loan ID">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4" data-label="Principal">{{ peso($loan->principal_amount) }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Disbursed">{{ $loan->disbursed_at?->format('M d, Y') ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Paid Off">{{ $loan->payments->max('transaction_date')?->format('M d, Y') ?? '—' }}</td>

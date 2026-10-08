@@ -27,7 +27,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Barangay</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Contact Number</th>
@@ -40,7 +40,7 @@
             <tbody>
                 @forelse($members as $member)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $member->id }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">{{ $member->id }}</td>
                     <td class="px-4 px-md-6 py-4 text-dark">{{ $member->full_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $member->barangay ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $member->contact_number }}</td>
