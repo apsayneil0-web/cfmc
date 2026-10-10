@@ -13,12 +13,11 @@
                     <input type="text" id="searchFarmerName" placeholder="Search farmer name" class="form-control ps-5 py-2" style="min-width: 260px;" value="{{ request('search') }}">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
-                <select id="statusFilter" class="form-select" style="width: auto;">
-                    <option value="" {{ request('status') !== 'archived' ? 'selected' : '' }}>Active</option>
-                    <option value="archived" {{ request('status') === 'archived' ? 'selected' : '' }}>Archived</option>
-                </select>
             </div>
-            <span class="text-sm text-muted">{{ $loans->count() + $batchGroups->sum(fn($b) => $b->loanRequests->count()) }} approved loan request(s)</span>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="text-sm text-muted">{{ $loans->total() + $approvedBatchMemberCount }} {{ $showArchived ? 'archived' : 'approved' }} loan request(s)</span>
+                <x-archive-toggle route="admin.approved-loans" :showing="$showArchived" :count="$archivedCount" :except="['status', 'page', 'loans_page', 'batches_page']" />
+            </div>
         </div>
     </div>
 
@@ -62,6 +61,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$batchGroups" />
 
     @foreach($batchGroups as $batch)
     <!-- Archive/Unarchive Confirmation Modal -->
@@ -163,12 +163,13 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">No approved regular loan requests found.</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived loan requests.' : 'No approved regular loan requests found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$loans" />
 
     {{-- Modals rendered outside the table: a <div> is not valid directly
          inside a table body, and browsers "correct" that by ejecting
@@ -214,7 +215,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('searchFarmerName');
-    const statusFilter = document.getElementById('statusFilter');
 
     function applyFilters() {
         const currentUrl = new URL(window.location.href);
@@ -223,12 +223,6 @@ document.addEventListener('DOMContentLoaded', function () {
             currentUrl.searchParams.set('search', searchInput.value);
         } else {
             currentUrl.searchParams.delete('search');
-        }
-
-        if (statusFilter.value) {
-            currentUrl.searchParams.set('status', statusFilter.value);
-        } else {
-            currentUrl.searchParams.delete('status');
         }
 
         window.location.href = currentUrl.toString();
@@ -247,7 +241,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    statusFilter.addEventListener('change', applyFilters);
 });
 </script>
 @endsection

@@ -29,23 +29,28 @@
     <x-table-toolbar>
         <x-slot:filters>
             <form method="GET" action="{{ route('manager.announcement') }}" class="d-flex flex-wrap align-items-center gap-3">
+                @if($showArchived)
+                <input type="hidden" name="archived" value="1">
+                @endif
                 <div class="position-relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search announcements..." class="form-control ps-5" style="min-width: 220px;">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
+                @unless($showArchived)
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
                     <option value="">All Status</option>
                     <option value="published" {{ request('status') == 'published' ? 'selected' : '' }}>Published</option>
                     <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
-                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
+                @endunless
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->anyFilled(['search', 'status']))
-                <a href="{{ route('manager.announcement') }}" class="btn btn-link btn-sm">Clear</a>
+                @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
+                <a href="{{ route('manager.announcement', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
         </x-slot:filters>
         <x-slot:actions>
+            <x-archive-toggle route="manager.announcement" :showing="$showArchived" :count="$archivedCount" />
             <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createAnnouncementModal">
                 <i class="fas fa-plus"></i><span>Create Announcement</span>
             </button>
@@ -184,12 +189,13 @@
                 @endif
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No announcements found.</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived announcements.' : 'No announcements found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$announcements" />
 </div>
 
 <!-- Create Announcement Modal -->

@@ -29,15 +29,14 @@
     <x-table-toolbar>
         <x-slot:filters>
             <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Approved Farmer Members</h3>
-            <form method="GET" action="{{ route('manager.farmer-profile') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.farmer-profile') }}" id="farmerSearchForm" class="d-flex flex-wrap align-items-center gap-3">
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search farmers..." class="form-control ps-5" style="min-width: 220px;">
-                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
+                    <input type="text" name="search" id="farmerSearchInput" value="{{ request('search') }}" placeholder="Search farmers..." class="form-control ps-5 pe-5" style="min-width: 220px;" autocomplete="off">
+                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" id="farmerSearchIcon" style="font-size: 14px;"></i>
+                    <button type="button" id="farmerSearchClear" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y text-muted p-0 pe-3 border-0 bg-transparent {{ request('search') ? '' : 'd-none' }}" title="Clear search" aria-label="Clear search">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
                 </div>
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->anyFilled(['search']))
-                <a href="{{ route('manager.farmer-profile') }}" class="btn btn-link btn-sm">Clear</a>
-                @endif
             </form>
         </x-slot:filters>
     </x-table-toolbar>
@@ -144,15 +143,15 @@
                                             $filename = basename($farmer->{$doc['path']});
                                         @endphp
                                         @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-image me-1"></i> View Image
                                             </a>
                                         @elseif($extension == 'pdf')
-                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-danger">
                                                 <i class="fas fa-file-pdf me-1"></i> View PDF
                                             </a>
                                         @else
-                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-secondary">
                                                 <i class="fas fa-file me-1"></i> View Document
                                             </a>
                                         @endif
@@ -345,6 +344,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$farmers" />
 </div>
 
 <x-info-banner variant="info" title="Farmer Profile" class="mt-6">
@@ -389,5 +389,60 @@
             });
         });
     });
+
+    // Live search — same behaviour as the User Management search: results
+    // update shortly after you stop typing, Enter searches immediately, and
+    // the clear (x) button resets the list.
+    (function () {
+        var input = document.getElementById('farmerSearchInput');
+        var icon = document.getElementById('farmerSearchIcon');
+        var clearBtn = document.getElementById('farmerSearchClear');
+        var form = document.getElementById('farmerSearchForm');
+        if (!input || !form) return;
+        var timer;
+
+        function applySearch() {
+            clearTimeout(timer);
+            var url = new URL(window.location.href);
+            var value = input.value.trim();
+            if (value) {
+                url.searchParams.set('search', value);
+            } else {
+                url.searchParams.delete('search');
+            }
+            url.searchParams.delete('page');
+            if (url.toString() === window.location.href) return;
+
+            // Feedback while the page reloads with the new results.
+            icon.className = 'fas fa-spinner fa-spin position-absolute start-3 top-50 translate-middle-y text-muted';
+            input.readOnly = true;
+            window.location.href = url.toString();
+        }
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            applySearch();
+        });
+
+        input.addEventListener('input', function () {
+            clearBtn.classList.toggle('d-none', !input.value);
+            clearTimeout(timer);
+            timer = setTimeout(applySearch, 500);
+        });
+
+        clearBtn.addEventListener('click', function () {
+            input.value = '';
+            clearBtn.classList.add('d-none');
+            applySearch();
+        });
+
+        // After a search reloads the page, put the cursor back at the end of
+        // the text so typing feels continuous.
+        if (input.value) {
+            input.focus();
+            var length = input.value.length;
+            input.setSelectionRange(length, length);
+        }
+    })();
 </script>
 @endsection

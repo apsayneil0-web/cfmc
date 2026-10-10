@@ -63,9 +63,7 @@
         </table>
     </div>
 
-    <div class="px-4 px-md-6 py-4 border-top d-flex align-items-center justify-content-between">
-        <p class="text-muted small mb-0">Showing {{ $schedules->count() }} of {{ $schedules->count() }} entries</p>
-    </div>
+    <x-pagination-footer :paginator="$schedules" />
 </div>
 
 {{-- Modals live outside the table: a <div> can't be a direct child of <tbody>. --}}

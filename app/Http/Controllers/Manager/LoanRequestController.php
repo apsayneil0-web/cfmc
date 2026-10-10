@@ -10,6 +10,7 @@ use App\Models\LoanBatch;
 use App\Models\LoanRequest;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -36,11 +37,13 @@ class LoanRequestController extends Controller
     {
         $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch']);
 
-        // Archived requests are hidden unless the manager explicitly filters
-        // for "Archived". Only denied requests can be archived; pending batch
-        // members removed from a batch also carry archived_at but are not
-        // archived records, so they stay out of this view.
-        if ($request->input('status') === 'archived') {
+        // Archived requests live in their own view ("View Archived",
+        // ?archived=1; old ?status=archived links too). Only denied requests
+        // can be archived; pending batch members removed from a batch also
+        // carry archived_at but are not archived records, so they stay out.
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+
+        if ($showArchived) {
             $query->whereNotNull('archived_at')->where('status', 'denied');
         } else {
             $query->whereNull('archived_at');
@@ -64,7 +67,11 @@ class LoanRequestController extends Controller
 
         // Fold every batch's requests into one row on the main table (Regular
         // requests stay listed individually) — same pattern used on the
-        // Admin Loan Approval / Approved Loans pages.
+        // Admin Loan Approval / Approved Loans pages. $requests itself stays
+        // the full, unpaginated collection: the View/Edit/Archive modals
+        // below are rendered once per request (regular and batch members
+        // alike) and reached via switchModal() from either table, so every
+        // request needs a modal regardless of which page it's displayed on.
         $regularRequests = $requests->where('type', '!=', 'batch')->values();
         $requestBatchGroups = $requests->where('type', 'batch')
             ->groupBy('batch_id')
@@ -74,6 +81,11 @@ class LoanRequestController extends Controller
             ])
             ->sortByDesc(fn ($group) => $group->members->max('created_at'))
             ->values();
+
+        // Two independent tables share this one page (batch groups, regular
+        // requests), so each gets its own "page" query param.
+        $requestBatchGroups = $this->paginateCollection($requestBatchGroups, $request, 'batches_page');
+        $regularRequests = $this->paginateCollection($regularRequests, $request, 'regular_page');
 
         $farmers = Farmer::where('status', 'approved')->orderBy('created_at', 'desc')->get();
         $batches = LoanBatch::orderBy('created_at', 'desc')->get();
@@ -117,7 +129,22 @@ class LoanRequestController extends Controller
             'purposes' => self::PURPOSES,
             'termOptions' => self::TERMS,
             'farmersIneligibleForNewRequest' => $farmersIneligibleForNewRequest,
+            'showArchived' => $showArchived,
+            'archivedCount' => LoanRequest::whereNotNull('archived_at')->where('status', 'denied')->count(),
         ]);
+    }
+
+    private function paginateCollection($items, Request $request, string $pageName, int $perPage = 10): LengthAwarePaginator
+    {
+        $page = (int) $request->input($pageName, 1);
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query(), 'pageName' => $pageName]
+        );
     }
 
     /**

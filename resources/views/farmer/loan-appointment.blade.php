@@ -218,6 +218,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$appointments" />
 </div>
 
 <!-- Create Modal -->

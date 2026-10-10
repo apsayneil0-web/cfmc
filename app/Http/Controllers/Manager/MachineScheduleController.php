@@ -39,7 +39,8 @@ class MachineScheduleController extends Controller
             ->when($showArchived, fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $members = Farmer::where('status', 'approved')
             ->whereNotNull('account_user_id')
@@ -56,7 +57,7 @@ class MachineScheduleController extends Controller
 
         return view('manager.machine-schedule', compact(
             'requests', 'calendarDays', 'machineryList', 'machineQuantities', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'monthOptions', 'showArchived'
-        ));
+        ) + ['archivedCount' => ScheduleRequest::whereNotNull('archived_at')->count()]);
     }
 
     /**
@@ -202,9 +203,11 @@ class MachineScheduleController extends Controller
     }
 
     /**
-     * Push every active (pending/approved), non-archived schedule — every
-     * scheduled date, not just today onward — forward by one day, e.g. for a
-     * fleet-wide rainout or delay, and notify each affected farmer account.
+     * Push every active (pending/approved), non-archived schedule dated
+     * today or later forward by one day, e.g. for a fleet-wide rainout or
+     * delay, and notify each affected farmer account. Already-past schedules
+     * are left alone — moving a date that's already elapsed doesn't make
+     * sense operationally.
      */
     public function shiftDay(Request $request)
     {
@@ -231,11 +234,12 @@ class MachineScheduleController extends Controller
 
         $schedules = ScheduleRequest::whereIn('status', ['pending', 'approved'])
             ->whereNull('archived_at')
+            ->where('scheduled_date', '>=', now()->startOfDay())
             ->get();
 
         if ($schedules->isEmpty()) {
             return redirect()->route('manager.machine-schedule')
-                ->with('error', 'There are no schedules to move.');
+                ->with('error', 'There are no upcoming schedules to move.');
         }
 
         $earliestAllowedDate = ScheduleRequest::earliestAllowedDate();
@@ -301,11 +305,12 @@ class MachineScheduleController extends Controller
     /**
      * Push every active (pending/approved), non-archived schedule on one or
      * more manager-picked dates forward (or back) by one day, notifying each
-     * affected farmer. Unlike applyBulkShift(), which moves every schedule
-     * together (so relative spacing never changes), moving a single date's
-     * schedules can land them on a day that already has other bookings — so
-     * each move is checked for conflicts/capacity and skipped rather than
-     * overbooking.
+     * affected farmer. Only dates today or later are eligible — an already-
+     * past date is silently excluded rather than moved. Unlike
+     * applyBulkShift(), which moves every schedule together (so relative
+     * spacing never changes), moving a single date's schedules can land them
+     * on a day that already has other bookings — so each move is checked for
+     * conflicts/capacity and skipped rather than overbooking.
      */
     public function shiftSpecificDay(Request $request)
     {
@@ -323,11 +328,12 @@ class MachineScheduleController extends Controller
         $schedules = ScheduleRequest::whereIn('status', ['pending', 'approved'])
             ->whereNull('archived_at')
             ->whereIn('scheduled_date', $dates)
+            ->where('scheduled_date', '>=', now()->startOfDay())
             ->get();
 
         if ($schedules->isEmpty()) {
             return redirect()->route('manager.machine-schedule')
-                ->with('error', 'There are no schedules on the selected date(s) to move.');
+                ->with('error', 'There are no upcoming schedules on the selected date(s) to move.');
         }
 
         $earliestAllowedDate = ScheduleRequest::earliestAllowedDate();

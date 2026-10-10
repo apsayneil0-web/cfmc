@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Loan;
 use App\Models\LoanPayment;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class BatchLoanManagementController extends Controller
 {
@@ -32,9 +33,11 @@ class BatchLoanManagementController extends Controller
             ->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch'));
 
         // By default (and for any specific business status), only show
-        // approved/active loans still in play. Archived ones are hidden
-        // unless the manager explicitly filters for "Archived".
-        if ($request->input('status') === 'archived') {
+        // approved/active loans still in play. Archived ones live in their own
+        // view ("View Archived", ?archived=1; old ?status=archived links too).
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+
+        if ($showArchived) {
             $query->whereNotNull('archived_at');
         } else {
             $query->whereNull('archived_at');
@@ -62,6 +65,18 @@ class BatchLoanManagementController extends Controller
             ->sortByDesc(fn ($group) => $group->loans->max('created_at'))
             ->values();
 
+        // Paginate by batch (one page = N batch groups), not by individual
+        // loan — a batch's members always need to be reviewed together.
+        $perPage = 10;
+        $page = (int) $request->input('page', 1);
+        $batchGroups = new LengthAwarePaginator(
+            $batchGroups->forPage($page, $perPage)->values(),
+            $batchGroups->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         $batchOnly = fn ($q) => $q->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch'));
 
         $stats = [
@@ -77,8 +92,9 @@ class BatchLoanManagementController extends Controller
             'interest_earned' => LoanPayment::where('type', 'interest')
                 ->whereHas('loan', fn ($q) => $q->whereNull('archived_at')->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch')))
                 ->sum('amount'),
+            'archived_count' => Loan::whereNotNull('archived_at')->tap($batchOnly)->count(),
         ];
 
-        return view('manager.batch-loan-management', compact('batchGroups', 'stats'));
+        return view('manager.batch-loan-management', compact('batchGroups', 'stats', 'showArchived'));
     }
 }

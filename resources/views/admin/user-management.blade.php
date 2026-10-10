@@ -23,18 +23,20 @@
                     <option value="2" {{ request('role') == '2' ? 'selected' : '' }}>Manager</option>
                     <option value="3" {{ request('role') == '3' ? 'selected' : '' }}>Farmer</option>
                 </select>
-                <select id="statusFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
+                <select id="statusFilter" class="form-select py-2 {{ $showArchived ? 'd-none' : '' }}" style="width: auto; min-width: 120px;">
                     <option value="">All Status</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     <option value="locked" {{ request('status') == 'locked' ? 'selected' : '' }}>Locked</option>
-                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
             </div>
-            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
-                <i class="fas fa-plus"></i>
-                <span>Create Account</span>
-            </button>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <x-archive-toggle route="admin.user-management" :showing="$showArchived" :count="$archivedCount" />
+                <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="fas fa-plus"></i>
+                    <span>Create Account</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -120,7 +122,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="px-4 px-md-6 py-4 text-center text-muted">No users found</td>
+                    <td colspan="9" class="px-4 px-md-6 py-4 text-center text-muted">{{ $showArchived ? 'No archived users.' : 'No users found' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -1025,7 +1027,7 @@
 
     // Submits an admin-initiated password reset for a Manager or Farmer
     // account. Admin accounts are never targetable here — enforced server-side too.
-    function submitChangePassword() {
+    async function submitChangePassword() {
         var form = document.getElementById('changePasswordForm');
         var newPassword = document.getElementById('newPasswordInput').value;
         var confirmPassword = document.getElementById('confirmPasswordInput').value;
@@ -1045,7 +1047,7 @@
         var userId = document.getElementById('changePasswordUserId').value;
         var userName = document.getElementById('changePasswordUserName').textContent;
 
-        if (!confirm('Change the login password for ' + userName + '? They will need to use the new password next time they log in.')) {
+        if (!(await confirmDialog('Change the login password for ' + userName + '? They will need to use the new password next time they log in.', { title: 'Change password?', confirmLabel: 'Change password' }))) {
             return;
         }
 
@@ -1443,12 +1445,16 @@
     }
 
     // Activate / Deactivate Account Function (Manager and Farmer accounts only)
-    function toggleUserStatus(userId, currentStatus) {
+    async function toggleUserStatus(userId, currentStatus) {
         var confirmMessage = currentStatus === 'active'
             ? 'Deactivate this account? The user will no longer be able to log in.'
             : 'Activate this account? The user will be able to log in again.';
 
-        if (confirm(confirmMessage)) {
+        if (await confirmDialog(confirmMessage, {
+            title: currentStatus === 'active' ? 'Deactivate account?' : 'Activate account?',
+            confirmLabel: currentStatus === 'active' ? 'Deactivate' : 'Activate',
+            variant: currentStatus === 'active' ? 'danger' : 'primary'
+        })) {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
@@ -1480,8 +1486,8 @@
     }
 
     // Unarchive User Function
-    function unarchiveUser(userId) {
-        if (confirm('Restore this account from the archive?')) {
+    async function unarchiveUser(userId) {
+        if (await confirmDialog('Restore this account from the archive?', { title: 'Restore account?', confirmLabel: 'Restore' })) {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
@@ -1513,8 +1519,8 @@
     }
 
     // Archive User Function
-    function archiveUser(userId) {
-        if (confirm('Are you sure you want to archive this user?')) {
+    async function archiveUser(userId) {
+        if (await confirmDialog('The user will no longer be able to log in until the account is restored.', { title: 'Archive this user?', confirmLabel: 'Archive', variant: 'danger' })) {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');

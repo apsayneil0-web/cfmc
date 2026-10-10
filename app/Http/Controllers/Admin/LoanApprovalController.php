@@ -7,6 +7,7 @@ use App\Models\LoanBatch;
 use App\Models\LoanRequest;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class LoanApprovalController extends Controller
 {
@@ -16,13 +17,14 @@ class LoanApprovalController extends Controller
      * on together, one batch at a time, and only once the batch has filled
      * up to capacity — a partially-filled batch is not sent for approval yet.
      */
-    public function index()
+    public function index(Request $request)
     {
         $requests = LoanRequest::with('farmer')
             ->where('status', 'pending')
             ->where('type', 'regular')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10, ['*'], 'requests_page')
+            ->withQueryString();
 
         $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
         $batchGroups = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
@@ -32,6 +34,15 @@ class LoanApprovalController extends Controller
             ->filter(fn (LoanBatch $batch) => $batch->is_full)
             ->values();
 
+        // The "Pending Requests" stat must count every batch member across
+        // every batch, not just the ones on the current page — compute it
+        // from the full set before paginating $batchGroups for display.
+        $pendingBatchMemberCount = $batchGroups->sum(fn (LoanBatch $batch) => $batch->loanRequests->count());
+
+        // Two independent tables share this one page (regular requests,
+        // batch groups), so each gets its own "page" query param.
+        $batchGroups = $this->paginateCollection($batchGroups, $request, 'batches_page');
+
         $approvedThisMonth = LoanRequest::where('status', 'approved')
             ->whereBetween('updated_at', [now()->startOfMonth(), now()->endOfMonth()])
             ->count();
@@ -40,7 +51,20 @@ class LoanApprovalController extends Controller
             ->whereBetween('updated_at', [now()->startOfMonth(), now()->endOfMonth()])
             ->count();
 
-        return view('admin.loan-approval', compact('requests', 'batchGroups', 'approvedThisMonth', 'deniedThisMonth'));
+        return view('admin.loan-approval', compact('requests', 'batchGroups', 'pendingBatchMemberCount', 'approvedThisMonth', 'deniedThisMonth'));
+    }
+
+    private function paginateCollection($items, Request $request, string $pageName, int $perPage = 10): LengthAwarePaginator
+    {
+        $page = (int) $request->input($pageName, 1);
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query(), 'pageName' => $pageName]
+        );
     }
 
     /**
@@ -64,9 +88,11 @@ class LoanApprovalController extends Controller
             });
         };
 
-        // By default only show loans still "in play" (not archived); the
-        // manager explicitly filters for "Archived" to review old ones.
-        $matchesArchiveFilter = fn ($q) => $request->input('status') === 'archived'
+        // By default only show loans still "in play" (not archived); archived
+        // ones live in their own view ("View Archived", ?archived=1; old
+        // ?status=archived links too).
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+        $matchesArchiveFilter = fn ($q) => $showArchived
             ? $q->whereNotNull('archived_at')
             : $q->whereNull('archived_at');
 
@@ -76,7 +102,8 @@ class LoanApprovalController extends Controller
             ->tap($matchesSearch)
             ->tap($matchesArchiveFilter)
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(10, ['*'], 'loans_page')
+            ->withQueryString();
 
         $approvedMember = fn ($q) => $q->where('status', 'approved');
 
@@ -87,7 +114,16 @@ class LoanApprovalController extends Controller
             ->filter(fn (LoanBatch $batch) => $batch->loanRequests->isNotEmpty())
             ->values();
 
-        return view('admin.approved-loans', compact('loans', 'batchGroups'));
+        // Same reasoning as index(): this must count every batch member
+        // across every batch, not just the current page's.
+        $approvedBatchMemberCount = $batchGroups->sum(fn (LoanBatch $batch) => $batch->loanRequests->count());
+
+        $batchGroups = $this->paginateCollection($batchGroups, $request, 'batches_page');
+
+        // Approved requests (regular and batch members alike) that were archived.
+        $archivedCount = LoanRequest::where('status', 'approved')->whereNotNull('archived_at')->count();
+
+        return view('admin.approved-loans', compact('loans', 'batchGroups', 'approvedBatchMemberCount', 'showArchived', 'archivedCount'));
     }
 
     /**

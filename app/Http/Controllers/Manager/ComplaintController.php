@@ -31,7 +31,7 @@ class ComplaintController extends Controller
             });
         }
 
-        $complaints = $query->get();
+        $complaints = $query->paginate(10)->withQueryString();
 
         $counts = [
             'total' => Complaint::where('status', '!=', 'draft')->count(),

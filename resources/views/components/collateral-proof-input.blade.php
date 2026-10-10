@@ -149,6 +149,7 @@
     function collateralShowPreview(id, file) {
         var viewLink = document.getElementById(id + '_viewLink');
         viewLink.href = URL.createObjectURL(file);
+        viewLink.setAttribute('data-viewer-type', file.type || '');
         viewLink.classList.remove('d-none');
     }
 
@@ -281,7 +282,7 @@
 </div>
 <div class="d-flex align-items-center gap-2">
     <p class="small text-muted mb-0" id="{{ $id }}_label">{{ $existingLabel ?? 'No file chosen' }}</p>
-    <a href="{{ $existingUrl }}" target="_blank" id="{{ $id }}_viewLink" class="btn btn-link btn-sm p-0 {{ $existingUrl ? '' : 'd-none' }}">View Photo</a>
+    <a href="{{ $existingUrl }}" target="_blank" data-file-viewer data-viewer-title="Collateral Proof" id="{{ $id }}_viewLink" class="btn btn-link btn-sm p-0 {{ $existingUrl ? '' : 'd-none' }}">View Photo</a>
 </div>
 
 <input type="file" name="documents" id="{{ $id }}" class="d-none" accept=".pdf,.jpg,.jpeg,.png">

@@ -133,7 +133,7 @@
                                 <div class="modal-footer bg-light">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                                     <button type="submit" name="action" value="draft" class="btn btn-outline-primary">Save Draft</button>
-                                    <button type="submit" name="action" value="submit" class="btn btn-primary" onclick="return confirm('Submit this complaint for review? You won\'t be able to edit it once submitted.')">Submit for Review</button>
+                                    <button type="submit" name="action" value="submit" class="btn btn-primary" data-confirm="You won't be able to edit it once it's submitted." data-confirm-title="Submit this complaint for review?" data-confirm-label="Submit">Submit for Review</button>
                                 </div>
                             </form>
                         </div>
@@ -171,6 +171,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$complaints" />
 </div>
 
 <!-- Create Modal -->
@@ -196,7 +197,7 @@
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" name="action" value="draft" class="btn btn-outline-primary">Save as Draft</button>
-                    <button type="submit" name="action" value="submit" class="btn btn-primary" onclick="return confirm('Submit this complaint for review? You won\'t be able to edit it once submitted.')">Submit for Review</button>
+                    <button type="submit" name="action" value="submit" class="btn btn-primary" data-confirm="You won't be able to edit it once it's submitted." data-confirm-title="Submit this complaint for review?" data-confirm-label="Submit">Submit for Review</button>
                 </div>
             </form>
         </div>

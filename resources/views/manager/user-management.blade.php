@@ -17,14 +17,14 @@
                         <i class="fas fa-times-circle"></i>
                     </button>
                 </div>
-                <select id="statusFilter" class="form-select py-2" style="width: auto; min-width: 120px;">
+                <select id="statusFilter" class="form-select py-2 {{ $showArchived ? 'd-none' : '' }}" style="width: auto; min-width: 120px;">
                     <option value="">All Status</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     <option value="locked" {{ request('status') == 'locked' ? 'selected' : '' }}>Locked</option>
-                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
             </div>
+            <x-archive-toggle route="manager.user-management" :showing="$showArchived" :count="$archivedCount" />
         </div>
     </div>
 
@@ -111,7 +111,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-4 text-center text-muted">No users found</td>
+                    <td colspan="8" class="px-4 px-md-6 py-4 text-center text-muted">{{ $showArchived ? 'No archived users.' : 'No users found' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -548,7 +548,7 @@
 
     // Submits a manager-initiated password reset for a farmer account. Only
     // Farmer accounts can be targeted — enforced again server-side.
-    function submitChangePassword() {
+    async function submitChangePassword() {
         var form = document.getElementById('changePasswordForm');
         var newPassword = document.getElementById('newPasswordInput').value;
         var confirmPassword = document.getElementById('confirmPasswordInput').value;
@@ -568,7 +568,7 @@
         var userId = document.getElementById('changePasswordUserId').value;
         var userName = document.getElementById('changePasswordUserName').textContent;
 
-        if (!confirm('Change the login password for ' + userName + '? They will need to use the new password next time they log in.')) {
+        if (!(await confirmDialog('Change the login password for ' + userName + '? They will need to use the new password next time they log in.', { title: 'Change password?', confirmLabel: 'Change password' }))) {
             return;
         }
 

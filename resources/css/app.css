@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './palette.css';
+@import 'flatpickr/dist/flatpickr.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -649,18 +650,42 @@ body.bg-light {
    Modals
    ------------------------------------------------------------------------- */
 .modal-content {
-    border: none;
+    border: 1px solid var(--brand-border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-modal);
     overflow: hidden;
 }
 .modal-content {
     --bs-modal-bg: var(--brand-surface);
     --bs-modal-color: var(--text-primary);
 }
+
+/* Popup backdrop: darkens and blurs the page so the popup stands out.
+   Bootstrap fades the backdrop with opacity, which would also fade the blur,
+   so the backdrop stays fully opaque and the tint carries the transparency. */
 .modal-backdrop {
-    --bs-backdrop-bg: var(--palette-ink);
-    --bs-backdrop-opacity: 0.4;
+    --bs-backdrop-bg: var(--backdrop-tint);
+    --bs-backdrop-opacity: 1;
+    -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    backdrop-filter: blur(var(--backdrop-blur));
+    transition: opacity 240ms var(--ease);
+}
+:root {
+    --backdrop-tint: rgba(31, 42, 34, 0.55);
+    --backdrop-blur: 6px;
+    --shadow-modal: 0 32px 64px -24px rgba(31, 42, 34, 0.45), 0 12px 24px -12px rgba(31, 42, 34, 0.18);
+}
+/* Lighter blur on phones: it's costly on low-end devices. */
+@media (max-width: 767.98px) {
+    :root { --backdrop-blur: 3px; }
+}
+/* Where blur isn't supported (or the visitor wants less transparency),
+   rely on a deeper tint alone. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root { --backdrop-tint: rgba(31, 42, 34, 0.68); }
+}
+@media (prefers-reduced-transparency: reduce) {
+    :root { --backdrop-tint: rgba(31, 42, 34, 0.72); --backdrop-blur: 0px; }
 }
 .modal-header {
     border-bottom: 1px solid var(--brand-border);
@@ -674,8 +699,8 @@ body.bg-light {
     padding: 1.5rem;
 }
 .modal.fade .modal-dialog {
-    transform: translateY(-16px) scale(0.98);
-    transition: transform 220ms var(--ease), opacity 220ms var(--ease);
+    transform: translateY(14px) scale(0.97);
+    transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 220ms var(--ease);
 }
 .modal.show .modal-dialog {
     transform: translateY(0) scale(1);
@@ -687,6 +712,124 @@ body.bg-light {
    directly, while the form itself keeps working normally for submission. */
 .modal-form-flex {
     display: contents;
+}
+
+/* -------------------------------------------------------------------------
+   Date & time pickers (Flatpickr, see resources/js/date-pickers.js)
+   Themed from the same tokens as the rest of the app, so it follows the
+   palette in light and dark mode.
+   ------------------------------------------------------------------------- */
+.flatpickr-input[readonly]:not([disabled]) {
+    background-color: var(--brand-surface);
+    cursor: pointer;
+}
+.flatpickr-calendar {
+    font-family: var(--font-sans);
+    background: var(--brand-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    width: auto;
+    padding: 0.35rem;
+}
+.flatpickr-calendar.arrowTop::before,
+.flatpickr-calendar.arrowTop::after { border-bottom-color: var(--brand-border); }
+.flatpickr-calendar.arrowTop::after { border-bottom-color: var(--brand-surface); }
+.flatpickr-calendar.arrowBottom::before,
+.flatpickr-calendar.arrowBottom::after { border-top-color: var(--brand-border); }
+.flatpickr-calendar.arrowBottom::after { border-top-color: var(--brand-surface); }
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year,
+span.flatpickr-weekday {
+    color: var(--text-primary);
+    fill: var(--text-primary);
+    background: transparent;
+}
+.flatpickr-current-month { font-size: 1rem; font-weight: 600; padding-top: 0.45rem; }
+.flatpickr-current-month .flatpickr-monthDropdown-months { font-weight: 600; border-radius: var(--radius-sm); }
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover,
+.flatpickr-current-month .numInputWrapper:hover { background: var(--brand-surface-hover); border-radius: var(--radius-sm); }
+.flatpickr-current-month .flatpickr-monthDropdown-months option { background: var(--brand-surface); color: var(--text-primary); }
+span.flatpickr-weekday { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month { color: var(--text-secondary); fill: var(--text-secondary); border-radius: var(--radius-sm); }
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg { fill: var(--brand-primary); }
+.numInputWrapper span.arrowUp::after { border-bottom-color: var(--text-secondary); }
+.numInputWrapper span.arrowDown::after { border-top-color: var(--text-secondary); }
+
+.flatpickr-day {
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    font-variant-numeric: tabular-nums;
+}
+.flatpickr-day:hover,
+.flatpickr-day:focus,
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover {
+    background: var(--brand-primary-light);
+    border-color: var(--brand-primary-light);
+    color: var(--brand-primary-text);
+}
+.flatpickr-day.today { border-color: var(--brand-primary); }
+.flatpickr-day.today:hover { background: var(--brand-primary-light); color: var(--brand-primary-text); }
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover,
+.flatpickr-day.selected:focus {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: var(--brand-on-primary);
+}
+.flatpickr-day.inRange,
+.flatpickr-day.inRange:hover {
+    background: var(--brand-primary-light);
+    border-color: var(--brand-primary-light);
+    color: var(--brand-primary-text);
+    box-shadow: -5px 0 0 var(--brand-primary-light), 5px 0 0 var(--brand-primary-light);
+}
+.flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n + 1)),
+.flatpickr-day.startRange.startRange + .endRange:not(:nth-child(7n + 1)),
+.flatpickr-day.endRange.startRange + .endRange:not(:nth-child(7n + 1)) {
+    box-shadow: -10px 0 0 var(--brand-primary);
+}
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay { color: var(--text-muted); opacity: 0.6; }
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+    color: var(--text-muted);
+    opacity: 0.35;
+    background: transparent;
+    border-color: transparent;
+    cursor: not-allowed;
+}
+
+/* Time picker (time fields and date+time) */
+.flatpickr-time { border-top-color: var(--brand-border) !important; }
+.flatpickr-calendar.noCalendar .flatpickr-time { border-top: 0 !important; }
+.flatpickr-time input,
+.flatpickr-time .flatpickr-am-pm,
+.flatpickr-time .flatpickr-time-separator {
+    color: var(--text-primary);
+    font-weight: 600;
+    background: transparent;
+}
+.flatpickr-time input:hover,
+.flatpickr-time input:focus,
+.flatpickr-time .flatpickr-am-pm:hover,
+.flatpickr-time .flatpickr-am-pm:focus { background: var(--brand-primary-light); border-radius: var(--radius-sm); }
+
+/* Phones use their native picker; keep that field looking like the others */
+.flatpickr-mobile { min-height: calc(1.5em + 1.1rem + 2px); }
+
+@media (prefers-reduced-motion: reduce) {
+    .flatpickr-calendar.animate.open { animation: none; }
 }
 
 /* -------------------------------------------------------------------------
@@ -1410,9 +1553,12 @@ body.bg-light {
 :root[data-bs-theme="dark"] .app-topbar {
     background-color: var(--brand-bg) !important;
 }
-:root[data-bs-theme="dark"] .modal-backdrop {
-    --bs-backdrop-bg: #000;
-    --bs-backdrop-opacity: 0.6;
+:root[data-bs-theme="dark"] {
+    --backdrop-tint: rgba(0, 0, 0, 0.62);
+    --shadow-modal: 0 32px 64px -24px rgba(0, 0, 0, 0.7), 0 12px 24px -12px rgba(0, 0, 0, 0.4);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root[data-bs-theme="dark"] { --backdrop-tint: rgba(0, 0, 0, 0.75); }
 }
 
 :root[data-bs-theme="dark"] .form-select {

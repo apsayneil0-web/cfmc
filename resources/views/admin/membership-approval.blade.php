@@ -167,15 +167,15 @@
                                         $extension = pathinfo($application->{$doc['path']}, PATHINFO_EXTENSION);
                                     @endphp
                                     @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="application-{{ $application->id }}" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-image me-1"></i> View Image
                                         </a>
                                     @elseif($extension == 'pdf')
-                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="application-{{ $application->id }}" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-file-pdf me-1"></i> View PDF
                                         </a>
                                     @else
-                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="application-{{ $application->id }}" class="btn btn-sm btn-outline-secondary">
                                             <i class="fas fa-file me-1"></i> View Document
                                         </a>
                                     @endif
@@ -215,6 +215,7 @@
     </div>
     @endforeach
     @endif
+    <x-pagination-footer :paginator="$applications" />
 </div>
 
 <!-- Approve/Reject Confirmation Modal -->

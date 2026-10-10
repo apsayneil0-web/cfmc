@@ -25,21 +25,23 @@ class MachineController extends Controller
             'archived' => Machine::whereNotNull('archived_at')->count(),
         ];
 
-        $machines = $showArchived ? Machine::whereNotNull('archived_at')->get() : $activeMachines;
+        $query = $showArchived ? Machine::whereNotNull('archived_at') : Machine::whereNull('archived_at');
 
         if ($request->filled('type')) {
-            $machines = $machines->where('type', $request->string('type'));
+            $query->where('type', $request->string('type'));
         }
 
         if ($request->filled('search')) {
-            $search = mb_strtolower($request->string('search'));
-            $machines = $machines->filter(fn (Machine $m) => str_starts_with(mb_strtolower($m->name), $search)
-                || str_starts_with(mb_strtolower((string) $m->type), $search)
-                || str_starts_with(mb_strtolower((string) $m->brand), $search)
-                || str_starts_with(mb_strtolower((string) $m->serial_number), $search));
+            $search = $request->string('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "{$search}%")
+                    ->orWhere('type', 'like', "{$search}%")
+                    ->orWhere('brand', 'like', "{$search}%")
+                    ->orWhere('serial_number', 'like', "{$search}%");
+            });
         }
 
-        $machines = $machines->sortByDesc('created_at')->values();
+        $machines = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
 
         $existingTypes = Machine::whereNull('archived_at')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
 

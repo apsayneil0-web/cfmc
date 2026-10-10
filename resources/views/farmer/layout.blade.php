@@ -189,5 +189,7 @@
             backdrop.addEventListener('click', closeSidebar);
         })();
     </script>
+    <x-file-viewer />
+    <x-confirm-dialog />
 </body>
 </html>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Machine;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class MachineUsageController extends Controller
 {
@@ -41,6 +42,22 @@ class MachineUsageController extends Controller
         }
 
         $machines = $machines->sortByDesc('created_at')->values();
+
+        // status/maintenance_level are PHP accessors derived from usage
+        // records, not real columns, so the filters above can't be pushed
+        // into SQL — the search/filter has to happen on the fetched
+        // collection. Paginating is still doable: slice that already-
+        // filtered collection into a real paginator by hand, same API the
+        // view already uses everywhere else (currentPage(), url(), etc).
+        $page = (int) $request->input('page', 1);
+        $perPage = 10;
+        $machines = new LengthAwarePaginator(
+            $machines->forPage($page, $perPage)->values(),
+            $machines->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return view('manager.machine-usage', compact('machines', 'stats'));
     }

@@ -23,7 +23,9 @@ class MembershipController extends Controller
         // Default to Pending when no status filter is chosen yet — that's the
         // actionable list a manager lands on this page to work through.
         // Explicitly picking "All Status" still excludes archived records.
-        $status = $request->filled('status') ? $request->status : 'pending';
+        // Archived records live in their own view ("View Archived", ?archived=1).
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+        $status = $showArchived ? 'archived' : ($request->filled('status') ? $request->status : 'pending');
 
         if ($status === 'all') {
             $query->where('status', '!=', 'archived');
@@ -37,9 +39,10 @@ class MembershipController extends Controller
             $query->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["{$search}%"]);
         }
 
-        $farmers = $query->orderBy('created_at', 'desc')->get();
+        $farmers = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+        $archivedCount = Farmer::where('status', 'archived')->count();
 
-        return view('manager.membership', compact('crops', 'farmers'));
+        return view('manager.membership', compact('crops', 'farmers', 'showArchived', 'archivedCount'));
     }
 
     /**

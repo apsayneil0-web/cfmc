@@ -34,13 +34,23 @@ class UserController extends Controller
             $query->where('roleID', $request->role);
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        // Archived accounts live in their own view ("View Archived", ?archived=1),
+        // so the default list only shows accounts still in use.
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+
+        if ($showArchived) {
+            $query->where('status', 'archived');
+        } else {
+            $query->where('status', '!=', 'archived');
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
         }
 
         $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+        $archivedCount = User::where('roleID', 3)->where('status', 'archived')->count();
 
-        return view('manager.user-management', compact('users'));
+        return view('manager.user-management', compact('users', 'showArchived', 'archivedCount'));
     }
 
     /**

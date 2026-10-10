@@ -343,5 +343,6 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$requests" />
 </div>
 @endsection

@@ -23,7 +23,8 @@ class LoanAppointmentController extends Controller
     {
         $appointments = LoanAppointment::where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('farmer.loan-appointment', [
             'appointments' => $appointments,

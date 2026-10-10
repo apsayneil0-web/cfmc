@@ -122,6 +122,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$machines" />
 </div>
 
 {{-- Modals rendered outside <tbody>: a <div> is not valid directly inside a
@@ -229,7 +230,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Archive MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }} ({{ $machine->name }})? It will be removed from this list but kept for records.</p>
+                <p class="mb-0">Archive this machine ({{ $machine->name }})? It will be removed from this list but kept for records.</p>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -253,7 +254,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Restore MCH-{{ str_pad($machine->id, 3, '0', STR_PAD_LEFT) }} ({{ $machine->name }})? It will return to the active fleet and become bookable again.</p>
+                <p class="mb-0">Restore this machine ({{ $machine->name }})? It will return to the active fleet and become bookable again.</p>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

@@ -80,11 +80,15 @@ class Loan extends Model
     /**
      * What's actually due for the upcoming period: the standard monthly_due,
      * plus any shortfall a "partial" payment carried forward from a prior
-     * period (see recordPayment()). Zero once that shortfall is paid off.
+     * period (carried_over_amount — see recordPayment()), minus whatever
+     * progress has already been applied toward the current period
+     * (current_period_paid) — including a prepayment that overshot the
+     * amount due, which leaves its excess sitting there as a head-start
+     * credit on the next period instead of just being stranded unseen.
      */
     public function getAmountDueAttribute(): float
     {
-        return round($this->monthly_due + (float) $this->carried_over_amount, 2);
+        return max(0, round($this->monthly_due + (float) $this->carried_over_amount - (float) $this->current_period_paid, 2));
     }
 
     /**
@@ -150,9 +154,21 @@ class Loan extends Model
             $schedule[] = (object) [
                 'number' => $number,
                 'due_date' => $this->original_due_date->copy()->addMonthsNoOverflow($number - 1),
-                // Only the upcoming installment carries a prior period's
-                // shortfall — past and future rows show the plain monthly_due.
-                'amount' => $number === $currentNumber ? $this->amount_due : $this->monthly_due,
+                // The upcoming installment shows amount_due (monthly_due plus
+                // whatever shortfall was carried into it). The period that
+                // shortfall was carried FROM — the one right before it —
+                // shows what was actually paid for it instead of the flat
+                // monthly_due, by working the same shortfall back out
+                // (monthly_due - carried_over_amount). Only reconstructable
+                // for that one most-recent period: carried_over_amount is a
+                // single running value, not a per-period history, so an
+                // older "paid" row has no way to recover what was actually
+                // paid if it too was a partial payment.
+                'amount' => match (true) {
+                    $number === $currentNumber => $this->amount_due,
+                    $number === $currentNumber - 1 && (float) $this->carried_over_amount > 0 => round($this->monthly_due - (float) $this->carried_over_amount, 2),
+                    default => $this->monthly_due,
+                },
                 'status' => $status,
             ];
         }

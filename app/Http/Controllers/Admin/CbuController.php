@@ -20,7 +20,8 @@ class CbuController extends Controller
         $farmers = Farmer::where('status', 'approved')
             ->with(['cbu.transactions' => fn ($q) => $q->orderByDesc('transaction_date')->orderByDesc('created_at')])
             ->orderBy('last_name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $stats = [
             'total_balance' => Cbu::sum('balance'),

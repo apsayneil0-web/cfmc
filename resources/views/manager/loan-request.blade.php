@@ -239,24 +239,29 @@
     <x-table-toolbar>
         <x-slot:filters>
             <form method="GET" action="{{ route('manager.loan-request') }}" class="d-flex flex-wrap align-items-center gap-3">
+                @if($showArchived)
+                <input type="hidden" name="archived" value="1">
+                @endif
                 <div class="position-relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 220px;">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
+                @unless($showArchived)
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
                     <option value="">All Status</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="denied" {{ request('status') == 'denied' ? 'selected' : '' }}>Denied</option>
-                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
+                @endunless
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->anyFilled(['search', 'status']))
-                <a href="{{ route('manager.loan-request') }}" class="btn btn-link btn-sm">Clear</a>
+                @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
+                <a href="{{ route('manager.loan-request', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
         </x-slot:filters>
         <x-slot:actions>
+            <x-archive-toggle route="manager.loan-request" :showing="$showArchived" :count="$archivedCount" :except="['status', 'page', 'regular_page', 'batches_page']" />
             <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createRequestModal">
                 <i class="fas fa-plus"></i><span>New Request</span>
             </button>
@@ -303,6 +308,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$requestBatchGroups" />
 
     @foreach($requestBatchGroups as $group)
     <x-modal id="viewBatchGroupModal{{ $group->batch?->id }}" title="{{ $group->batch?->label ?? 'Batch' }} — Requests">
@@ -401,12 +407,13 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">No regular loan requests found.</td>
+                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived loan requests.' : 'No regular loan requests found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$regularRequests" />
 
     {{-- View/Edit/Finalize/Archive modals for every request (regular rows above,
          and batch members reached via the Batch Requests group modal's own
@@ -425,7 +432,7 @@
                         <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucfirst($req->status)" /></div>
                         <div class="col-6"><label class="text-muted small d-block">Encoded By</label><p class="fw-medium mb-0">{{ $req->requestedBy->name ?? '—' }}</p></div>
                         @if($req->documents_path)
-                        <div class="col-12"><label class="text-muted small d-block">Supporting Document</label><a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank" class="fw-medium">View Document</a></div>
+                        <div class="col-12"><label class="text-muted small d-block">Supporting Document</label><a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank" data-file-viewer data-viewer-title="Supporting Document" class="fw-medium">View Document</a></div>
                         @endif
                         @if($req->status === 'denied' && $req->denial_reason)
                         <div class="col-12"><label class="text-muted small d-block">Denial Reason</label><p class="fw-medium mb-0 text-danger">{{ $req->denial_reason }}</p></div>
@@ -514,7 +521,7 @@
                                         <input type="file" name="documents" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                                         @if($req->documents_path)
                                         <div class="form-text">
-                                            Current file: <a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank">View Photo</a>. Choosing a new file will replace it.
+                                            Current file: <a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank" data-file-viewer data-viewer-title="Supporting Document">View Photo</a>. Choosing a new file will replace it.
                                         </div>
                                         @else
                                         <div class="form-text">No file attached yet.</div>
@@ -583,7 +590,7 @@
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-0">Archive LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }} for {{ $req->farmer->full_name }}? It will be removed from the active list but kept for records.</p>
+                                <p class="mb-0">Archive this request for {{ $req->farmer->full_name }}? It will be removed from the active list but kept for records.</p>
                             </div>
                             <div class="modal-footer bg-light">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -607,7 +614,7 @@
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-0">Restore LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }} for {{ $req->farmer->full_name }}? It will reappear on the active list as a denied request.</p>
+                                <p class="mb-0">Restore this request for {{ $req->farmer->full_name }}? It will reappear on the active list as a denied request.</p>
                             </div>
                             <div class="modal-footer bg-light">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

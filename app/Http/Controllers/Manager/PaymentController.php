@@ -13,6 +13,7 @@ use App\Models\LoanPayment;
 use App\Models\Notification;
 use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
 class PaymentController extends Controller
@@ -28,7 +29,7 @@ class PaymentController extends Controller
      * Display recorded loan payments, CBU transactions, and cooperative
      * expenses (operational/replaceable parts) in one unified feed.
      */
-    public function index()
+    public function index(Request $request)
     {
         $loanPayments = LoanPayment::with('loan.loanRequest.farmer')
             ->orderByDesc('created_at')
@@ -109,6 +110,23 @@ class PaymentController extends Controller
             'model' => $harvest,
         ]))->sortByDesc(fn ($payment) => $payment->model->created_at)->values();
 
+        if ($request->filled('type')) {
+            $type = $request->string('type');
+            $payments = $payments->filter(fn ($payment) => $payment->filter_category === $type)->values();
+        }
+
+        if ($request->filled('date')) {
+            $date = $request->date('date')->toDateString();
+            $payments = $payments->filter(fn ($payment) => $payment->date->toDateString() === $date)->values();
+        }
+
+        if ($request->filled('search')) {
+            $search = strtolower($request->string('search'));
+            $payments = $payments->filter(fn ($payment) => str_contains(strtolower($payment->transaction_code.' '.$payment->payer.' '.$payment->type_label.' '.$payment->reference), $search))->values();
+        }
+
+        $payments = $this->paginateCollection($payments, $request);
+
         $payableLoans = Loan::whereNull('archived_at')
             ->whereIn('status', ['active', 'overdue'])
             ->with('loanRequest.farmer')
@@ -147,6 +165,19 @@ class PaymentController extends Controller
         ];
 
         return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'payableExpenses', 'nonMemberNames', 'stats'));
+    }
+
+    private function paginateCollection($items, Request $request, int $perPage = 10): LengthAwarePaginator
+    {
+        $page = (int) $request->input('page', 1);
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
     }
 
     /**

@@ -30,7 +30,8 @@ class MembershipApprovalController extends Controller
         $applications = Farmer::with('crops')
             ->where('status', $status)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('admin.membership-approval', compact('applications', 'status'));
     }

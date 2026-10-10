@@ -59,6 +59,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$members" />
 </div>
 
 <script>

@@ -50,6 +50,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$farmers" />
 </div>
 
 {{-- Modals live outside the table: a <div> can't be a direct child of <tbody>, and

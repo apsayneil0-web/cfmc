@@ -53,7 +53,7 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member ID</th>
+                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Member Name</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Contribution Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
@@ -66,7 +66,7 @@
             <tbody>
                 @forelse($transactions as $transaction)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">FM-{{ str_pad($transaction->cbu->farmer_id, 3, '0', STR_PAD_LEFT) }}</td>
+                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">FM-{{ str_pad($transaction->cbu->farmer_id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $transaction->cbu->farmer->full_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $transaction->category ?? ($transaction->type === 'contribution' ? 'Contribution' : 'Expense') }}</td>
                     <td class="px-4 px-md-6 py-4 {{ $transaction->type === 'contribution' ? 'text-success' : 'text-danger' }} fw-medium">
@@ -87,6 +87,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$transactions" />
 </div>
 
 {{-- Modals live outside the table: a <div> can't be a direct child of <tbody>. --}}
@@ -97,7 +98,7 @@
         @method('PUT')
         <div class="mb-3">
             <label class="text-muted small d-block mb-1">Farmer</label>
-            <p class="fw-medium mb-0">FM-{{ str_pad($transaction->cbu->farmer_id, 3, '0', STR_PAD_LEFT) }} — {{ $transaction->cbu->farmer->full_name }}</p>
+            <p class="fw-medium mb-0">{{ $transaction->cbu->farmer->full_name }}</p>
         </div>
         <div class="mb-3">
             <label class="form-label fw-semibold">Entry Type <span class="text-danger">*</span></label>

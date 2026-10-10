@@ -46,18 +46,20 @@
                     <input type="text" id="searchFarmers" placeholder="Search farmers..." class="form-control ps-5 py-2" style="min-width: 250px;" value="{{ request('search') }}">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
-                <select id="filterStatus" class="form-select py-2" style="width: auto;">
+                <select id="filterStatus" class="form-select py-2 {{ $showArchived ? 'd-none' : '' }}" style="width: auto;">
                     <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
                     <option value="pending" {{ !request()->has('status') || request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
             </div>
-            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
-                <i class="fas fa-plus"></i>
-                <span>New Request</span>
-            </button>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <x-archive-toggle route="manager.membership" :showing="$showArchived" :count="$archivedCount" />
+                <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="fas fa-plus"></i>
+                    <span>New Request</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -169,21 +171,21 @@
                                                     $filename = basename($farmer->{$doc['path']});
                                                 @endphp
                                                 @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-primary">
                                                         <i class="fas fa-image me-1"></i> View Image
                                                     </a>
                                                     <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
                                                         <i class="fas fa-download me-1"></i> Download
                                                     </a>
                                                 @elseif($extension == 'pdf')
-                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-danger">
                                                         <i class="fas fa-file-pdf me-1"></i> View PDF
                                                     </a>
                                                     <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
                                                         <i class="fas fa-download me-1"></i> Download
                                                     </a>
                                                 @else
-                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                    <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-secondary">
                                                         <i class="fas fa-file me-1"></i> View Document
                                                     </a>
                                                     <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
@@ -388,26 +390,14 @@
                 </div>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-4 text-center text-muted">No membership requests found.</td>
+                    <td colspan="8" class="px-4 px-md-6 py-4 text-center text-muted">{{ $showArchived ? 'No archived members.' : 'No membership requests found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    <!-- Pagination -->
-    <div class="px-4 px-md-6 py-4 border-top d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-        <span class="text-muted small">Showing 1-10 of 23 entries</span>
-        <nav aria-label="Table pagination">
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item disabled"><span class="page-link">Previous</span></li>
-                <li class="page-item active"><span class="page-link">1</span></li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                <li class="page-item"><a class="page-link" href="#">Next</a></li>
-            </ul>
-        </nav>
-    </div>
+    <x-pagination-footer :paginator="$farmers" />
 </div>
 
 <!-- Confirmation Modal -->

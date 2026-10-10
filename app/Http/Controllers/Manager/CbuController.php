@@ -19,7 +19,8 @@ class CbuController extends Controller
     {
         $transactions = CbuTransaction::with('cbu.farmer', 'recordedBy')
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $stats = [
             'total_contributions' => CbuTransaction::where('type', 'contribution')->sum('amount'),

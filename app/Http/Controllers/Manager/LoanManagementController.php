@@ -33,9 +33,11 @@ class LoanManagementController extends Controller
             ->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular'));
 
         // By default (and for any specific business status), only show
-        // approved/active loans still in play. Archived ones are hidden
-        // unless the manager explicitly filters for "Archived".
-        if ($request->input('status') === 'archived') {
+        // approved/active loans still in play. Archived ones live in their own
+        // view ("View Archived", ?archived=1; old ?status=archived links too).
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+
+        if ($showArchived) {
             $query->whereNotNull('archived_at');
         } else {
             $query->whereNull('archived_at');
@@ -53,7 +55,7 @@ class LoanManagementController extends Controller
             });
         }
 
-        $loans = $query->orderBy('created_at', 'desc')->get();
+        $loans = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         $regularOnly = fn ($q) => $q->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular'));
 
@@ -70,9 +72,10 @@ class LoanManagementController extends Controller
             'interest_earned' => LoanPayment::where('type', 'interest')
                 ->whereHas('loan', fn ($q) => $q->whereNull('archived_at')->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular')))
                 ->sum('amount'),
+            'archived_count' => Loan::whereNotNull('archived_at')->tap($regularOnly)->count(),
         ];
 
-        return view('manager.loan-management', compact('loans', 'stats'));
+        return view('manager.loan-management', compact('loans', 'stats', 'showArchived'));
     }
 
     /**

@@ -32,7 +32,7 @@ class FarmerProfileController extends Controller
             });
         }
 
-        $farmers = $query->orderBy('created_at', 'desc')->get();
+        $farmers = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         return view('manager.farmer-profile', compact('crops', 'farmers'));
     }

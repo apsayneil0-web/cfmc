@@ -222,6 +222,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$requests" />
 </div>
 <script>
     // Blocks a deny submission whose reason is empty or only whitespace (the

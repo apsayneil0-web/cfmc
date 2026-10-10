@@ -38,7 +38,7 @@ class ScheduleApprovalController extends Controller
             });
         }
 
-        $requests = $query->get();
+        $requests = $query->paginate(10)->withQueryString();
 
         return view('manager.schedule-approval', compact('requests'));
     }

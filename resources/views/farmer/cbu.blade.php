@@ -42,6 +42,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$contributions" />
 </div>
 
 <!-- CBU-Funded Expenses -->
@@ -74,6 +75,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$expenses" />
 </div>
 
 <x-info-banner variant="info" title="Monitoring Only" class="mt-6">

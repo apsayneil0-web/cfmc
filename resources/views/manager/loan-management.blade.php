@@ -31,24 +31,31 @@
         <x-slot:filters>
             <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Loans</h3>
             <form method="GET" action="{{ route('manager.loan-management') }}" class="d-flex flex-wrap align-items-center gap-3">
+                @if($showArchived)
+                <input type="hidden" name="archived" value="1">
+                @endif
                 <div class="position-relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
+                @unless($showArchived)
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
                     <option value="">All Status</option>
                     <option value="pending_disbursement" {{ request('status') == 'pending_disbursement' ? 'selected' : '' }}>Pending Disbursement</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
                     <option value="fully_paid" {{ request('status') == 'fully_paid' ? 'selected' : '' }}>Fully Paid</option>
-                    <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                 </select>
+                @endunless
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->anyFilled(['search', 'status']))
-                <a href="{{ route('manager.loan-management') }}" class="btn btn-link btn-sm">Clear</a>
+                @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
+                <a href="{{ route('manager.loan-management', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
         </x-slot:filters>
+        <x-slot:actions>
+            <x-archive-toggle route="manager.loan-management" :showing="$showArchived" />
+        </x-slot:actions>
     </x-table-toolbar>
 
     <div class="table-responsive">
@@ -115,21 +122,23 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No loans found.</td>
+                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived loans.' : 'No loans found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$loans" />
 </div>
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-5 gap-6 mt-6">
+<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 mt-6">
     <x-stat-card label="Pending Disbursement" value="{{ $stats['pending_disbursement_count'] }}" icon="fa-money-check-alt" color="warning" />
     <x-stat-card label="Active Loans" value="{{ $stats['active_count'] }}" icon="fa-file-invoice-dollar" color="primary" />
     <x-stat-card label="Total Outstanding" value="{{ peso($stats['total_outstanding']) }}" icon="fa-hand-holding-usd" color="danger" />
     <x-stat-card label="Due This Month" value="{{ peso($stats['due_this_month']) }}" icon="fa-calendar-day" color="warning" />
     <x-stat-card label="Interest Earned" value="{{ peso($stats['interest_earned']) }}" icon="fa-chart-line" color="success" />
+    <x-stat-card label="Archived" value="{{ $stats['archived_count'] }}" icon="fa-box-archive" color="secondary" />
 </div>
 
 {{-- Modals rendered outside <tbody>: a <div> is not valid directly inside a
@@ -299,7 +308,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Archive LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} for {{ $loan->farmer->full_name }}? It will be removed from the active list but kept for auditing.</p>
+                <p class="mb-0">Archive this loan for {{ $loan->farmer->full_name }}? It will be removed from the active list but kept for auditing.</p>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -324,7 +333,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Restore LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} for {{ $loan->farmer->full_name }}? It will reappear on the active list.</p>
+                <p class="mb-0">Restore this loan for {{ $loan->farmer->full_name }}? It will reappear on the active list.</p>
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

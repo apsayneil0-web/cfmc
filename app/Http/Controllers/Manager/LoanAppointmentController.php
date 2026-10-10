@@ -38,7 +38,7 @@ class LoanAppointmentController extends Controller
             });
         }
 
-        $appointments = $query->get();
+        $appointments = $query->paginate(10)->withQueryString();
 
         $stats = [
             'pending_count' => LoanAppointment::where('status', 'pending')->count(),

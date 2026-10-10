@@ -28,7 +28,8 @@ class ScheduleController extends Controller
             ->where('user_id', Auth::id())
             ->whereNull('archived_at')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $month = $request->filled('month') ? Carbon::parse($request->string('month').'-01') : now()->startOfMonth();
         $machineryFilter = $request->string('calendar_machinery')->toString();

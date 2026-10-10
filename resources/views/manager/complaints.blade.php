@@ -131,5 +131,6 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$complaints" />
 </div>
 @endsection

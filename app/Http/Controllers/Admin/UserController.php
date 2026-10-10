@@ -293,20 +293,26 @@ class UserController extends Controller
             $query->where('roleID', $request->role);
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        // Archived accounts live in their own view ("View Archived", ?archived=1);
+        // the old ?status=archived link still lands there too.
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+
+        if ($showArchived) {
+            $query->where('status', 'archived');
         } else {
-            // Archived accounts are kept out of the default view — they're only
-            // ever reachable by explicitly filtering the Status dropdown to Archived.
             $query->where('status', '!=', 'archived');
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
         }
 
         $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+        $archivedCount = User::where('status', 'archived')->count();
 
         // Crop options for the "Create Account" form's Farmer crop-type checkboxes
         $crops = Crop::all();
 
-        return view('admin.user-management', compact('users', 'crops'));
+        return view('admin.user-management', compact('users', 'crops', 'showArchived', 'archivedCount'));
     }
 
     /**

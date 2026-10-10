@@ -38,19 +38,25 @@
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <div class="position-relative">
-                <input type="text" id="paymentSearchInput" placeholder="Search payments..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
-                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
-            </div>
-            <select id="paymentTypeFilter" class="form-select" style="width: auto;">
-                <option value="">All Types</option>
-                <option value="Loan Payment">Loan Payment</option>
-                <option value="CBU Contribution">CBU Contribution</option>
-                <option value="Harvest Payment">Harvest Payment</option>
-                <option value="Operational Expense">Operational Expense</option>
-                <option value="Replaceable Parts">Replaceable Parts</option>
-            </select>
-            <input type="date" id="paymentDateFilter" class="form-control" style="width: auto;">
+            <form method="GET" action="{{ route('manager.payment') }}" class="d-flex flex-wrap align-items-center gap-3">
+                <div class="position-relative">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search payments..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
+                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
+                </div>
+                <select name="type" class="form-select" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    <option value="Loan Payment" {{ request('type') == 'Loan Payment' ? 'selected' : '' }}>Loan Payment</option>
+                    <option value="CBU Contribution" {{ request('type') == 'CBU Contribution' ? 'selected' : '' }}>CBU Contribution</option>
+                    <option value="Harvest Payment" {{ request('type') == 'Harvest Payment' ? 'selected' : '' }}>Harvest Payment</option>
+                    <option value="Operational Expense" {{ request('type') == 'Operational Expense' ? 'selected' : '' }}>Operational Expense</option>
+                    <option value="Replaceable Parts" {{ request('type') == 'Replaceable Parts' ? 'selected' : '' }}>Replaceable Parts</option>
+                </select>
+                <input type="date" name="date" value="{{ request('date') }}" class="form-control" style="width: auto;" onchange="this.form.submit()">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
+                @if(request()->anyFilled(['search', 'type', 'date']))
+                <a href="{{ route('manager.payment') }}" class="btn btn-link btn-sm">Clear</a>
+                @endif
+            </form>
         </x-slot:filters>
         <x-slot:actions>
             <div class="dropdown">
@@ -99,7 +105,7 @@
             </thead>
             <tbody id="paymentsTableBody">
                 @forelse($payments as $payment)
-                <tr data-filter-category="{{ $payment->filter_category }}" data-date="{{ $payment->date->format('Y-m-d') }}">
+                <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $payment->transaction_code }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $payment->date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $payment->payer }}</td>
@@ -118,23 +124,13 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments recorded yet.</td>
-                </tr>
-                @endforelse
-                <tr id="paymentsNoFilterMatch" class="d-none">
                     <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments match your filters.</td>
                 </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
-
-    <div class="px-4 px-md-6 py-4 border-top d-flex align-items-center justify-content-between">
-        <p class="text-muted small mb-0">Showing 1-10 of 45 entries</p>
-        <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-secondary btn-sm" disabled>Previous</button>
-            <button class="btn btn-outline-secondary btn-sm">Next</button>
-        </div>
-    </div>
+    <x-pagination-footer :paginator="$payments" />
 </div>
 
 {{-- Modals live outside the table: a <div> can't be a direct child of <tbody>. --}}
@@ -398,6 +394,23 @@
         });
     });
 
+    // Pre-fills Payment Amount with the loan's amount due for Regular/
+    // Prepayment — not Partial, since the farmer deliberately pays less
+    // than the full amount due in that case and should type it themselves.
+    function recordPaymentAutoFillAmount() {
+        var loanSelect = document.getElementById('recordPaymentLoanSelect');
+        var typeSelect = document.getElementById('recordPaymentTypeSelect');
+        var amountInput = document.getElementById('recordPaymentAmount');
+        var option = loanSelect.options[loanSelect.selectedIndex];
+        var monthlyDue = option ? option.getAttribute('data-monthly-due') : null;
+
+        if (monthlyDue && typeSelect.value !== 'partial') {
+            amountInput.value = parseFloat(monthlyDue).toFixed(2);
+        }
+    }
+
+    document.getElementById('recordPaymentTypeSelect')?.addEventListener('change', recordPaymentAutoFillAmount);
+
     document.getElementById('recordPaymentLoanSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];
         var balance = option ? option.getAttribute('data-balance') : null;
@@ -416,6 +429,7 @@
                 text += ' (due ' + nextDueDate + ')';
             }
             hint.innerHTML = text;
+            recordPaymentAutoFillAmount();
         } else {
             amountInput.removeAttribute('max');
             hint.textContent = '';
@@ -516,47 +530,5 @@
     document.getElementById('harvestAmountInput')?.addEventListener('input', updateHarvestPreview);
     document.getElementById('harvestCalculateBtn')?.addEventListener('click', updateHarvestPreview);
 
-    // Search / Type / Date filters: purely client-side, since the whole feed
-    // is already rendered — toggles row visibility using the category each
-    // row was tagged with server-side (data-filter-category/data-date), and
-    // a plain text match against the row's own visible content for search.
-    (function () {
-        var searchInput = document.getElementById('paymentSearchInput');
-        var typeFilter = document.getElementById('paymentTypeFilter');
-        var dateFilter = document.getElementById('paymentDateFilter');
-
-        function applyPaymentFilters() {
-            var search = (searchInput?.value || '').trim().toLowerCase();
-            var type = typeFilter?.value || '';
-            var date = dateFilter?.value || '';
-            var rows = document.querySelectorAll('#paymentsTableBody tr[data-filter-category]');
-            var visibleCount = 0;
-
-            rows.forEach(function (row) {
-                var matchesType = !type || row.getAttribute('data-filter-category') === type;
-                var matchesDate = !date || row.getAttribute('data-date') === date;
-                var matchesSearch = !search || row.textContent.toLowerCase().includes(search);
-                var matches = matchesType && matchesDate && matchesSearch;
-
-                row.classList.toggle('d-none', !matches);
-                if (matches) {
-                    visibleCount++;
-                }
-            });
-
-            var noMatchRow = document.getElementById('paymentsNoFilterMatch');
-            if (noMatchRow) {
-                noMatchRow.classList.toggle('d-none', visibleCount !== 0 || rows.length === 0);
-            }
-        }
-
-        var searchTimeout;
-        searchInput?.addEventListener('input', function () {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(applyPaymentFilters, 200);
-        });
-        typeFilter?.addEventListener('change', applyPaymentFilters);
-        dateFilter?.addEventListener('change', applyPaymentFilters);
-    })();
 </script>
 @endsection

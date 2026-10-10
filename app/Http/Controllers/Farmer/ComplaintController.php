@@ -14,7 +14,8 @@ class ComplaintController extends Controller
     {
         $complaints = Complaint::where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('farmer.complaints', compact('complaints'));
     }

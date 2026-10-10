@@ -27,7 +27,7 @@ class ScheduleController extends Controller
             $query->where('status', $request->string('status'));
         }
 
-        $schedules = $query->get();
+        $schedules = $query->paginate(10)->withQueryString();
 
         $machineryList = Machine::whereNull('archived_at')->orderBy('name')->pluck('name');
 

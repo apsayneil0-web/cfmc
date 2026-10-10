@@ -24,7 +24,7 @@
 
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <x-stat-card label="Pending Requests" value="{{ $requests->count() + $batchGroups->sum(fn($b) => $b->loanRequests->count()) }}" icon="fa-hourglass-half" color="warning" />
+    <x-stat-card label="Pending Requests" value="{{ $requests->total() + $pendingBatchMemberCount }}" icon="fa-hourglass-half" color="warning" />
     <x-stat-card label="Approved This Month" value="{{ $approvedThisMonth }}" icon="fa-check-circle" color="success" />
     <x-stat-card label="Denied This Month" value="{{ $deniedThisMonth }}" icon="fa-times-circle" color="danger" />
 </div>
@@ -120,7 +120,7 @@
                                                         <div class="col-12">
                                                             <label class="text-muted small d-block">Supporting Document</label>
                                                             @if($member->documents_path)
-                                                                <a href="{{ asset('storage/'.$member->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                <a href="{{ asset('storage/'.$member->documents_path) }}" target="_blank" data-file-viewer data-viewer-title="Supporting Document" class="btn btn-sm btn-outline-primary">
                                                                     <i class="fas fa-file me-1"></i> View Document
                                                                 </a>
                                                             @else
@@ -165,6 +165,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$batchGroups" />
 </div>
 @endif
 
@@ -254,7 +255,7 @@
                                         <label class="text-muted small">Supporting Document</label>
                                         <div class="mt-2">
                                             @if($req->documents_path)
-                                                <a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank" data-file-viewer data-viewer-title="Supporting Document" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-file me-1"></i> View Document
                                                 </a>
                                             @else
@@ -298,6 +299,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$requests" />
 </div>
 
 <!-- Approve/Deny Confirmation Modal -->

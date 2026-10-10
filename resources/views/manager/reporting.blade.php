@@ -24,12 +24,11 @@
                 </select>
             </div>
             <div>
-                <label class="form-label fw-semibold">Date From</label>
-                <input type="date" name="date_from" class="form-control" value="{{ $dateFrom }}">
-            </div>
-            <div>
-                <label class="form-label fw-semibold">Date To</label>
-                <input type="date" name="date_to" class="form-control" value="{{ $dateTo }}">
+                {{-- One range calendar edits both dates (see resources/js/date-pickers.js);
+                     without JavaScript both plain date fields are shown. --}}
+                <label class="form-label fw-semibold" for="reportDateFrom">Date Range</label>
+                <input type="date" name="date_from" id="reportDateFrom" class="form-control" value="{{ $dateFrom }}" data-range-end="reportDateTo" placeholder="Select date range" aria-label="Date range">
+                <input type="date" name="date_to" id="reportDateTo" class="form-control mt-2" value="{{ $dateTo }}" aria-label="Date to">
             </div>
             <div>
                 @if($reportType === 'maintenance')
@@ -183,7 +182,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->scheduled_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->display_name }}</td>
@@ -223,7 +222,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $loop->iteration }}</td>
                     <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($row->id, 3, '0', STR_PAD_LEFT) }}</td>
@@ -258,7 +257,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $row->machine->name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->times_used }}</td>
@@ -287,7 +286,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->scheduled_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->display_name }}</td>
@@ -318,7 +317,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->transaction_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->cbu?->farmer?->full_name }}</td>
@@ -348,7 +347,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->created_at->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->user?->farmer?->full_name ?? $row->user?->name }}</td>
@@ -378,7 +377,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->expense_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ ucfirst(str_replace('_', ' ', $row->category)) }}</td>
@@ -409,7 +408,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($rows as $row)
+                @forelse($tableRows as $row)
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->payment_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->payer_name }}</td>
@@ -427,6 +426,7 @@
         </table>
     </div>
     @endif
+    <x-pagination-footer :paginator="$tableRows" />
 </div>
 
 @if($summary)

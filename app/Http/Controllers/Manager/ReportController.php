@@ -14,6 +14,7 @@ use App\Models\Machine;
 use App\Models\ScheduleRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -73,10 +74,29 @@ class ReportController extends Controller
             default => null,
         };
 
+        // $rows stays the full, unpaginated collection — the breakdown and
+        // summary stats above are computed from it and would be wrong if
+        // they only reflected one page. $tableRows is a separate, paginated
+        // copy for the report preview table only.
+        $tableRows = $this->paginateCollection($rows, $request);
+
         return view('manager.reporting', compact(
             'reportType', 'dateFrom', 'dateTo', 'memberId', 'machineId', 'loanStatus', 'paymentStatus', 'category',
-            'farmers', 'selectedFarmer', 'machines', 'selectedMachine', 'rows', 'breakdown', 'breakdownTitle', 'summary'
+            'farmers', 'selectedFarmer', 'machines', 'selectedMachine', 'rows', 'tableRows', 'breakdown', 'breakdownTitle', 'summary'
         ));
+    }
+
+    private function paginateCollection($items, Request $request, int $perPage = 10): LengthAwarePaginator
+    {
+        $page = (int) $request->input('page', 1);
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
     }
 
     public function export(Request $request): StreamedResponse

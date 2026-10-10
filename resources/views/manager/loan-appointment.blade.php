@@ -142,7 +142,7 @@
                             <label class="text-muted small d-block">Collateral Proof</label>
                             <div class="mt-2">
                                 @if($appt->documents_path)
-                                <a href="{{ asset('storage/'.$appt->documents_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ asset('storage/'.$appt->documents_path) }}" target="_blank" data-file-viewer data-viewer-title="Collateral Proof" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-file me-1"></i> View Document
                                 </a>
                                 @else
@@ -275,6 +275,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$appointments" />
 </div>
 
 <x-info-banner variant="info" title="Loan Appointment Requests" class="mt-6">

@@ -24,9 +24,11 @@ class AnnouncementController extends Controller
     {
         $query = Announcement::withCount('recipients');
 
-        // Archived announcements are hidden unless the manager explicitly
-        // filters for "Archived".
-        if ($request->input('status') === 'archived') {
+        // Archived announcements live in their own view ("View Archived",
+        // ?archived=1); the old ?status=archived link still lands there too.
+        $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
+
+        if ($showArchived) {
             $query->whereNotNull('archived_at');
         } else {
             $query->whereNull('archived_at');
@@ -44,7 +46,7 @@ class AnnouncementController extends Controller
             });
         }
 
-        $announcements = $query->orderBy('created_at', 'desc')->get();
+        $announcements = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         $farmers = Farmer::where('status', 'approved')->orderBy('created_at', 'desc')->get();
 
@@ -52,6 +54,8 @@ class AnnouncementController extends Controller
             'announcements' => $announcements,
             'farmers' => $farmers,
             'purposes' => self::PURPOSES,
+            'showArchived' => $showArchived,
+            'archivedCount' => Announcement::whereNotNull('archived_at')->count(),
         ]);
     }
 

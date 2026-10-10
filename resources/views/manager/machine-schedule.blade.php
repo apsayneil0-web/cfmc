@@ -112,15 +112,7 @@
 <div class="section-card">
     <div class="table-toolbar d-flex align-items-center justify-content-between gap-3">
         <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ $showArchived ? 'Archived Schedules' : 'All Schedules' }}</h3>
-        @if($showArchived)
-        <a href="{{ route('manager.machine-schedule', request()->except('archived')) }}" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i>Back to Active
-        </a>
-        @else
-        <a href="{{ route('manager.machine-schedule', array_merge(request()->query(), ['archived' => 1])) }}" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-box-archive me-1"></i>View Archived
-        </a>
-        @endif
+        <x-archive-toggle route="manager.machine-schedule" :showing="$showArchived" :count="$archivedCount" :except="['page']" />
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -253,7 +245,7 @@
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-0">Archive SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }} for {{ $req->display_name }}? It will be removed from the active list but kept for reporting and auditing.</p>
+                                <p class="mb-0">Archive this schedule for {{ $req->display_name }}? It will be removed from the active list but kept for reporting and auditing.</p>
                             </div>
                             <div class="modal-footer bg-light">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -276,7 +268,7 @@
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-0">Restore SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }} for {{ $req->display_name }}? It will reappear on the active calendar and schedule list.</p>
+                                <p class="mb-0">Restore this schedule for {{ $req->display_name }}? It will reappear on the active calendar and schedule list.</p>
                             </div>
                             <div class="modal-footer bg-light">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -297,6 +289,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$requests" />
 </div>
 
 <!-- Move Schedule +1 Day Confirmation Modal -->
@@ -310,7 +303,7 @@
             <form action="{{ route('manager.machine-schedule.shift-day') }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <p>This will move <strong>every pending/approved schedule</strong> — every scheduled date, including any already overdue — forward by 1 day, and automatically notify each affected farmer of their new date. This action cannot be undone. Continue?</p>
+                    <p>This will move <strong>every pending/approved schedule dated today or later</strong> forward by 1 day, and automatically notify each affected farmer of their new date. Schedules already in the past are left alone. This action cannot be undone. Continue?</p>
                     <div class="mb-0">
                         <label class="form-label fw-semibold">Reason for moving <span class="text-danger">*</span></label>
                         <textarea name="reason" class="form-control" rows="2" maxlength="500" placeholder="e.g. Fleet-wide rainout, machine breakdown, operator unavailable..." required></textarea>
@@ -337,7 +330,7 @@
             <form action="{{ route('manager.machine-schedule.shift-day-backward') }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <p>This will move <strong>every pending/approved schedule</strong> back by 1 day, and automatically notify each affected farmer of their new date. Any schedule that would land before the {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }}-day minimum lead time is skipped instead of being backdated. This action cannot be undone. Continue?</p>
+                    <p>This will move <strong>every pending/approved schedule dated today or later</strong> back by 1 day, and automatically notify each affected farmer of their new date. Schedules already in the past are left alone, and any that would land before the {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }}-day minimum lead time are skipped instead of being backdated. This action cannot be undone. Continue?</p>
                     <div class="mb-0">
                         <label class="form-label fw-semibold">Reason for moving <span class="text-danger">*</span></label>
                         <textarea name="reason" class="form-control" rows="2" maxlength="500" placeholder="e.g. Original date was scheduled in error, farmer requested earlier slot..." required></textarea>

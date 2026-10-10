@@ -157,10 +157,11 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$paidLoans" />
 </div>
 
 @foreach($paidLoans as $loan)
-<x-modal id="paidLoanModal{{ $loan->id }}" title="LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — Fully Paid">
+<x-modal id="paidLoanModal{{ $loan->id }}" title="Fully Paid Loan">
     <div class="row g-3 mb-3">
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
@@ -247,6 +248,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$loanRequests" />
 </div>
 @endif
 

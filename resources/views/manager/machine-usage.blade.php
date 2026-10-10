@@ -92,6 +92,7 @@
             </tbody>
         </table>
     </div>
+    <x-pagination-footer :paginator="$machines" />
 </div>
 
 @foreach($machines as $machine)

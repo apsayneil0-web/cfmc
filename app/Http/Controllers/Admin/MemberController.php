@@ -27,7 +27,7 @@ class MemberController extends Controller
             $query->where('status', $request->status);
         }
 
-        $members = $query->orderBy('created_at', 'desc')->get();
+        $members = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         return view('admin.members', compact('members'));
     }

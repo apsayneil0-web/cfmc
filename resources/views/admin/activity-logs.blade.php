@@ -25,7 +25,7 @@
                     <option value="{{ $action }}" {{ request('action') == $action ? 'selected' : '' }}>{{ $action }}</option>
                     @endforeach
                 </select>
-                <input type="date" id="filterDateFrom" class="form-control py-2" style="width: auto;" value="{{ request('date_from') }}" title="From date">
+                <input type="date" id="filterDateFrom" class="form-control py-2" style="width: auto;" value="{{ request('date_from') }}" title="From date" data-range-end="filterDateTo" placeholder="Filter by date range">
                 <input type="date" id="filterDateTo" class="form-control py-2" style="width: auto;" value="{{ request('date_to') }}" title="To date">
             </div>
         </div>

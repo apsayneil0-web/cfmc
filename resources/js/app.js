@@ -1,4 +1,5 @@
 import './bootstrap';
+import './date-pickers';
 
 (function () {
     var STORAGE_KEY = 'cfmc-theme';
