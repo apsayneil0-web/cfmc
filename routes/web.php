@@ -177,6 +177,7 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
 
     Route::get('/manager/reporting', [ReportController::class, 'index'])->name('manager.reporting');
     Route::get('/manager/reporting/export', [ReportController::class, 'export'])->name('manager.reporting.export');
+    Route::get('/manager/reporting/export-excel', [ReportController::class, 'exportExcel'])->name('manager.reporting.export-excel');
 
     Route::get('/manager/user-management', [UserController::class, 'index'])->name('manager.user-management');
 

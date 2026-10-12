@@ -15,6 +15,10 @@ use App\Models\ScheduleRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -140,6 +144,157 @@ class ReportController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Branded Excel export: loads the cooperative's letterhead-styled
+     * template (storage/app/report_templates/CFMC_Report_Templates.xlsx —
+     * one sheet per report type, designed outside the app) and writes this
+     * report's filtered rows into it, rather than generating a workbook
+     * from scratch. Keeps every sheet's exact formatting, formulas, and
+     * signature lines; only the data area and the two header-row formulas
+     * (SUM range, generated-on date) are touched.
+     */
+    public function exportExcel(Request $request): BinaryFileResponse
+    {
+        $reportType = in_array($request->get('report_type'), self::REPORT_TYPES, true)
+            ? $request->get('report_type')
+            : 'harvesting';
+
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $memberId = $request->get('member_id');
+        $machineId = $request->get('machine_id');
+        $loanStatus = $request->get('loan_status');
+        $paymentStatus = $request->get('payment_status');
+        $category = $request->get('category');
+
+        $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $machineId, $loanStatus, $paymentStatus, $category);
+        $data = $this->excelRowsFor($reportType, $rows);
+        $config = $this->excelSheetConfig($reportType);
+
+        $spreadsheet = IOFactory::load(storage_path('app/report_templates/CFMC_Report_Templates.xlsx'));
+        $sheet = $spreadsheet->getSheetByName($config['sheet']);
+        abort_if($sheet === null, 500, "Report template is missing its \"{$config['sheet']}\" sheet.");
+
+        // Keep only the sheet being exported — the workbook ships with all
+        // 8 report sheets as a reusable template, but one export is one report.
+        foreach ($spreadsheet->getSheetNames() as $name) {
+            if ($name !== $config['sheet']) {
+                $spreadsheet->removeSheetByIndex($spreadsheet->getIndex($spreadsheet->getSheetByName($name)));
+            }
+        }
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $sheet->setCellValue('B4', 'From: '.($dateFrom ?: '—').'   To: '.($dateTo ?: '—'));
+        $sheet->setCellValue($config['generatedCell'], ExcelDate::PHPToExcel(now()));
+
+        $startRow = 7;
+        $templateDataRows = 10;
+        $dataCount = count($data);
+
+        // The template reserves 10 data rows (7-16) before a blank spacer
+        // and the TOTAL/SUMMARY row at 18. More rows than that need extra
+        // ones inserted (copying row 16's styling) so nothing gets
+        // silently truncated for a wide date range / no filters at all.
+        if ($dataCount > $templateDataRows) {
+            $extra = $dataCount - $templateDataRows;
+            $sheet->insertNewRowBefore(17, $extra);
+            foreach ($config['columns'] as $col) {
+                for ($r = 17; $r < 17 + $extra; $r++) {
+                    $sheet->duplicateStyle($sheet->getStyle("{$col}16"), "{$col}{$r}");
+                }
+            }
+        }
+
+        foreach ($data as $i => $values) {
+            $row = $startRow + $i;
+            foreach ($values as $colIdx => $value) {
+                $col = $config['columns'][$colIdx];
+                if ($value instanceof \DateTimeInterface) {
+                    $sheet->setCellValue("{$col}{$row}", ExcelDate::PHPToExcel($value));
+                } else {
+                    $sheet->setCellValue("{$col}{$row}", $value);
+                }
+            }
+        }
+
+        $lastDataRow = $startRow - 1 + max($dataCount, $templateDataRows);
+        $totalRow = $lastDataRow + 2;
+
+        foreach ($config['sumCols'] as $colIdx) {
+            $col = $config['columns'][$colIdx];
+            $sheet->setCellValue("{$col}{$totalRow}", "=SUM({$col}{$startRow}:{$col}{$lastDataRow})");
+        }
+
+        $filename = "{$reportType}-report-".now()->format('Y-m-d').'.xlsx';
+        $tempPath = tempnam(sys_get_temp_dir(), 'cfmc_report_').'.xlsx';
+        IOFactory::createWriter($spreadsheet, 'Xlsx')->save($tempPath);
+
+        return response()->download($tempPath, $filename)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Which sheet in the Excel template each report type fills, which
+     * column letters its rows use (matching excelRowsFor()'s value order),
+     * which of those columns get a TOTAL/SUMMARY SUM() formula, and where
+     * the "Generated on" date goes — all taken from the template's actual
+     * layout (see storage/app/report_templates/CFMC_Report_Templates.xlsx).
+     */
+    private function excelSheetConfig(string $reportType): array
+    {
+        return match ($reportType) {
+            'harvesting' => ['sheet' => 'Harvesting Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [3, 4]],
+            'harvest_payment' => ['sheet' => 'Harvest Payment Report', 'generatedCell' => 'G4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'sumCols' => [3, 5]],
+            'loan' => ['sheet' => 'Loan Report', 'generatedCell' => 'K4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'], 'sumCols' => [3, 4, 5, 6, 7, 8]],
+            'maintenance' => ['sheet' => 'Maintenance Report', 'generatedCell' => 'D4', 'columns' => ['A', 'B', 'C', 'D'], 'sumCols' => [1, 2]],
+            'schedule' => ['sheet' => 'Schedule Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [4]],
+            'cbu' => ['sheet' => 'CBU Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [4]],
+            'complaint' => ['sheet' => 'Complaint Report', 'generatedCell' => 'E4', 'columns' => ['A', 'B', 'C', 'D', 'E'], 'sumCols' => []],
+            'expense' => ['sheet' => 'Expense Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [3]],
+        };
+    }
+
+    /**
+     * Row values for the Excel export, in the same column order as
+     * excelSheetConfig()'s 'columns' list for that report type. Mirrors
+     * each writeXCsv() method's data exactly — the Excel and CSV exports
+     * should never show different numbers for the same filtered rows.
+     */
+    private function excelRowsFor(string $reportType, $rows): array
+    {
+        return match ($reportType) {
+            'harvesting' => $rows->map(fn ($r) => [
+                $r->scheduled_date, $r->display_name, $r->machinery, $r->land_size, $r->harvest_yield, $r->location,
+            ])->values()->all(),
+            'harvest_payment' => $rows->map(fn ($r) => [
+                $r->payment_date, $r->payer_name, $r->member_type === 'member' ? 'Member' : 'Non-Member',
+                $r->harvest_amount, $r->rate, $r->payment_amount, $r->notes,
+            ])->values()->all(),
+            'loan' => $rows->map(fn (Loan $r) => [
+                'LN-'.str_pad((string) $r->id, 3, '0', STR_PAD_LEFT), $r->farmer?->full_name, $r->loanRequest?->purpose,
+                $r->principal_amount, $r->interest_charged, $r->penalty_charged, $r->total_amount, $r->amount_paid,
+                $r->remaining_balance, $r->remaining_balance > 0 ? $r->next_due_date : null, $r->display_status,
+            ])->values()->all(),
+            'maintenance' => $rows->map(fn ($r) => [
+                $r->machine->name, $r->times_used, $r->usage_hours, $r->machine->maintenance_label,
+            ])->values()->all(),
+            'schedule' => $rows->map(fn ($r) => [
+                $r->scheduled_date, $r->display_name, $r->member_type === 'member' ? 'Member' : 'Non-Member',
+                $r->machine?->name ?? $r->machinery, $r->land_size, ucfirst($r->status),
+            ])->values()->all(),
+            'cbu' => $rows->map(fn ($r) => [
+                $r->transaction_date, $r->cbu?->farmer?->full_name, ucfirst($r->type), $r->category ?? '—', $r->amount, $r->balance_after,
+            ])->values()->all(),
+            'complaint' => $rows->map(fn ($r) => [
+                $r->created_at, $r->user?->farmer?->full_name ?? $r->user?->name, $r->subject,
+                ucfirst(str_replace('_', ' ', $r->status)), $r->manager_response,
+            ])->values()->all(),
+            'expense' => $rows->map(fn ($r) => [
+                $r->expense_date, ucfirst(str_replace('_', ' ', $r->category)), $r->description, $r->amount,
+                ucfirst($r->status), $r->recordedBy?->name,
+            ])->values()->all(),
+        };
     }
 
     /**

@@ -98,6 +98,9 @@
             <a href="{{ route('manager.reporting.export', request()->query()) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
                 <i class="fas fa-file-csv"></i><span>Export CSV</span>
             </a>
+            <a href="{{ route('manager.reporting.export-excel', request()->query()) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="fas fa-file-excel"></i><span>Export Excel</span>
+            </a>
         </div>
     </form>
 </div>
