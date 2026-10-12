@@ -45,38 +45,9 @@ class ReportController extends Controller
         $selectedMachine = $machineId ? $machines->firstWhere('id', $machineId) : null;
 
         $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $machineId, $loanStatus, $paymentStatus, $category);
-
-        $breakdown = match ($reportType) {
-            'harvesting' => $this->yieldByFarmer($rows),
-            'loan' => $this->loanStatusBreakdown($rows),
-            'maintenance' => $this->maintenanceTierBreakdown($rows),
-            'schedule' => $this->scheduleMemberBreakdown($rows),
-            'cbu' => $this->cbuCategoryBreakdown($rows),
-            'complaint' => $this->complaintCommonProblems($rows),
-            'expense' => $this->expenseCategoryBreakdown($rows),
-            'harvest_payment' => $this->harvestPaymentMemberBreakdown($rows),
-        };
-
-        $breakdownTitle = match ($reportType) {
-            'harvesting' => 'Top Yield by Farmer',
-            'loan' => 'Loan Status Breakdown',
-            'maintenance' => 'Maintenance Tier Breakdown',
-            'schedule' => 'Members vs Non-Members',
-            'cbu' => 'CBU Category Breakdown',
-            'complaint' => 'Common Problems',
-            'expense' => 'Expense Category Breakdown',
-            'harvest_payment' => 'Payments by Farmer Type',
-        };
-
-        $summary = match ($reportType) {
-            'loan' => $this->loanSummary($rows),
-            'schedule' => $this->scheduleSummary($rows),
-            'cbu' => $this->cbuSummary($rows),
-            'complaint' => $this->complaintSummary($rows),
-            'expense' => $this->expenseSummary($rows),
-            'harvest_payment' => $this->harvestPaymentSummary($rows),
-            default => null,
-        };
+        $breakdown = $this->breakdownFor($reportType, $rows);
+        $breakdownTitle = $this->breakdownTitleFor($reportType);
+        $summary = $this->summaryFor($reportType, $rows);
 
         // $rows stays the full, unpaginated collection — the breakdown and
         // summary stats above are computed from it and would be wrong if
@@ -169,9 +140,17 @@ class ReportController extends Controller
         $paymentStatus = $request->get('payment_status');
         $category = $request->get('category');
 
+        $farmers = Farmer::where('status', 'approved')->orderBy('last_name')->get();
+        $selectedFarmer = $memberId ? $farmers->firstWhere('id', $memberId) : null;
+        $machines = Machine::whereNull('archived_at')->orderBy('name')->get();
+        $selectedMachine = $machineId ? $machines->firstWhere('id', $machineId) : null;
+
         $rows = $this->rowsFor($reportType, $dateFrom, $dateTo, $memberId, $machineId, $loanStatus, $paymentStatus, $category);
         $data = $this->excelRowsFor($reportType, $rows);
+        $summary = $this->summaryFor($reportType, $rows);
+        $breakdown = $this->breakdownFor($reportType, $rows);
         $config = $this->excelSheetConfig($reportType);
+        $filtersText = $this->excelFiltersText($reportType, $selectedFarmer, $selectedMachine, $loanStatus, $paymentStatus, $category);
 
         $spreadsheet = IOFactory::load(storage_path('app/report_templates/CFMC_Report_Templates.xlsx'));
         $sheet = $spreadsheet->getSheetByName($config['sheet']);
@@ -186,35 +165,34 @@ class ReportController extends Controller
         }
         $spreadsheet->setActiveSheetIndex(0);
 
-        $sheet->setCellValue('B4', 'From: '.($dateFrom ?: '—').'   To: '.($dateTo ?: '—'));
+        $sheet->setCellValue('B5', $this->excelPeriodText($dateFrom, $dateTo));
         $sheet->setCellValue($config['generatedCell'], ExcelDate::PHPToExcel(now()));
-        $sheet->setCellValue('B22', auth()->user()->name ?? '');
+        $sheet->setCellValue('B6', $filtersText);
 
-        $startRow = 7;
+        $startRow = 9;
         $templateDataRows = 10;
         $dataCount = count($data);
 
-        // The template reserves 10 data rows (7-16) before a blank spacer
-        // and the TOTAL/SUMMARY row at 18. More rows than that need extra
-        // ones inserted (copying row 16's styling) so nothing gets
-        // silently truncated for a wide date range / no filters at all.
-        if ($dataCount > $templateDataRows) {
-            $extra = $dataCount - $templateDataRows;
-            $sheet->insertNewRowBefore(17, $extra);
+        // The template reserves 10 data rows (9-18) before a blank spacer and
+        // the Report Summary / Breakdown / Notes / Signature blocks below.
+        // More rows than that need extra ones inserted (copying row 18's
+        // styling), which pushes every one of those later blocks down with
+        // it — so nothing below the table needs its own overflow handling.
+        $shift = max(0, $dataCount - $templateDataRows);
+        if ($shift > 0) {
+            $sheet->insertNewRowBefore($startRow + $templateDataRows, $shift);
             foreach ($config['columns'] as $col) {
-                for ($r = 17; $r < 17 + $extra; $r++) {
-                    $sheet->duplicateStyle($sheet->getStyle("{$col}16"), "{$col}{$r}");
+                for ($r = $startRow + $templateDataRows; $r < $startRow + $templateDataRows + $shift; $r++) {
+                    $sheet->duplicateStyle($sheet->getStyle($col.($startRow + $templateDataRows - 1)), "{$col}{$r}");
                 }
             }
         }
 
-        // Clear every reserved data row first — the template ships with a
-        // sample row (row 7) for anyone opening it by hand, which must never
-        // leak into a real export, including when the filtered result is
-        // empty and nothing below would otherwise overwrite it.
-        $lastReservedRow = $startRow - 1 + max($dataCount, $templateDataRows);
+        // Clear every reserved data row first so a filtered result smaller
+        // than the reserved 10 rows never leaves old content behind.
+        $lastDataRow = $startRow - 1 + max($dataCount, $templateDataRows);
         foreach ($config['columns'] as $col) {
-            for ($r = $startRow; $r <= $lastReservedRow; $r++) {
+            for ($r = $startRow; $r <= $lastDataRow; $r++) {
                 $sheet->setCellValue("{$col}{$r}", null);
             }
         }
@@ -231,13 +209,36 @@ class ReportController extends Controller
             }
         }
 
-        $lastDataRow = $startRow - 1 + max($dataCount, $templateDataRows);
-        $totalRow = $lastDataRow + 2;
-
-        foreach ($config['sumCols'] as $colIdx) {
-            $col = $config['columns'][$colIdx];
-            $sheet->setCellValue("{$col}{$totalRow}", "=SUM({$col}{$startRow}:{$col}{$lastDataRow})");
+        // Report Summary block: template bakes in the section header only —
+        // both the label and the (already-formatted) value for every row are
+        // written here, reusing the exact same data the on-screen panel shows.
+        $summaryHeaderRow = $lastDataRow + 2;
+        foreach ($summary->rows as $i => $row) {
+            $r = $summaryHeaderRow + 1 + $i;
+            $sheet->setCellValue("A{$r}", $row['label']);
+            $sheet->setCellValue("C{$r}", $row['value']);
+            if (! empty($row['emphasis'])) {
+                $sheet->getStyle("C{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFB00020'));
+            }
         }
+
+        // Breakdown block: header + 2-column mini-header are baked into the
+        // template; both the label and count for every row are written here
+        // since several breakdowns (top yield, common problems) have labels
+        // that vary with the data, not a fixed category list.
+        $breakdownHeaderRow = $summaryHeaderRow + $config['summaryCount'] + 2;
+        $breakdownStartRow = $breakdownHeaderRow + 2;
+        foreach ($breakdown as $i => $item) {
+            $r = $breakdownStartRow + $i;
+            $sheet->setCellValue("A{$r}", $item->label);
+            $sheet->setCellValue("C{$r}", $item->value);
+        }
+
+        // Prepared by: the template bakes in the label and role/org line —
+        // only the name itself (the logged-in manager) is written here.
+        $notesRow = $breakdownStartRow + $config['breakdownCount'] + 1;
+        $signRow = $notesRow + $config['noteCount'] + 2;
+        $sheet->setCellValue('A'.($signRow + 1), auth()->user()->name ?? '');
 
         $filename = "{$reportType}-report-".now()->format('Y-m-d').'.xlsx';
         $tempPath = tempnam(sys_get_temp_dir(), 'cfmc_report_').'.xlsx';
@@ -247,23 +248,58 @@ class ReportController extends Controller
     }
 
     /**
+     * "Jan 01, 2026  to  Jun 30, 2026" style text for the Report Period
+     * cell — human-readable, matching how the rest of the sheet reads,
+     * rather than raw From/To values.
+     */
+    private function excelPeriodText(?string $dateFrom, ?string $dateTo): string
+    {
+        return match (true) {
+            $dateFrom && $dateTo => Carbon::parse($dateFrom)->format('M d, Y').'  to  '.Carbon::parse($dateTo)->format('M d, Y'),
+            (bool) $dateFrom => 'From '.Carbon::parse($dateFrom)->format('M d, Y'),
+            (bool) $dateTo => 'Through '.Carbon::parse($dateTo)->format('M d, Y'),
+            default => 'All available records',
+        };
+    }
+
+    /**
+     * "Farmer: X  |  Loan Status: Y  |  ..." summary of whichever filters
+     * were actually applied, for the Filters Applied row.
+     */
+    private function excelFiltersText(string $reportType, ?Farmer $selectedFarmer, ?Machine $selectedMachine, ?string $loanStatus, ?string $paymentStatus, ?string $category): string
+    {
+        return match ($reportType) {
+            'maintenance' => 'Machine: '.($selectedMachine?->name ?? 'All Machines'),
+            'expense' => 'Category: '.($category ? ucfirst(str_replace('_', ' ', $category)) : 'All Categories'),
+            'loan' => 'Farmer: '.($selectedFarmer?->full_name ?? 'All Farmers')
+                .'  |  Loan Status: '.($loanStatus ? ucfirst(str_replace('_', ' ', $loanStatus)) : 'All')
+                .'  |  Payment Status: '.($paymentStatus ? ucfirst($paymentStatus) : 'All (Paid / Partial / Unpaid)'),
+            default => 'Farmer: '.($selectedFarmer?->full_name ?? 'All Farmers'),
+        };
+    }
+
+    /**
      * Which sheet in the Excel template each report type fills, which
      * column letters its rows use (matching excelRowsFor()'s value order),
-     * which of those columns get a TOTAL/SUMMARY SUM() formula, and where
-     * the "Generated on" date goes — all taken from the template's actual
-     * layout (see storage/app/report_templates/CFMC_Report_Templates.xlsx).
+     * where the "Generated on" date goes, and how many rows the Report
+     * Summary / Breakdown / Note sections reserve — all taken from the
+     * template's actual layout (storage/app/report_templates/CFMC_Report_Templates.xlsx).
+     * summaryCount must equal that type's summaryFor()->rows count, and
+     * breakdownCount must be a true upper bound on breakdownFor()'s size
+     * (fixed category lists, or a ->take(N) cap) — there's no overflow
+     * handling for the breakdown block like there is for the data table.
      */
     private function excelSheetConfig(string $reportType): array
     {
         return match ($reportType) {
-            'harvesting' => ['sheet' => 'Harvesting Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [3, 4]],
-            'harvest_payment' => ['sheet' => 'Harvest Payment Report', 'generatedCell' => 'G4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'sumCols' => [3, 5]],
-            'loan' => ['sheet' => 'Loan Report', 'generatedCell' => 'K4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'], 'sumCols' => [3, 4, 5, 6, 7, 8]],
-            'maintenance' => ['sheet' => 'Maintenance Report', 'generatedCell' => 'D4', 'columns' => ['A', 'B', 'C', 'D'], 'sumCols' => [1, 2]],
-            'schedule' => ['sheet' => 'Schedule Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [4]],
-            'cbu' => ['sheet' => 'CBU Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [4]],
-            'complaint' => ['sheet' => 'Complaint Report', 'generatedCell' => 'E4', 'columns' => ['A', 'B', 'C', 'D', 'E'], 'sumCols' => []],
-            'expense' => ['sheet' => 'Expense Report', 'generatedCell' => 'F4', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'sumCols' => [3]],
+            'harvesting' => ['sheet' => 'Harvesting', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 3, 'breakdownCount' => 5, 'noteCount' => 2],
+            'harvest_payment' => ['sheet' => 'Harvest Payment', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'generatedCell' => 'G5', 'summaryCount' => 5, 'breakdownCount' => 2, 'noteCount' => 2],
+            'loan' => ['sheet' => 'Loan', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], 'generatedCell' => 'J5', 'summaryCount' => 6, 'breakdownCount' => 4, 'noteCount' => 2],
+            'maintenance' => ['sheet' => 'Maintenance', 'columns' => ['A', 'B', 'C', 'D'], 'generatedCell' => 'D5', 'summaryCount' => 3, 'breakdownCount' => 5, 'noteCount' => 2],
+            'schedule' => ['sheet' => 'Schedule', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 4, 'breakdownCount' => 2, 'noteCount' => 1],
+            'cbu' => ['sheet' => 'Capital Build-Up', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 5, 'breakdownCount' => 6, 'noteCount' => 2],
+            'complaint' => ['sheet' => 'Complaint', 'columns' => ['A', 'B', 'C', 'D', 'E'], 'generatedCell' => 'E5', 'summaryCount' => 3, 'breakdownCount' => 5, 'noteCount' => 2],
+            'expense' => ['sheet' => 'Expense', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 5, 'breakdownCount' => 3, 'noteCount' => 2],
         };
     }
 
@@ -284,7 +320,7 @@ class ReportController extends Controller
                 $r->harvest_amount, $r->rate, $r->payment_amount, $r->notes,
             ])->values()->all(),
             'loan' => $rows->map(fn (Loan $r) => [
-                $r->farmer?->full_name, $r->loanRequest?->purpose, $r->disbursed_at,
+                $r->farmer?->full_name, $r->loanRequest?->purpose,
                 $r->principal_amount, $r->interest_charged, $r->penalty_charged, $r->total_amount, $r->amount_paid,
                 $r->remaining_balance, $r->remaining_balance > 0 ? $r->next_due_date : null, $r->display_status,
             ])->values()->all(),
@@ -306,6 +342,53 @@ class ReportController extends Controller
                 $r->expense_date, ucfirst(str_replace('_', ' ', $r->category)), $r->description, $r->amount,
                 ucfirst($r->status), $r->recordedBy?->name,
             ])->values()->all(),
+        };
+    }
+
+    /**
+     * Shared by index() and exportExcel() so the on-screen Report Summary /
+     * Breakdown panels and the Excel export's equivalent sections can never
+     * show different numbers for the same filtered rows.
+     */
+    private function breakdownFor(string $reportType, $rows)
+    {
+        return match ($reportType) {
+            'harvesting' => $this->yieldByFarmer($rows),
+            'loan' => $this->loanStatusBreakdown($rows),
+            'maintenance' => $this->maintenanceTierBreakdown($rows),
+            'schedule' => $this->scheduleMemberBreakdown($rows),
+            'cbu' => $this->cbuCategoryBreakdown($rows),
+            'complaint' => $this->complaintCommonProblems($rows),
+            'expense' => $this->expenseCategoryBreakdown($rows),
+            'harvest_payment' => $this->harvestPaymentMemberBreakdown($rows),
+        };
+    }
+
+    private function breakdownTitleFor(string $reportType): string
+    {
+        return match ($reportType) {
+            'harvesting' => 'Top Yield by Farmer',
+            'loan' => 'Loan Status Breakdown',
+            'maintenance' => 'Maintenance Tier Breakdown',
+            'schedule' => 'Members vs Non-Members',
+            'cbu' => 'CBU Category Breakdown',
+            'complaint' => 'Common Problems',
+            'expense' => 'Expense Category Breakdown',
+            'harvest_payment' => 'Payments by Farmer Type',
+        };
+    }
+
+    private function summaryFor(string $reportType, $rows)
+    {
+        return match ($reportType) {
+            'harvesting' => $this->harvestingSummary($rows),
+            'loan' => $this->loanSummary($rows),
+            'maintenance' => $this->maintenanceSummary($rows),
+            'schedule' => $this->scheduleSummary($rows),
+            'cbu' => $this->cbuSummary($rows),
+            'complaint' => $this->complaintSummary($rows),
+            'expense' => $this->expenseSummary($rows),
+            'harvest_payment' => $this->harvestPaymentSummary($rows),
         };
     }
 
@@ -620,6 +703,24 @@ class ReportController extends Controller
             ->map(fn ($group, $type) => (object) ['label' => $labels[$type] ?? ucfirst($type), 'value' => $group->count()])
             ->sortByDesc('value')
             ->values();
+    }
+
+    private function harvestingSummary($rows)
+    {
+        return (object) ['rows' => [
+            ['label' => 'Total Harvest Records', 'value' => (string) $rows->count()],
+            ['label' => 'Total Land Size Harvested', 'value' => number_format((float) $rows->sum('land_size'), 2).' ha'],
+            ['label' => 'Total Harvest Yield', 'value' => (string) $rows->sum('harvest_yield')],
+        ]];
+    }
+
+    private function maintenanceSummary($rows)
+    {
+        return (object) ['rows' => [
+            ['label' => 'Total Machines', 'value' => (string) $rows->count()],
+            ['label' => 'Total Times Used', 'value' => (string) $rows->sum('times_used')],
+            ['label' => 'Total Hours Used', 'value' => (string) $rows->sum('usage_hours')],
+        ]];
     }
 
     /**
