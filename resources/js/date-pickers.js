@@ -102,14 +102,6 @@ const shared = {
     allowInput: true,
     parseDate,
     onReady: [(_, __, instance) => mirrorLook(instance)],
-    // A pick made in the open calendar is a real user edit; tell the popup
-    // unsaved-changes guard (modal-guard.js), since the change event itself
-    // is synthetic.
-    onChange: [(_, __, instance) => {
-        if (instance.isOpen) {
-            instance.input.dispatchEvent(new CustomEvent('picker:userchange', { bubbles: true }));
-        }
-    }],
     onOpen: [(_, __, instance) => pauseModalFocusTrap(instance, true)],
     onClose: [(_, __, instance) => pauseModalFocusTrap(instance, false)],
 };

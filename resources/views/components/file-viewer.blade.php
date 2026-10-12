@@ -6,7 +6,8 @@
         <a href="..." target="_blank" data-file-viewer
            data-viewer-title="Valid ID" data-viewer-group="farmer-12">View</a>
 
-    A plain click opens the viewer; Ctrl/Cmd/middle-click still opens a new
+    A plain click opens the viewer (closed with ✕ or Esc, not by clicking the
+    dimmed background); Ctrl/Cmd/middle-click still opens a new
     tab, and without JS the link behaves exactly as before. Links that share
     a data-viewer-group can be stepped through with the arrows.
     Optional: data-viewer-type="image" | "pdf" (or a MIME type) when the URL
@@ -14,7 +15,7 @@
 --}}
 @once
 <div class="fv" id="fileViewer" hidden role="dialog" aria-modal="true" aria-labelledby="fvTitle">
-    <div class="fv-backdrop" data-fv-close></div>
+    <div class="fv-backdrop"></div>
     <div class="fv-panel">
         <div class="fv-bar">
             <div class="fv-heading">

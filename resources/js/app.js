@@ -1,6 +1,30 @@
 import './bootstrap';
 import './date-pickers';
-import './modal-guard';
+
+// Popups are locked against outside clicks system-wide: clicking the dimmed
+// background does nothing, so a stray click never closes a form or loses what
+// was typed. They close with their ✕ / Close / Cancel buttons, or Esc.
+// A popup can still opt back in with data-bs-backdrop="true".
+(function () {
+    function lockPopups() {
+        var Modal = window.bootstrap && window.bootstrap.Modal;
+        if (!Modal) return;
+        Modal.Default.backdrop = 'static';
+        // Popups some pages create before this runs keep the old default, so
+        // also apply it to each popup as it opens.
+        document.addEventListener('show.bs.modal', function (event) {
+            var instance = Modal.getInstance(event.target);
+            if (instance && instance._config && !event.target.hasAttribute('data-bs-backdrop')) {
+                instance._config.backdrop = 'static';
+            }
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', lockPopups);
+    } else {
+        lockPopups();
+    }
+})();
 
 // Row action dropdowns (the kebab-menu) render with position:absolute by
 // default, which gets clipped by any ancestor with overflow set — every

@@ -16,7 +16,7 @@
 --}}
 @once
 <div class="cd" id="confirmDialog" hidden role="alertdialog" aria-modal="true" aria-labelledby="cdTitle" aria-describedby="cdMessage">
-    <div class="cd-backdrop" data-cd-cancel></div>
+    <div class="cd-backdrop"></div>
     <div class="cd-panel">
         <span class="cd-icon" id="cdIcon"><i class="fas fa-circle-question"></i></span>
         <h2 class="cd-title" id="cdTitle">Are you sure?</h2>
