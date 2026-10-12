@@ -188,6 +188,7 @@ class ReportController extends Controller
 
         $sheet->setCellValue('B4', 'From: '.($dateFrom ?: '—').'   To: '.($dateTo ?: '—'));
         $sheet->setCellValue($config['generatedCell'], ExcelDate::PHPToExcel(now()));
+        $sheet->setCellValue('B22', auth()->user()->name ?? '');
 
         $startRow = 7;
         $templateDataRows = 10;
@@ -204,6 +205,17 @@ class ReportController extends Controller
                 for ($r = 17; $r < 17 + $extra; $r++) {
                     $sheet->duplicateStyle($sheet->getStyle("{$col}16"), "{$col}{$r}");
                 }
+            }
+        }
+
+        // Clear every reserved data row first — the template ships with a
+        // sample row (row 7) for anyone opening it by hand, which must never
+        // leak into a real export, including when the filtered result is
+        // empty and nothing below would otherwise overwrite it.
+        $lastReservedRow = $startRow - 1 + max($dataCount, $templateDataRows);
+        foreach ($config['columns'] as $col) {
+            for ($r = $startRow; $r <= $lastReservedRow; $r++) {
+                $sheet->setCellValue("{$col}{$r}", null);
             }
         }
 
@@ -272,7 +284,7 @@ class ReportController extends Controller
                 $r->harvest_amount, $r->rate, $r->payment_amount, $r->notes,
             ])->values()->all(),
             'loan' => $rows->map(fn (Loan $r) => [
-                'LN-'.str_pad((string) $r->id, 3, '0', STR_PAD_LEFT), $r->farmer?->full_name, $r->loanRequest?->purpose,
+                $r->farmer?->full_name, $r->loanRequest?->purpose, $r->disbursed_at,
                 $r->principal_amount, $r->interest_charged, $r->penalty_charged, $r->total_amount, $r->amount_paid,
                 $r->remaining_balance, $r->remaining_balance > 0 ? $r->next_due_date : null, $r->display_status,
             ])->values()->all(),
