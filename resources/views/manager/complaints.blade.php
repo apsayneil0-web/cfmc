@@ -109,10 +109,6 @@
                                         <input type="checkbox" class="form-check-input" id="markViewed{{ $complaint->id }}" onchange="if(this.checked){ document.getElementById('markViewedForm{{ $complaint->id }}').submit(); }">
                                         <label class="form-check-label" for="markViewed{{ $complaint->id }}">Mark as viewed (notifies the farmer their complaint has been seen)</label>
                                     </div>
-                                    <form id="markViewedForm{{ $complaint->id }}" action="{{ route('manager.complaints.mark-viewed', $complaint->id) }}" method="POST" class="d-none">
-                                        @csrf
-                                        @method('PATCH')
-                                    </form>
                                     @endif
                                 </div>
                                 <div class="modal-footer bg-light">
@@ -120,6 +116,12 @@
                                     <button type="submit" class="btn btn-primary">Save Response</button>
                                 </div>
                             </form>
+                            @unless($complaint->viewed_at)
+                            <form id="markViewedForm{{ $complaint->id }}" action="{{ route('manager.complaints.mark-viewed', $complaint->id) }}" method="POST" class="d-none">
+                                @csrf
+                                @method('PATCH')
+                            </form>
+                            @endunless
                         </div>
                     </div>
                 </div>

@@ -65,10 +65,10 @@ class AnnouncementController extends Controller
 
         $announcement = Announcement::create([
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'description' => $validated['description'],
             'purpose' => $validated['purpose'],
             'resolution' => $validated['resolution'] ?? null,
-            'announcement_date' => $validated['announcement_date'] ?? null,
+            'announcement_date' => $validated['announcement_date'],
             'time' => $validated['time'] ?? null,
             'location' => $validated['location'] ?? null,
             'audience' => $validated['audience'],
@@ -92,10 +92,10 @@ class AnnouncementController extends Controller
 
         $announcement->update([
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'description' => $validated['description'],
             'purpose' => $validated['purpose'],
             'resolution' => $validated['resolution'] ?? null,
-            'announcement_date' => $validated['announcement_date'] ?? null,
+            'announcement_date' => $validated['announcement_date'],
             'time' => $validated['time'] ?? null,
             'location' => $validated['location'] ?? null,
             'audience' => $validated['audience'],
@@ -200,10 +200,10 @@ class AnnouncementController extends Controller
     {
         return $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'required|string',
             'purpose' => ['required', Rule::in(self::PURPOSES)],
             'resolution' => 'nullable|string',
-            'announcement_date' => 'nullable|date',
+            'announcement_date' => 'required|date',
             'time' => 'nullable|date_format:H:i',
             'location' => 'nullable|string|max:255',
             'audience' => ['required', Rule::in(['all_members', 'selected'])],

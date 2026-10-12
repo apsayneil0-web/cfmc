@@ -10,8 +10,8 @@
         <input type="text" name="title" class="form-control" value="{{ old('title', $announcement->title ?? '') }}" placeholder="Enter title" required>
     </div>
     <div class="mb-3">
-        <label class="form-label fw-semibold">Description</label>
-        <textarea name="description" rows="3" class="form-control" placeholder="Enter description">{{ old('description', $announcement->description ?? '') }}</textarea>
+        <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+        <textarea name="description" rows="3" class="form-control" placeholder="Enter description" required>{{ old('description', $announcement->description ?? '') }}</textarea>
     </div>
     <div class="row mb-3">
         <div class="col-md-6 mb-3 mb-md-0">
@@ -23,8 +23,8 @@
             </select>
         </div>
         <div class="col-md-6">
-            <label class="form-label fw-semibold">Date</label>
-            <input type="date" name="announcement_date" class="form-control" value="{{ old('announcement_date', $announcement?->announcement_date?->format('Y-m-d')) }}">
+            <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+            <input type="date" name="announcement_date" class="form-control" value="{{ old('announcement_date', $announcement?->announcement_date?->format('Y-m-d')) }}" required>
         </div>
     </div>
     <div class="row mb-3 meeting-fields" style="{{ $isMeeting ? '' : 'display:none;' }}">
