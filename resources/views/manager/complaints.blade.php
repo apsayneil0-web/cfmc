@@ -22,11 +22,11 @@
 
 <!-- Complaints Table -->
 <div class="section-card">
-    <form method="GET" action="{{ route('manager.complaints') }}">
+    <form method="GET" action="{{ route('manager.complaints') }}" id="complaintsFilterForm">
         <x-table-toolbar>
             <x-slot:filters>
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search complaints..." class="form-control ps-5" style="min-width: 220px;">
+                    <input type="text" name="search" id="complaintsSearchInput" value="{{ request('search') }}" placeholder="Search complaints..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
@@ -135,4 +135,8 @@
     </div>
     <x-pagination-footer :paginator="$complaints" />
 </div>
+
+<script>
+    wireDebouncedSearch('complaintsSearchInput', 'complaintsFilterForm');
+</script>
 @endsection

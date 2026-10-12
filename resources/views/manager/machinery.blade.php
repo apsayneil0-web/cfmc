@@ -37,12 +37,12 @@
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <form method="GET" action="{{ route('manager.machinery') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.machinery') }}" class="d-flex flex-wrap align-items-center gap-3" id="machineryFilterForm">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
                 @endif
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;">
+                    <input type="text" name="search" id="machinerySearchInput" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 <select name="type" class="form-select" style="width: auto;" onchange="this.form.submit()">
@@ -51,7 +51,6 @@
                     <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>{{ $type }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'type']))
                 <a href="{{ route('manager.machinery', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
@@ -413,5 +412,7 @@
         typeInput.addEventListener('input', updateSerialPreview);
         updateSerialPreview();
     })();
+
+    wireDebouncedSearch('machinerySearchInput', 'machineryFilterForm');
 </script>
 @endsection

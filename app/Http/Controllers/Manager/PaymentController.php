@@ -78,7 +78,7 @@ class PaymentController extends Controller
             'balance_after' => $transaction->balance_after,
             'notes' => $transaction->notes,
             'status_label' => 'Completed',
-            'filter_category' => 'CBU Contribution',
+            'filter_category' => 'CBU Payment',
             'model' => $transaction,
         ]))->concat($expenses->map(fn ($expense) => (object) [
             'kind' => 'expense',
@@ -92,7 +92,7 @@ class PaymentController extends Controller
             'balance_after' => null,
             'notes' => null,
             'status_label' => ucfirst($expense->status),
-            'filter_category' => $expense->category === 'operational' ? 'Operational Expense' : 'Replaceable Parts',
+            'filter_category' => 'Expense Payment',
             'model' => $expense,
         ]))->concat($harvestPayments->map(fn ($harvest) => (object) [
             'kind' => 'harvest',
@@ -106,12 +106,12 @@ class PaymentController extends Controller
             'balance_after' => null,
             'notes' => $harvest->notes,
             'status_label' => 'Completed',
-            'filter_category' => 'Harvest Payment',
+            'filter_category' => 'Harvesting Payment',
             'model' => $harvest,
         ]))->sortByDesc(fn ($payment) => $payment->model->created_at)->values();
 
         if ($request->filled('type')) {
-            $type = $request->string('type');
+            $type = $request->string('type')->toString();
             $payments = $payments->filter(fn ($payment) => $payment->filter_category === $type)->values();
         }
 

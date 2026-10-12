@@ -26,7 +26,7 @@
 @endif
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-6 gap-6 mb-8">
     <x-stat-card label="Pending Disbursement" value="{{ $stats['pending_disbursement_count'] }}" icon="fa-money-check-alt" color="warning" />
     <x-stat-card label="Active Loans" value="{{ $stats['active_count'] }}" icon="fa-file-invoice-dollar" color="primary" />
     <x-stat-card label="Total Outstanding" value="{{ peso($stats['total_outstanding']) }}" icon="fa-hand-holding-usd" color="danger" />
@@ -40,12 +40,12 @@
     <x-table-toolbar>
         <x-slot:filters>
             <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Batch Loans</h3>
-            <form method="GET" action="{{ route('manager.batch-loan-management') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.batch-loan-management') }}" class="d-flex flex-wrap align-items-center gap-3" id="batchLoanFilterForm">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
                 @endif
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;">
+                    <input type="text" name="search" id="batchLoanSearchInput" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 @unless($showArchived)
@@ -57,7 +57,6 @@
                     <option value="fully_paid" {{ request('status') == 'fully_paid' ? 'selected' : '' }}>Fully Paid</option>
                 </select>
                 @endunless
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
                 <a href="{{ route('manager.batch-loan-management', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
@@ -371,5 +370,7 @@
             openTarget();
         }
     }
+
+    wireDebouncedSearch('batchLoanSearchInput', 'batchLoanFilterForm');
 </script>
 @endsection

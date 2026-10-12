@@ -38,21 +38,19 @@
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <form method="GET" action="{{ route('manager.payment') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.payment') }}" class="d-flex flex-wrap align-items-center gap-3" id="paymentFilterForm">
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search payments..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
+                    <input type="text" name="search" id="paymentSearchInput" value="{{ request('search') }}" placeholder="Search payments..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 <select name="type" class="form-select" style="width: auto;" onchange="this.form.submit()">
                     <option value="">All Types</option>
                     <option value="Loan Payment" {{ request('type') == 'Loan Payment' ? 'selected' : '' }}>Loan Payment</option>
-                    <option value="CBU Contribution" {{ request('type') == 'CBU Contribution' ? 'selected' : '' }}>CBU Contribution</option>
-                    <option value="Harvest Payment" {{ request('type') == 'Harvest Payment' ? 'selected' : '' }}>Harvest Payment</option>
-                    <option value="Operational Expense" {{ request('type') == 'Operational Expense' ? 'selected' : '' }}>Operational Expense</option>
-                    <option value="Replaceable Parts" {{ request('type') == 'Replaceable Parts' ? 'selected' : '' }}>Replaceable Parts</option>
+                    <option value="CBU Payment" {{ request('type') == 'CBU Payment' ? 'selected' : '' }}>CBU Payment</option>
+                    <option value="Expense Payment" {{ request('type') == 'Expense Payment' ? 'selected' : '' }}>Expense Payment</option>
+                    <option value="Harvesting Payment" {{ request('type') == 'Harvesting Payment' ? 'selected' : '' }}>Harvesting Payment</option>
                 </select>
                 <input type="date" name="date" value="{{ request('date') }}" class="form-control" style="width: auto;" onchange="this.form.submit()">
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'type', 'date']))
                 <a href="{{ route('manager.payment') }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
@@ -93,7 +91,6 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Transaction ID</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Payor/Payer</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Payment Type</th>
@@ -106,7 +103,6 @@
             <tbody id="paymentsTableBody">
                 @forelse($payments as $payment)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $payment->transaction_code }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $payment->date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $payment->payer }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->type_label" /></td>
@@ -124,7 +120,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No payments match your filters.</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">No payments match your filters.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -377,6 +373,35 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
 <script>
+    // Debounced live search: Type and Date already auto-submit on change, so
+    // the search box submits the same way instead of requiring Enter/a
+    // separate button — waits briefly after typing stops so it doesn't
+    // reload on every keystroke.
+    (function () {
+        var searchInput = document.getElementById('paymentSearchInput');
+        var form = document.getElementById('paymentFilterForm');
+        if (!searchInput || !form) {
+            return;
+        }
+
+        var debounceTimer;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                form.submit();
+            }, 500);
+        });
+
+        // Restore focus (cursor at the end) after a search reloads the page,
+        // so typing feels continuous instead of resetting to the top.
+        searchInput.focus();
+        if (searchInput.value) {
+            var restoredValue = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = restoredValue;
+        }
+    })();
+
     // Upgrades the Loan and Farmer <select> fields in the payment modals into
     // searchable dropdowns once their modal is shown. Tom Select keeps the
     // underlying <select> in sync and still fires native "change" events on

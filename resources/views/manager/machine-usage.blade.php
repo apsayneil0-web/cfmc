@@ -24,9 +24,9 @@
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <form method="GET" action="{{ route('manager.machine-usage') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.machine-usage') }}" class="d-flex flex-wrap align-items-center gap-3" id="machineUsageFilterForm">
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;">
+                    <input type="text" name="search" id="machineUsageSearchInput" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
@@ -43,7 +43,6 @@
                     <option value="full" {{ request('maintenance') == 'full' ? 'selected' : '' }}>Full Maintenance</option>
                     <option value="comprehensive" {{ request('maintenance') == 'comprehensive' ? 'selected' : '' }}>Comprehensive Servicing</option>
                 </select>
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->anyFilled(['search', 'status', 'maintenance']))
                 <a href="{{ route('manager.machine-usage') }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
@@ -110,4 +109,8 @@
     </div>
 </x-modal>
 @endforeach
+
+<script>
+    wireDebouncedSearch('machineUsageSearchInput', 'machineUsageFilterForm');
+</script>
 @endsection

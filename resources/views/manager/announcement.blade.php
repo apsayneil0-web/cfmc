@@ -28,12 +28,12 @@
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <form method="GET" action="{{ route('manager.announcement') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.announcement') }}" class="d-flex flex-wrap align-items-center gap-3" id="announcementFilterForm">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
                 @endif
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search announcements..." class="form-control ps-5" style="min-width: 220px;">
+                    <input type="text" name="search" id="announcementSearchInput" value="{{ request('search') }}" placeholder="Search announcements..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 @unless($showArchived)
@@ -43,7 +43,6 @@
                     <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                 </select>
                 @endunless
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
                 @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
                 <a href="{{ route('manager.announcement', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
@@ -250,5 +249,7 @@
             });
         }
     });
+
+    wireDebouncedSearch('announcementSearchInput', 'announcementFilterForm');
 </script>
 @endsection

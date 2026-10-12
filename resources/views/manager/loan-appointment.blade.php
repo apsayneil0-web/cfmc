@@ -35,20 +35,19 @@
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <form method="GET" action="{{ route('manager.loan-appointment') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.loan-appointment') }}" class="d-flex flex-wrap align-items-center gap-3" id="loanAppointmentFilterForm">
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 220px;">
+                    <input type="text" name="search" id="loanAppointmentSearchInput" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Status</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
+                    <option value="pending" {{ ! request()->has('status') || request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
                 <input type="date" name="date" value="{{ request('date') }}" class="form-control" style="width: auto;" onchange="this.form.submit()">
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->anyFilled(['search', 'status', 'date']))
+                @if(request()->anyFilled(['search', 'date']) || request('status') !== null)
                 <a href="{{ route('manager.loan-appointment') }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
@@ -361,5 +360,34 @@
             }
         }
     });
+
+    // Debounced live search: Status and Date already auto-submit on change,
+    // so the search box submits the same way instead of requiring a separate
+    // Filter button — waits briefly after typing stops so it doesn't reload
+    // on every keystroke.
+    (function () {
+        var searchInput = document.getElementById('loanAppointmentSearchInput');
+        var form = document.getElementById('loanAppointmentFilterForm');
+        if (!searchInput || !form) {
+            return;
+        }
+
+        var debounceTimer;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                form.submit();
+            }, 500);
+        });
+
+        // Restore focus (cursor at the end) after a search reloads the page,
+        // so typing feels continuous instead of resetting to the top.
+        searchInput.focus();
+        if (searchInput.value) {
+            var restoredValue = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = restoredValue;
+        }
+    })();
 </script>
 @endsection

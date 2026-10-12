@@ -42,8 +42,16 @@ class LoanManagementController extends Controller
         } else {
             $query->whereNull('archived_at');
 
-            if ($request->filled('status')) {
-                $query->where('status', $request->string('status'));
+            // Default to Pending Disbursement on a fresh visit (no status
+            // param at all) — the loans actually needing manager action.
+            // "All Status" is its own explicit value so it's distinguishable
+            // from that default, rather than reusing an empty string for both.
+            $status = $request->get('status');
+
+            if ($status === null) {
+                $query->where('status', 'pending_disbursement');
+            } elseif ($status !== 'all') {
+                $query->where('status', $status);
             }
         }
 

@@ -30,25 +30,24 @@
     <x-table-toolbar>
         <x-slot:filters>
             <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Loans</h3>
-            <form method="GET" action="{{ route('manager.loan-management') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.loan-management') }}" class="d-flex flex-wrap align-items-center gap-3" id="loanManagementFilterForm">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
                 @endif
                 <div class="position-relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;">
+                    <input type="text" name="search" id="loanManagementSearchInput" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;" autocomplete="off">
                     <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
                 </div>
                 @unless($showArchived)
                 <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Status</option>
-                    <option value="pending_disbursement" {{ request('status') == 'pending_disbursement' ? 'selected' : '' }}>Pending Disbursement</option>
+                    <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
+                    <option value="pending_disbursement" {{ ! request()->has('status') || request('status') == 'pending_disbursement' ? 'selected' : '' }}>Pending Disbursement</option>
                     <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                     <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
                     <option value="fully_paid" {{ request('status') == 'fully_paid' ? 'selected' : '' }}>Fully Paid</option>
                 </select>
                 @endunless
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
-                @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
+                @if(request()->filled('search') || (! $showArchived && request('status') !== null))
                 <a href="{{ route('manager.loan-management', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
@@ -132,7 +131,7 @@
 </div>
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 mt-6">
+<div class="grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-6 gap-6 mt-6">
     <x-stat-card label="Pending Disbursement" value="{{ $stats['pending_disbursement_count'] }}" icon="fa-money-check-alt" color="warning" />
     <x-stat-card label="Active Loans" value="{{ $stats['active_count'] }}" icon="fa-file-invoice-dollar" color="primary" />
     <x-stat-card label="Total Outstanding" value="{{ peso($stats['total_outstanding']) }}" icon="fa-hand-holding-usd" color="danger" />
@@ -358,4 +357,34 @@
 <x-info-banner variant="warning" title="Grace Period &amp; Penalty Policy" class="mt-4">
     If a due date passes with a balance still unpaid, a one-time 2% grace-period interest applies. If it's still unpaid after the 30-day grace period, a one-time 10% penalty applies and the farmer is restricted from new loan requests until fully paid. Accounts unpaid for 5 months are flagged for Barangay summons, and for 6 months for legal action &mdash; both notify the Administrator.
 </x-info-banner>
+
+<script>
+    // Debounced live search: Status already auto-submits on change, so the
+    // search box submits the same way instead of requiring Filter/Enter —
+    // waits briefly after typing stops so it doesn't reload on every keystroke.
+    (function () {
+        var searchInput = document.getElementById('loanManagementSearchInput');
+        var form = document.getElementById('loanManagementFilterForm');
+        if (!searchInput || !form) {
+            return;
+        }
+
+        var debounceTimer;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                form.submit();
+            }, 500);
+        });
+
+        // Restore focus (cursor at the end) after a search reloads the page,
+        // so typing feels continuous instead of resetting to the top.
+        searchInput.focus();
+        if (searchInput.value) {
+            var restoredValue = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = restoredValue;
+        }
+    })();
+</script>
 @endsection

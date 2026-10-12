@@ -18,8 +18,16 @@ class LoanAppointmentController extends Controller
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'cancelled')")
             ->orderBy('created_at', 'desc');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
+        // Default to Pending on a fresh visit (no status param at all) — the
+        // requests actually needing manager action. "All Status" is its own
+        // explicit value so it's distinguishable from that default, rather
+        // than reusing an empty string for both.
+        $status = $request->get('status');
+
+        if ($status === null) {
+            $query->where('status', 'pending');
+        } elseif ($status !== 'all') {
+            $query->where('status', $status);
         }
 
         if ($request->filled('date')) {

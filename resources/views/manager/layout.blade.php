@@ -178,6 +178,33 @@
             logoutModal.show();
         }
 
+        // Shared by every page's search filter: submits the form 500ms after
+        // typing stops instead of requiring Enter or a separate Filter
+        // button, and restores cursor focus after the reload so typing feels
+        // continuous instead of resetting to the top of the page.
+        function wireDebouncedSearch(inputId, formId, delay) {
+            var input = document.getElementById(inputId);
+            var form = document.getElementById(formId);
+            if (!input || !form) {
+                return;
+            }
+
+            var timer;
+            input.addEventListener('input', function () {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    form.submit();
+                }, delay || 500);
+            });
+
+            input.focus();
+            if (input.value) {
+                var restoredValue = input.value;
+                input.value = '';
+                input.value = restoredValue;
+            }
+        }
+
         (function () {
             var sidebar = document.getElementById('appSidebar');
             var backdrop = document.getElementById('sidebarBackdrop');
