@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -41,6 +42,16 @@ class HarvestPayment extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /**
+     * Opt-in filter for list/report queries only — see
+     * LoanRequest::scopeVisibleAccount(). Non-member payments (farmer_id
+     * null) have nothing to match and are always kept.
+     */
+    public function scopeVisibleAccount(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('farmer.account', fn ($q) => $q->where('status', 'inactive'));
     }
 
     /**

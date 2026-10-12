@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\StoresFarmerDocuments;
 use App\Models\Crop;
 use App\Models\Farmer;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class MembershipController extends Controller
 {
+    use StoresFarmerDocuments;
+
     /**
      * Display the membership registration page.
      */
@@ -69,10 +71,14 @@ class MembershipController extends Controller
             'crop_ids' => 'required|array|min:1',
             'crop_ids.*' => 'exists:crops,id',
             'land_area' => 'required|numeric|min:0',
-            'documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'certificate_of_title' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'barangay_certification' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'rsbsa' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'documents' => 'required|array|min:1',
+            'documents.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'certificate_of_title' => 'required|array|min:1',
+            'certificate_of_title.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'barangay_certification' => 'required|array|min:1',
+            'barangay_certification.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'rsbsa' => 'required|array|min:1',
+            'rsbsa.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
             'barangay' => 'nullable|string|max:255',
@@ -88,10 +94,10 @@ class MembershipController extends Controller
             'suffix' => $validated['suffix'],
             'contact_number' => $validated['contact_number'],
             'land_area' => $validated['land_area'],
-            'documents_path' => $this->storeFarmerDocument($request, 'documents'),
-            'certificate_of_title_path' => $this->storeFarmerDocument($request, 'certificate_of_title'),
-            'barangay_certification_path' => $this->storeFarmerDocument($request, 'barangay_certification'),
-            'rsbsa_path' => $this->storeFarmerDocument($request, 'rsbsa'),
+            'documents_path' => $this->storeFarmerDocumentPaths($request, 'documents'),
+            'certificate_of_title_path' => $this->storeFarmerDocumentPaths($request, 'certificate_of_title'),
+            'barangay_certification_path' => $this->storeFarmerDocumentPaths($request, 'barangay_certification'),
+            'rsbsa_path' => $this->storeFarmerDocumentPaths($request, 'rsbsa'),
             'province' => $validated['province'],
             'municipality' => $validated['municipality'],
             'barangay' => $validated['barangay'] ?? null,
@@ -133,10 +139,14 @@ class MembershipController extends Controller
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
             'barangay' => 'nullable|string|max:255',
-            'documents' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'certificate_of_title' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'barangay_certification' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'rsbsa' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'certificate_of_title' => 'nullable|array',
+            'certificate_of_title.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'barangay_certification' => 'nullable|array',
+            'barangay_certification.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'rsbsa' => 'nullable|array',
+            'rsbsa.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
         ], [
             'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
         ]);
@@ -153,10 +163,10 @@ class MembershipController extends Controller
             'barangay' => $validated['barangay'] ?? null,
         ];
 
-        $this->applyDocumentUpdate($request, $farmer, $updateData, 'documents', 'documents_path');
-        $this->applyDocumentUpdate($request, $farmer, $updateData, 'certificate_of_title', 'certificate_of_title_path');
-        $this->applyDocumentUpdate($request, $farmer, $updateData, 'barangay_certification', 'barangay_certification_path');
-        $this->applyDocumentUpdate($request, $farmer, $updateData, 'rsbsa', 'rsbsa_path');
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'documents', 'documents_path');
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'certificate_of_title', 'certificate_of_title_path');
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'barangay_certification', 'barangay_certification_path');
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'rsbsa', 'rsbsa_path');
 
         $farmer->update($updateData);
         $farmer->crops()->sync($validated['crop_ids']);
@@ -187,37 +197,4 @@ class MembershipController extends Controller
             ->with('success', 'Farmer unarchived successfully!');
     }
 
-    /**
-     * Store an uploaded farmer document under the given form field, if present.
-     */
-    private function storeFarmerDocument(Request $request, string $field): ?string
-    {
-        if (! $request->hasFile($field)) {
-            return null;
-        }
-
-        $document = $request->file($field);
-        $documentName = time().'_'.$document->getClientOriginalName();
-
-        return $document->storeAs('farmer_documents', $documentName, 'public');
-    }
-
-    /**
-     * Apply a removal and/or replacement for one of a farmer's document fields.
-     */
-    private function applyDocumentUpdate(Request $request, Farmer $farmer, array &$updateData, string $field, string $pathColumn): void
-    {
-        if ($request->boolean('remove_'.$field) && $farmer->{$pathColumn}) {
-            Storage::disk('public')->delete($farmer->{$pathColumn});
-            $updateData[$pathColumn] = null;
-        }
-
-        if ($request->hasFile($field)) {
-            if ($farmer->{$pathColumn}) {
-                Storage::disk('public')->delete($farmer->{$pathColumn});
-            }
-
-            $updateData[$pathColumn] = $this->storeFarmerDocument($request, $field);
-        }
-    }
 }

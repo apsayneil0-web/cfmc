@@ -303,7 +303,7 @@
 </div>
 
 <!-- Approve/Deny Confirmation Modal -->
-<div class="modal fade" id="actionConfirmModal" tabindex="-1" aria-labelledby="actionConfirmTitle" aria-hidden="true" data-bs-backdrop="static">
+<div class="modal fade" id="actionConfirmModal" tabindex="-1" aria-labelledby="actionConfirmTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0">
             <div class="modal-header border-0 pb-0 pt-3 px-3">

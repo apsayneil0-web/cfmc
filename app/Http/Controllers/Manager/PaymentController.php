@@ -32,10 +32,12 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         $loanPayments = LoanPayment::with('loan.loanRequest.farmer')
+            ->visibleAccount()
             ->orderByDesc('created_at')
             ->get();
 
         $cbuTransactions = CbuTransaction::with('cbu.farmer')
+            ->visibleAccount()
             ->orderByDesc('created_at')
             ->get();
 
@@ -44,6 +46,7 @@ class PaymentController extends Controller
             ->get();
 
         $harvestPayments = HarvestPayment::with('farmer')
+            ->visibleAccount()
             ->orderByDesc('created_at')
             ->get();
 
@@ -130,10 +133,12 @@ class PaymentController extends Controller
         $payableLoans = Loan::whereNull('archived_at')
             ->whereIn('status', ['active', 'overdue'])
             ->with('loanRequest.farmer')
+            ->visibleAccount()
             ->orderBy('created_at', 'desc')
             ->get();
 
         $cbuFarmers = Farmer::where('status', 'approved')
+            ->whereDoesntHave('account', fn ($q) => $q->where('status', 'inactive'))
             ->with('cbu.transactions')
             ->orderBy('last_name')
             ->get();
@@ -157,11 +162,11 @@ class PaymentController extends Controller
             ->values();
 
         $stats = [
-            'loan_payments' => LoanPayment::whereIn('type', ['payment', 'prepayment', 'partial'])->sum('amount'),
-            'cbu_contributions' => CbuTransaction::where('type', 'contribution')->sum('amount'),
+            'loan_payments' => LoanPayment::whereIn('type', ['payment', 'prepayment', 'partial'])->visibleAccount()->sum('amount'),
+            'cbu_contributions' => CbuTransaction::where('type', 'contribution')->visibleAccount()->sum('amount'),
             'operational_expenses' => Expense::where('category', 'operational')->sum('amount'),
             'replaceable_parts' => Expense::where('category', 'replaceable_parts')->sum('amount'),
-            'harvest_payments' => HarvestPayment::sum('payment_amount'),
+            'harvest_payments' => HarvestPayment::visibleAccount()->sum('payment_amount'),
         ];
 
         return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'payableExpenses', 'nonMemberNames', 'stats'));

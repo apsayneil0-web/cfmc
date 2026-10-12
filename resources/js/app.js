@@ -1,5 +1,17 @@
 import './bootstrap';
 import './date-pickers';
+import './modal-guard';
+
+// Row action dropdowns (the kebab-menu) render with position:absolute by
+// default, which gets clipped by any ancestor with overflow set — every
+// table wrapper uses overflow-x:auto for mobile scrolling — whenever the
+// menu opens near that ancestor's edge. Popper's 'fixed' strategy escapes
+// that clipping app-wide instead of patching each table individually.
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.bootstrap && window.bootstrap.Dropdown) {
+        window.bootstrap.Dropdown.Default.popperConfig = { strategy: 'fixed' };
+    }
+});
 
 (function () {
     var STORAGE_KEY = 'cfmc-theme';

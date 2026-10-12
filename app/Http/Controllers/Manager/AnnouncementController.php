@@ -48,7 +48,10 @@ class AnnouncementController extends Controller
 
         $announcements = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
-        $farmers = Farmer::where('status', 'approved')->orderBy('created_at', 'desc')->get();
+        $farmers = Farmer::where('status', 'approved')
+            ->whereDoesntHave('account', fn ($q) => $q->where('status', 'inactive'))
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('manager.announcement', [
             'announcements' => $announcements,

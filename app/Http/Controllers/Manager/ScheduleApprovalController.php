@@ -16,6 +16,7 @@ class ScheduleApprovalController extends Controller
     {
         $query = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'crop'])
             ->whereNull('archived_at')
+            ->visibleAccount()
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'denied', 'completed')")
             ->orderBy('created_at', 'desc');
 

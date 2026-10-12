@@ -16,6 +16,7 @@ class ComplaintController extends Controller
     {
         $query = Complaint::with('user')
             ->where('status', '!=', 'draft')
+            ->visibleAccount()
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
@@ -34,10 +35,10 @@ class ComplaintController extends Controller
         $complaints = $query->paginate(10)->withQueryString();
 
         $counts = [
-            'total' => Complaint::where('status', '!=', 'draft')->count(),
-            'submitted' => Complaint::where('status', 'submitted')->count(),
-            'in_progress' => Complaint::where('status', 'in_progress')->count(),
-            'resolved' => Complaint::where('status', 'resolved')->count(),
+            'total' => Complaint::where('status', '!=', 'draft')->visibleAccount()->count(),
+            'submitted' => Complaint::where('status', 'submitted')->visibleAccount()->count(),
+            'in_progress' => Complaint::where('status', 'in_progress')->visibleAccount()->count(),
+            'resolved' => Complaint::where('status', 'resolved')->visibleAccount()->count(),
         ];
 
         return view('manager.complaints', compact('complaints', 'counts'));

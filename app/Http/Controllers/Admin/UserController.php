@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\StoresFarmerDocuments;
 use App\Http\Controllers\Controller;
 use App\Models\Crop;
 use App\Models\Farmer;
@@ -21,6 +22,8 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    use StoresFarmerDocuments;
+
     /**
      * Roles that require an email address (Admin, Manager). Farmer (3) does not.
      */
@@ -138,10 +141,14 @@ class UserController extends Controller
             'crop_ids' => 'required|array|min:1',
             'crop_ids.*' => 'exists:crops,id',
             'land_area' => 'required|numeric|min:0',
-            'documents' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'certificate_of_title' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'barangay_certification' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'rsbsa' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'documents' => 'required|array|min:1',
+            'documents.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'certificate_of_title' => 'required|array|min:1',
+            'certificate_of_title.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'barangay_certification' => 'required|array|min:1',
+            'barangay_certification.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'rsbsa' => 'required|array|min:1',
+            'rsbsa.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
             'barangay' => 'nullable|string|max:255',
@@ -167,10 +174,10 @@ class UserController extends Controller
                     'suffix' => $validated['suffix'] ?? null,
                     'contact_number' => $validated['contact_number'],
                     'land_area' => $validated['land_area'],
-                    'documents_path' => $this->storeFarmerDocument($request, 'documents'),
-                    'certificate_of_title_path' => $this->storeFarmerDocument($request, 'certificate_of_title'),
-                    'barangay_certification_path' => $this->storeFarmerDocument($request, 'barangay_certification'),
-                    'rsbsa_path' => $this->storeFarmerDocument($request, 'rsbsa'),
+                    'documents_path' => $this->storeFarmerDocumentPaths($request, 'documents'),
+                    'certificate_of_title_path' => $this->storeFarmerDocumentPaths($request, 'certificate_of_title'),
+                    'barangay_certification_path' => $this->storeFarmerDocumentPaths($request, 'barangay_certification'),
+                    'rsbsa_path' => $this->storeFarmerDocumentPaths($request, 'rsbsa'),
                     'province' => $validated['province'],
                     'municipality' => $validated['municipality'],
                     'barangay' => $validated['barangay'] ?? null,
@@ -239,21 +246,6 @@ class UserController extends Controller
         }
 
         return $username;
-    }
-
-    /**
-     * Store an uploaded farmer document under the given form field.
-     */
-    private function storeFarmerDocument(Request $request, string $field): ?string
-    {
-        if (! $request->hasFile($field)) {
-            return null;
-        }
-
-        $document = $request->file($field);
-        $documentName = time().'_'.$document->getClientOriginalName();
-
-        return $document->storeAs('farmer_documents', $documentName, 'public');
     }
 
     /**

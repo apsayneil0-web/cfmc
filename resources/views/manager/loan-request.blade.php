@@ -700,13 +700,13 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Collateral</label>
-                            <input type="text" name="collateral" class="form-control" placeholder="Describe collateral">
+                            <label class="form-label fw-semibold">Collateral <span class="text-danger">*</span></label>
+                            <input type="text" name="collateral" class="form-control" placeholder="Describe collateral" required>
                         </div>
                     </div>
                     <div>
-                        <label class="form-label fw-semibold">Collateral Proof</label>
-                        <input type="file" name="documents" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+                        <label class="form-label fw-semibold">Collateral Proof <span class="text-danger">*</span></label>
+                        <input type="file" name="documents" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

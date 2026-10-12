@@ -18,14 +18,14 @@ class CbuController extends Controller
     public function index(Request $request)
     {
         $farmers = Farmer::where('status', 'approved')
-            ->with(['cbu.transactions' => fn ($q) => $q->orderByDesc('transaction_date')->orderByDesc('created_at')])
+            ->with(['cbu.transactions' => fn ($q) => $q->visibleAccount()->orderByDesc('transaction_date')->orderByDesc('created_at')])
             ->orderBy('last_name')
             ->paginate(10)
             ->withQueryString();
 
         $stats = [
-            'total_balance' => Cbu::sum('balance'),
-            'total_contributions' => CbuTransaction::where('type', 'contribution')->sum('amount'),
+            'total_balance' => Cbu::visibleAccount()->sum('balance'),
+            'total_contributions' => CbuTransaction::where('type', 'contribution')->visibleAccount()->sum('amount'),
             'active_members' => Cbu::where('status', 'active')->count(),
         ];
 

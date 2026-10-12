@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -48,6 +49,17 @@ class LoanAppointment extends Model
     public function loanRequest(): BelongsTo
     {
         return $this->belongsTo(LoanRequest::class);
+    }
+
+    /**
+     * Opt-in filter for list/report queries only — see
+     * LoanRequest::scopeVisibleAccount(). Must never be called from
+     * availableSlotsFor(): a deactivated farmer still holds their booked
+     * slot, so it can't be double-booked out from under them.
+     */
+    public function scopeVisibleAccount(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('user', fn ($q) => $q->where('status', 'inactive'));
     }
 
     /**

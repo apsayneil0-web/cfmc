@@ -24,11 +24,11 @@ class DashboardController extends Controller
         $stats = [
             'total_farmers' => Farmer::where('status', 'approved')->count(),
             'pending_membership' => Farmer::where('status', 'pending')->count(),
-            'pending_schedules' => ScheduleRequest::whereNull('archived_at')->where('status', 'pending')->count(),
-            'approved_schedules' => ScheduleRequest::whereNull('archived_at')->where('status', 'approved')->count(),
-            'active_loan_applications' => LoanRequest::where('status', 'pending')->count(),
+            'pending_schedules' => ScheduleRequest::whereNull('archived_at')->where('status', 'pending')->visibleAccount()->count(),
+            'approved_schedules' => ScheduleRequest::whereNull('archived_at')->where('status', 'approved')->visibleAccount()->count(),
+            'active_loan_applications' => LoanRequest::where('status', 'pending')->visibleAccount()->count(),
             'available_machinery' => Machine::whereNull('archived_at')->get()->filter(fn ($m) => $m->status === 'available')->count(),
-            'total_cbu' => Cbu::sum('balance'),
+            'total_cbu' => Cbu::visibleAccount()->sum('balance'),
             'total_expenses' => Expense::sum('amount'),
         ];
 
@@ -58,6 +58,7 @@ class DashboardController extends Controller
 
         $schedules = ScheduleRequest::with('user.farmer')
             ->whereNull('archived_at')
+            ->visibleAccount()
             ->orderByDesc('created_at')
             ->take(3)
             ->get()
@@ -85,6 +86,7 @@ class DashboardController extends Controller
 
         $payments = LoanPayment::with('loan.loanRequest.farmer')
             ->where('type', 'payment')
+            ->visibleAccount()
             ->orderByDesc('created_at')
             ->take(3)
             ->get()

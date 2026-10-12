@@ -30,7 +30,8 @@ class BatchLoanManagementController extends Controller
         }
 
         $query = Loan::with(['loanRequest.farmer', 'loanRequest.batch', 'payments'])
-            ->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch'));
+            ->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch'))
+            ->visibleAccount();
 
         // By default (and for any specific business status), only show
         // approved/active loans still in play. Archived ones live in their own
@@ -77,7 +78,7 @@ class BatchLoanManagementController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        $batchOnly = fn ($q) => $q->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch'));
+        $batchOnly = fn ($q) => $q->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch'))->visibleAccount();
 
         $stats = [
             'pending_disbursement_count' => Loan::whereNull('archived_at')->where('status', 'pending_disbursement')->tap($batchOnly)->count(),
@@ -91,6 +92,7 @@ class BatchLoanManagementController extends Controller
                 ->sum(fn (Loan $loan) => $loan->amount_due),
             'interest_earned' => LoanPayment::where('type', 'interest')
                 ->whereHas('loan', fn ($q) => $q->whereNull('archived_at')->whereHas('loanRequest', fn ($q) => $q->where('type', 'batch')))
+                ->visibleAccount()
                 ->sum('amount'),
             'archived_count' => Loan::whereNotNull('archived_at')->tap($batchOnly)->count(),
         ];

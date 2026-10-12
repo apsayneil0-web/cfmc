@@ -162,26 +162,7 @@
                         <div class="col-12 mb-3">
                             <label class="text-muted small">{{ $doc['label'] }}</label>
                             <div class="mt-2">
-                                @if($application->{$doc['path']})
-                                    @php
-                                        $extension = pathinfo($application->{$doc['path']}, PATHINFO_EXTENSION);
-                                    @endphp
-                                    @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="application-{{ $application->id }}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-image me-1"></i> View Image
-                                        </a>
-                                    @elseif($extension == 'pdf')
-                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="application-{{ $application->id }}" class="btn btn-sm btn-outline-danger">
-                                            <i class="fas fa-file-pdf me-1"></i> View PDF
-                                        </a>
-                                    @else
-                                        <a href="{{ asset('storage/' . $application->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="application-{{ $application->id }}" class="btn btn-sm btn-outline-secondary">
-                                            <i class="fas fa-file me-1"></i> View Document
-                                        </a>
-                                    @endif
-                                @else
-                                    <span class="text-muted">No document uploaded</span>
-                                @endif
+                                <x-document-links :paths="$application->documentPaths($doc['path'])" :label="$doc['label']" :group="'application-'.$application->id" />
                             </div>
                         </div>
                         @endforeach
@@ -219,7 +200,7 @@
 </div>
 
 <!-- Approve/Reject Confirmation Modal -->
-<div class="modal fade" id="actionConfirmModal" tabindex="-1" aria-labelledby="actionConfirmTitle" aria-hidden="true" data-bs-backdrop="static">
+<div class="modal fade" id="actionConfirmModal" tabindex="-1" aria-labelledby="actionConfirmTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0">
             <div class="modal-header border-0 pb-0 pt-3 px-3">

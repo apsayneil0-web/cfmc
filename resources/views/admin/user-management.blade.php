@@ -295,51 +295,19 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-semibold">Upload Valid ID <span class="text-danger">*</span></label>
-                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="documentDropZone">
-                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
-                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
-                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
-                                    <input type="file" name="documents" id="documentsInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
-                                    <div id="documentFileName" class="mt-2 text-success fw-medium"></div>
-                                </div>
-                                <div class="invalid-feedback">Please upload required documents.</div>
+                                <x-multi-file-upload field="documents" label="Upload Valid ID" base-id="adminNewDocument" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Upload Certificate of Title <span class="text-danger">*</span></label>
-                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="certificateDropZone">
-                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
-                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
-                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
-                                    <input type="file" name="certificate_of_title" id="certificateInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
-                                    <div id="certificateFileName" class="mt-2 text-success fw-medium"></div>
-                                </div>
-                                <div class="invalid-feedback">Please upload the certificate of title.</div>
+                                <x-multi-file-upload field="certificate_of_title" label="Upload Certificate of Title" base-id="adminNewCertificate" required />
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-semibold">Upload Barangay Certification of Land Possession <span class="text-danger">*</span></label>
-                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="barangayDropZone">
-                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
-                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
-                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
-                                    <input type="file" name="barangay_certification" id="barangayInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
-                                    <div id="barangayFileName" class="mt-2 text-success fw-medium"></div>
-                                </div>
-                                <div class="invalid-feedback">Please upload the barangay certification of land possession.</div>
+                                <x-multi-file-upload field="barangay_certification" label="Upload Barangay Certification of Land Possession" base-id="adminNewBarangay" required />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Upload RSBSA Number/ID <span class="text-danger">*</span></label>
-                                <div class="border border-2 borderdashed rounded-3 p-4 text-center bg-light hover:bg-white transition cursor-pointer" id="rsbsaDropZone">
-                                    <i class="fas fa-cloud-upload-alt text-4xl text-muted mb-3 d-block"></i>
-                                    <p class="fw-medium text-dark mb-1">Click to upload or drag and drop</p>
-                                    <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
-                                    <input type="file" name="rsbsa" id="rsbsaInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png" required>
-                                    <div id="rsbsaFileName" class="mt-2 text-success fw-medium"></div>
-                                </div>
-                                <div class="invalid-feedback">Please upload the RSBSA number/ID.</div>
+                                <x-multi-file-upload field="rsbsa" label="Upload RSBSA Number/ID" base-id="adminNewRsbsa" required />
                             </div>
                         </div>
                     </div>
@@ -433,7 +401,7 @@
 </div>
 
 <!-- Confirm Create Account Modal -->
-<div class="modal fade" id="confirmCreateModal" tabindex="-1" aria-labelledby="confirmCreateModalLabel" aria-hidden="true" data-bs-backdrop="static">
+<div class="modal fade" id="confirmCreateModal" tabindex="-1" aria-labelledby="confirmCreateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0">
             <div class="modal-header border-0 pb-0 pt-3 px-3">
@@ -1148,46 +1116,6 @@
         }
     });
 
-    function wireDocumentDropZone(dropZoneId, inputId, fileNameId) {
-        const dropZone = document.getElementById(dropZoneId);
-        const input = document.getElementById(inputId);
-        const fileNameDisplay = document.getElementById(fileNameId);
-
-        dropZone.addEventListener('click', function() {
-            input.click();
-        });
-
-        input.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            fileNameDisplay.innerHTML = file ? '<i class="fas fa-file"></i> ' + file.name : '';
-        });
-
-        dropZone.addEventListener('dragover', function(event) {
-            event.preventDefault();
-            dropZone.classList.add('bg-white', 'border-success');
-        });
-
-        dropZone.addEventListener('dragleave', function(event) {
-            event.preventDefault();
-            dropZone.classList.remove('bg-white', 'border-success');
-        });
-
-        dropZone.addEventListener('drop', function(event) {
-            event.preventDefault();
-            dropZone.classList.remove('bg-white', 'border-success');
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                input.files = files;
-                fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + files[0].name;
-            }
-        });
-    }
-
-    wireDocumentDropZone('documentDropZone', 'documentsInput', 'documentFileName');
-    wireDocumentDropZone('certificateDropZone', 'certificateInput', 'certificateFileName');
-    wireDocumentDropZone('barangayDropZone', 'barangayInput', 'barangayFileName');
-    wireDocumentDropZone('rsbsaDropZone', 'rsbsaInput', 'rsbsaFileName');
-
     document.querySelectorAll('.ph-contact-input').forEach(function(input) {
         input.addEventListener('input', function() {
             let value = input.value.replace(/[^\d+]/g, '');
@@ -1203,8 +1131,10 @@
         form.reset();
         form.classList.remove('was-validated');
         document.getElementById('cropCheckboxError').style.display = 'none';
-        ['documentFileName', 'certificateFileName', 'barangayFileName', 'rsbsaFileName'].forEach(function(id) {
-            document.getElementById(id).textContent = '';
+        form.querySelectorAll('[data-multi-upload]').forEach(function(container) {
+            const slotsContainer = container.querySelector('[data-multi-upload-slots]');
+            slotsContainer.innerHTML = '';
+            container.querySelector('[data-multi-upload-add]').click();
         });
 
         const municipalitySelect = document.getElementById('municipalitySelect');

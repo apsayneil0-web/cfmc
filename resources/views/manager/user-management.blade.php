@@ -79,34 +79,29 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="#" onclick="viewUser({{ $user->id }}); return false;"><i class="fas fa-eye me-2 text-primary fa-fw"></i>View</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="editUser({{ $user->id }}); return false;"><i class="fas fa-edit me-2 text-primary fa-fw"></i>Edit</a></li>
-                                @if($user->roleID == 3)
-                                <li><a class="dropdown-item" href="#" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }}); return false;"><i class="fas fa-key me-2 text-primary fa-fw"></i>Change Password</a></li>
-                                @endif
-                                @if($user->status === 'locked')
-                                <li><a class="dropdown-item" href="#" onclick="unlockUser({{ $user->id }}); return false;"><i class="fas fa-unlock me-2 text-success fa-fw"></i>Unlock</a></li>
-                                @endif
-                                @if($user->roleID == 3 && in_array($user->status, ['active', 'inactive']))
-                                    @if($user->status === 'active')
-                                    <li><a class="dropdown-item" href="#" onclick="toggleUserStatus({{ $user->id }}, 'active'); return false;"><i class="fas fa-user-slash me-2 text-secondary fa-fw"></i>Deactivate</a></li>
-                                    @else
-                                    <li><a class="dropdown-item" href="#" onclick="toggleUserStatus({{ $user->id }}, 'inactive'); return false;"><i class="fas fa-user-check me-2 text-success fa-fw"></i>Activate</a></li>
-                                    @endif
-                                @endif
-                                <li><hr class="dropdown-divider"></li>
-                                @if($user->status === 'archived')
-                                <li><a class="dropdown-item" href="#" onclick="unarchiveUser({{ $user->id }}); return false;"><i class="fas fa-box-open me-2 text-success fa-fw"></i>Unarchive</a></li>
+                        <x-action-dropdown>
+                            <x-dropdown-item icon="fa-eye" color="primary" onclick="viewUser({{ $user->id }}); return false;">View</x-dropdown-item>
+                            <x-dropdown-item icon="fa-edit" color="primary" onclick="editUser({{ $user->id }}); return false;">Edit</x-dropdown-item>
+                            @if($user->roleID == 3)
+                            <x-dropdown-item icon="fa-key" color="primary" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }}); return false;">Change Password</x-dropdown-item>
+                            @endif
+                            @if($user->status === 'locked')
+                            <x-dropdown-item icon="fa-unlock" color="success" onclick="unlockUser({{ $user->id }}); return false;">Unlock</x-dropdown-item>
+                            @endif
+                            @if($user->roleID == 3 && in_array($user->status, ['active', 'inactive']))
+                                @if($user->status === 'active')
+                                <x-dropdown-item icon="fa-user-slash" color="secondary" onclick="toggleUserStatus({{ $user->id }}, 'active'); return false;">Deactivate</x-dropdown-item>
                                 @else
-                                <li><a class="dropdown-item text-danger" href="#" onclick="archiveUser({{ $user->id }}); return false;"><i class="fas fa-archive me-2 fa-fw"></i>Archive</a></li>
+                                <x-dropdown-item icon="fa-user-check" color="success" onclick="toggleUserStatus({{ $user->id }}, 'inactive'); return false;">Activate</x-dropdown-item>
                                 @endif
-                            </ul>
-                        </div>
+                            @endif
+                            <li><hr class="dropdown-divider"></li>
+                            @if($user->status === 'archived')
+                            <x-dropdown-item icon="fa-box-open" color="success" onclick="unarchiveUser({{ $user->id }}); return false;">Unarchive</x-dropdown-item>
+                            @else
+                            <x-dropdown-item icon="fa-archive" :danger="true" onclick="archiveUser({{ $user->id }}); return false;">Archive</x-dropdown-item>
+                            @endif
+                        </x-action-dropdown>
                     </td>
                 </tr>
                 @empty
@@ -146,7 +141,7 @@
 </div>
 
 <!-- View User Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-light">
@@ -205,7 +200,7 @@
 </div>
 
 <!-- Edit User Modal -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-light">
@@ -292,7 +287,7 @@
 </div>
 
 <!-- Change Password Modal -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-light">
@@ -346,7 +341,7 @@
 </div>
 
 <!-- Notification Modal -->
-<div class="modal fade" id="notifyModal" tabindex="-1" aria-labelledby="notifyMessage" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="notifyModal" tabindex="-1" aria-labelledby="notifyMessage" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0">
             <div class="modal-body px-4 pt-4 pb-4 text-center">
@@ -361,7 +356,7 @@
 </div>
 
 <!-- Confirm Action Modal (replaces native browser confirm() dialogs) -->
-<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionTitle" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0">
             <div class="modal-body px-4 pt-4 pb-4 text-center">

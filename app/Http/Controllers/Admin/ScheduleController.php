@@ -17,6 +17,7 @@ class ScheduleController extends Controller
     {
         $query = ScheduleRequest::with('user.farmer')
             ->whereNull('archived_at')
+            ->visibleAccount()
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('machinery')) {

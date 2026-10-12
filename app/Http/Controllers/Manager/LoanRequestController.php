@@ -35,7 +35,7 @@ class LoanRequestController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch']);
+        $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch'])->visibleAccount();
 
         // Archived requests live in their own view ("View Archived",
         // ?archived=1; old ?status=archived links too). Only denied requests
@@ -87,12 +87,15 @@ class LoanRequestController extends Controller
         $requestBatchGroups = $this->paginateCollection($requestBatchGroups, $request, 'batches_page');
         $regularRequests = $this->paginateCollection($regularRequests, $request, 'regular_page');
 
-        $farmers = Farmer::where('status', 'approved')->orderBy('created_at', 'desc')->get();
+        $farmers = Farmer::where('status', 'approved')
+            ->whereDoesntHave('account', fn ($q) => $q->where('status', 'inactive'))
+            ->orderBy('created_at', 'desc')
+            ->get();
         $batches = LoanBatch::orderBy('created_at', 'desc')->get();
 
         // Batches still collecting members: not yet full, so not yet forwarded
         // to the Administrator. These are the only ones a manager can edit.
-        $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
+        $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at')->visibleAccount();
         $batchesInProgress = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
             ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at', 'desc')])
             ->orderBy('created_at', 'desc')
@@ -112,7 +115,7 @@ class LoanRequestController extends Controller
         // Batches the Administrator has approved but that haven't been
         // finalized into loans yet — finalized one decision at a time per
         // batch, same as approval, rather than clicking "Finalize" 10 times.
-        $approvedUnfinalizedMember = fn ($q) => $q->where('status', 'approved')->whereNull('archived_at')->whereDoesntHave('loan');
+        $approvedUnfinalizedMember = fn ($q) => $q->where('status', 'approved')->whereNull('archived_at')->whereDoesntHave('loan')->visibleAccount();
         $batchesReadyToFinalize = LoanBatch::whereHas('loanRequests', $approvedUnfinalizedMember)
             ->with(['loanRequests' => fn ($q) => $approvedUnfinalizedMember($q)->with('farmer')->orderBy('created_at', 'desc')])
             ->orderBy('created_at', 'desc')
@@ -130,7 +133,7 @@ class LoanRequestController extends Controller
             'termOptions' => self::TERMS,
             'farmersIneligibleForNewRequest' => $farmersIneligibleForNewRequest,
             'showArchived' => $showArchived,
-            'archivedCount' => LoanRequest::whereNotNull('archived_at')->where('status', 'denied')->count(),
+            'archivedCount' => LoanRequest::whereNotNull('archived_at')->where('status', 'denied')->visibleAccount()->count(),
         ]);
     }
 
@@ -152,7 +155,7 @@ class LoanRequestController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $this->validateRequest($request);
+        $validated = $this->validateRequest($request, requireCollateralProof: true);
 
         $documentsPath = null;
         if ($request->hasFile('documents')) {
@@ -424,7 +427,7 @@ class LoanRequestController extends Controller
             ->with('success', "{$farmerName} has been removed from {$batchLabel}.");
     }
 
-    private function validateRequest(Request $request, ?int $excludeRequestId = null): array
+    private function validateRequest(Request $request, ?int $excludeRequestId = null, bool $requireCollateralProof = false): array
     {
         return $request->validate([
             'farmer_id' => [
@@ -534,8 +537,8 @@ class LoanRequestController extends Controller
             ],
             'purpose' => ['required', 'string', 'in:'.implode(',', self::PURPOSES)],
             'repayment_terms_months' => ['required', 'integer', 'in:'.implode(',', self::TERMS)],
-            'collateral' => 'nullable|string|max:255',
-            'documents' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'collateral' => $requireCollateralProof ? 'required|string|max:255' : 'nullable|string|max:255',
+            'documents' => [$requireCollateralProof ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ]);
     }
 }

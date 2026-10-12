@@ -38,12 +38,14 @@ class MachineScheduleController extends Controller
         $requests = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'rescheduleRequests', 'crop'])
             ->when($showArchived, fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+            ->visibleAccount()
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
         $members = Farmer::where('status', 'approved')
             ->whereNotNull('account_user_id')
+            ->whereDoesntHave('account', fn ($q) => $q->where('status', 'inactive'))
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -57,7 +59,7 @@ class MachineScheduleController extends Controller
 
         return view('manager.machine-schedule', compact(
             'requests', 'calendarDays', 'machineryList', 'machineQuantities', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'monthOptions', 'showArchived'
-        ) + ['archivedCount' => ScheduleRequest::whereNotNull('archived_at')->count()]);
+        ) + ['archivedCount' => ScheduleRequest::whereNotNull('archived_at')->visibleAccount()->count()]);
     }
 
     /**

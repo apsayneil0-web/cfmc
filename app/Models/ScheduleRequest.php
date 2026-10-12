@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -128,6 +129,18 @@ class ScheduleRequest extends Model
     }
 
     /**
+     * Opt-in filter for list/report queries only — see
+     * LoanRequest::scopeVisibleAccount(). Must never be called from
+     * reservedHectares()/hasConflict()/calendarForMonth(): a deactivated
+     * farmer's existing booking still occupies real machine capacity.
+     * Walk-in entries (user_id null, farmer_name instead) are always kept.
+     */
+    public function scopeVisibleAccount(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('user', fn ($q) => $q->where('status', 'inactive'));
+    }
+
+    /**
      * Display name for the requester: linked farmer's full name, account name,
      * or the manually entered name for non-member/manager-created entries.
      */
@@ -183,9 +196,13 @@ class ScheduleRequest extends Model
      */
     public static function calendarForMonth(Carbon $month, ?string $machinery = null, ?int $userId = null): array
     {
+        // A pure display calendar (not used for capacity/conflict checks —
+        // those go through reservedHectares()/hasConflict() instead), so
+        // it's safe to hide a deactivated farmer's bookings here.
         $query = self::with('user.farmer')
             ->whereNull('archived_at')
             ->where('status', 'approved')
+            ->visibleAccount()
             ->whereBetween('scheduled_date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()]);
 
         if ($machinery) {

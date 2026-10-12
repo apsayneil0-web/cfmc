@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -194,6 +195,17 @@ class Loan extends Model
     public function scheduledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'scheduled_by');
+    }
+
+    /**
+     * Opt-in filter for list/report queries only — see
+     * LoanRequest::scopeVisibleAccount(). Must never be called from
+     * applyOverdueInterest()/applyGracePeriodPolicy() or the scheduled
+     * delinquency command: a deactivated login doesn't pause real debt.
+     */
+    public function scopeVisibleAccount(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('loanRequest.farmer.account', fn ($q) => $q->where('status', 'inactive'));
     }
 
     /**

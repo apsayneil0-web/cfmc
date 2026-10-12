@@ -171,4 +171,26 @@ class Farmer extends Model
             'max_loanable' => $balance * 2,
         ];
     }
+
+    /**
+     * Document columns (documents_path, certificate_of_title_path, etc.)
+     * store a JSON-encoded array of storage paths so each one can hold
+     * multiple uploaded files. Older records predate this and still hold a
+     * single plain path string — normalized here so every reader sees a
+     * plain array either way, regardless of which form it was saved under.
+     */
+    public function documentPaths(string $column): array
+    {
+        $raw = $this->{$column};
+
+        if (blank($raw)) {
+            return [];
+        }
+
+        if (str_starts_with(trim($raw), '[')) {
+            return json_decode($raw, true) ?? [];
+        }
+
+        return [$raw];
+    }
 }

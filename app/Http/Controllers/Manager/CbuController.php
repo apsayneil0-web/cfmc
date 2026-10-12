@@ -18,17 +18,19 @@ class CbuController extends Controller
     public function index()
     {
         $transactions = CbuTransaction::with('cbu.farmer', 'recordedBy')
+            ->visibleAccount()
             ->orderByDesc('created_at')
             ->paginate(10)
             ->withQueryString();
 
         $stats = [
-            'total_contributions' => CbuTransaction::where('type', 'contribution')->sum('amount'),
-            'total_balance' => Cbu::sum('balance'),
+            'total_contributions' => CbuTransaction::where('type', 'contribution')->visibleAccount()->sum('amount'),
+            'total_balance' => Cbu::visibleAccount()->sum('balance'),
             'active_members' => Cbu::where('status', 'active')->count(),
             'this_month' => CbuTransaction::where('type', 'contribution')
                 ->whereMonth('transaction_date', now()->month)
                 ->whereYear('transaction_date', now()->year)
+                ->visibleAccount()
                 ->sum('amount'),
         ];
 

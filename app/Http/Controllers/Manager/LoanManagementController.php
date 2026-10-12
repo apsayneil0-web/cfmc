@@ -30,7 +30,8 @@ class LoanManagementController extends Controller
         }
 
         $query = Loan::with(['loanRequest.farmer', 'payments'])
-            ->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular'));
+            ->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular'))
+            ->visibleAccount();
 
         // By default (and for any specific business status), only show
         // approved/active loans still in play. Archived ones live in their own
@@ -65,7 +66,7 @@ class LoanManagementController extends Controller
 
         $loans = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
-        $regularOnly = fn ($q) => $q->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular'));
+        $regularOnly = fn ($q) => $q->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular'))->visibleAccount();
 
         $stats = [
             'pending_disbursement_count' => Loan::whereNull('archived_at')->where('status', 'pending_disbursement')->tap($regularOnly)->count(),
@@ -79,6 +80,7 @@ class LoanManagementController extends Controller
                 ->sum(fn (Loan $loan) => $loan->amount_due),
             'interest_earned' => LoanPayment::where('type', 'interest')
                 ->whereHas('loan', fn ($q) => $q->whereNull('archived_at')->whereHas('loanRequest', fn ($q) => $q->where('type', 'regular')))
+                ->visibleAccount()
                 ->sum('amount'),
             'archived_count' => Loan::whereNotNull('archived_at')->tap($regularOnly)->count(),
         ];

@@ -137,30 +137,7 @@
                             <div class="col-12">
                                 <label class="text-muted small d-block">{{ $doc['label'] }}</label>
                                 <div class="mt-1">
-                                    @if($farmer->{$doc['path']})
-                                        @php
-                                            $extension = pathinfo($farmer->{$doc['path']}, PATHINFO_EXTENSION);
-                                            $filename = basename($farmer->{$doc['path']});
-                                        @endphp
-                                        @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-image me-1"></i> View Image
-                                            </a>
-                                        @elseif($extension == 'pdf')
-                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-danger">
-                                                <i class="fas fa-file-pdf me-1"></i> View PDF
-                                            </a>
-                                        @else
-                                            <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" target="_blank" data-file-viewer data-viewer-title="{{ $doc['label'] }}" data-viewer-group="farmer-docs-{{ $farmer->id }}" class="btn btn-sm btn-outline-secondary">
-                                                <i class="fas fa-file me-1"></i> View Document
-                                            </a>
-                                        @endif
-                                        <a href="{{ asset('storage/' . $farmer->{$doc['path']}) }}" download="{{ $filename }}" class="btn btn-sm btn-success">
-                                            <i class="fas fa-download me-1"></i> Download
-                                        </a>
-                                    @else
-                                        <span class="text-muted">No document uploaded</span>
-                                    @endif
+                                    <x-document-links :paths="$farmer->documentPaths($doc['path'])" :label="$doc['label']" :group="'farmer-docs-'.$farmer->id" />
                                 </div>
                             </div>
                             @endforeach
@@ -273,29 +250,7 @@
                                         ];
                                     @endphp
                                     @foreach($editDocumentFields as $doc)
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">{{ $doc['label'] }}</label>
-                                        <div class="border border-2 borderdashed rounded-3 p-3 text-center bg-light" id="{{ $doc['prefix'] }}DropZone{{ $farmer->id }}">
-                                            <div id="{{ $doc['prefix'] }}Preview{{ $farmer->id }}">
-                                                @if($farmer->{$doc['path']})
-                                                    <div class="mb-2">
-                                                        <span class="text-success"><i class="fas fa-check-circle"></i> Current: {{ basename($farmer->{$doc['path']}) }}</span>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                            <i class="fas fa-cloud-upload-alt text-muted mb-2 d-block" style="font-size: 1.5rem;"></i>
-                                            <p class="fw-medium text-dark mb-1 small">Click to upload or drag and drop</p>
-                                            <p class="text-muted small mb-0">PDF, JPG, or PNG (Max 10MB)</p>
-                                            <input type="file" name="{{ $doc['field'] }}" id="{{ $doc['prefix'] }}Input{{ $farmer->id }}" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
-                                            <div id="{{ $doc['prefix'] }}FileName{{ $farmer->id }}" class="mt-2 text-success fw-medium"></div>
-                                        </div>
-                                        @if($farmer->{$doc['path']})
-                                        <div class="mt-2 form-check">
-                                            <input type="checkbox" class="form-check-input" id="profile_remove_{{ $doc['field'] }}{{ $farmer->id }}" name="remove_{{ $doc['field'] }}" value="1">
-                                            <label class="form-check-label text-danger" for="profile_remove_{{ $doc['field'] }}{{ $farmer->id }}">Remove current file</label>
-                                        </div>
-                                        @endif
-                                    </div>
+                                    <x-multi-file-upload :field="$doc['field']" :label="$doc['label']" :base-id="$doc['prefix'].$farmer->id" :existing-paths="$farmer->documentPaths($doc['path'])" />
                                     @endforeach
                                 </div>
                                 <div class="modal-footer bg-light">
@@ -352,44 +307,6 @@
 </x-info-banner>
 
 <script>
-    // Handle edit modal document uploads (one dropzone per document type, per farmer row)
-    ['profileEditDocument', 'profileEditCertificate', 'profileEditBarangay', 'profileEditRsbsa'].forEach(function(prefix) {
-        document.querySelectorAll('[id^="' + prefix + 'DropZone"]').forEach(function(dropZone) {
-            const farmerId = dropZone.id.replace(prefix + 'DropZone', '');
-            const input = document.getElementById(prefix + 'Input' + farmerId);
-            const fileNameDisplay = document.getElementById(prefix + 'FileName' + farmerId);
-
-            dropZone.addEventListener('click', function() {
-                input.click();
-            });
-
-            input.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                fileNameDisplay.innerHTML = file ? '<i class="fas fa-file"></i> ' + file.name : '';
-            });
-
-            dropZone.addEventListener('dragover', function(event) {
-                event.preventDefault();
-                dropZone.classList.add('bg-white', 'border-success');
-            });
-
-            dropZone.addEventListener('dragleave', function(event) {
-                event.preventDefault();
-                dropZone.classList.remove('bg-white', 'border-success');
-            });
-
-            dropZone.addEventListener('drop', function(event) {
-                event.preventDefault();
-                dropZone.classList.remove('bg-white', 'border-success');
-                const files = event.dataTransfer.files;
-                if (files.length > 0) {
-                    input.files = files;
-                    fileNameDisplay.innerHTML = '<i class="fas fa-file"></i> ' + files[0].name;
-                }
-            });
-        });
-    });
-
     // Live search — same behaviour as the User Management search: results
     // update shortly after you stop typing, Enter searches immediately, and
     // the clear (x) button resets the list.

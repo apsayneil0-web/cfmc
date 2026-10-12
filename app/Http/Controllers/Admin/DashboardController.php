@@ -18,8 +18,8 @@ class DashboardController extends Controller
         $archivedFarmers = Farmer::where('status', 'archived')->count();
         $rejectedFarmers = Farmer::where('status', 'rejected')->count();
 
-        $pendingLoanRequests = LoanRequest::where('status', 'pending')->count();
-        $machinerySchedules = ScheduleRequest::whereNull('archived_at')->count();
+        $pendingLoanRequests = LoanRequest::where('status', 'pending')->visibleAccount()->count();
+        $machinerySchedules = ScheduleRequest::whereNull('archived_at')->visibleAccount()->count();
 
         $recentApplications = Farmer::with('crops')
             ->orderBy('created_at', 'desc')

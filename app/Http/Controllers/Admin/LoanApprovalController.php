@@ -22,11 +22,12 @@ class LoanApprovalController extends Controller
         $requests = LoanRequest::with('farmer')
             ->where('status', 'pending')
             ->where('type', 'regular')
+            ->visibleAccount()
             ->orderBy('created_at', 'desc')
             ->paginate(10, ['*'], 'requests_page')
             ->withQueryString();
 
-        $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at');
+        $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at')->visibleAccount();
         $batchGroups = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
             ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with(['farmer', 'requestedBy'])->orderBy('created_at', 'desc')])
             ->orderBy('created_at', 'desc')
@@ -45,10 +46,12 @@ class LoanApprovalController extends Controller
 
         $approvedThisMonth = LoanRequest::where('status', 'approved')
             ->whereBetween('updated_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->visibleAccount()
             ->count();
 
         $deniedThisMonth = LoanRequest::where('status', 'denied')
             ->whereBetween('updated_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->visibleAccount()
             ->count();
 
         return view('admin.loan-approval', compact('requests', 'batchGroups', 'pendingBatchMemberCount', 'approvedThisMonth', 'deniedThisMonth'));
@@ -101,11 +104,12 @@ class LoanApprovalController extends Controller
             ->where('type', 'regular')
             ->tap($matchesSearch)
             ->tap($matchesArchiveFilter)
+            ->visibleAccount()
             ->orderByDesc('created_at')
             ->paginate(10, ['*'], 'loans_page')
             ->withQueryString();
 
-        $approvedMember = fn ($q) => $q->where('status', 'approved');
+        $approvedMember = fn ($q) => $q->where('status', 'approved')->visibleAccount();
 
         $batchGroups = LoanBatch::whereHas('loanRequests', $approvedMember)
             ->with(['loanRequests' => fn ($q) => $approvedMember($q)->with('farmer')->tap($matchesSearch)->tap($matchesArchiveFilter)->orderByDesc('created_at')])
@@ -121,7 +125,7 @@ class LoanApprovalController extends Controller
         $batchGroups = $this->paginateCollection($batchGroups, $request, 'batches_page');
 
         // Approved requests (regular and batch members alike) that were archived.
-        $archivedCount = LoanRequest::where('status', 'approved')->whereNotNull('archived_at')->count();
+        $archivedCount = LoanRequest::where('status', 'approved')->whereNotNull('archived_at')->visibleAccount()->count();
 
         return view('admin.approved-loans', compact('loans', 'batchGroups', 'approvedBatchMemberCount', 'showArchived', 'archivedCount'));
     }

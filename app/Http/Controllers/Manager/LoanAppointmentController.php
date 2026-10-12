@@ -15,6 +15,7 @@ class LoanAppointmentController extends Controller
     public function index(Request $request)
     {
         $query = LoanAppointment::with('user.farmer')
+            ->visibleAccount()
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'cancelled')")
             ->orderBy('created_at', 'desc');
 
@@ -49,10 +50,11 @@ class LoanAppointmentController extends Controller
         $appointments = $query->paginate(10)->withQueryString();
 
         $stats = [
-            'pending_count' => LoanAppointment::where('status', 'pending')->count(),
-            'approved_count' => LoanAppointment::where('status', 'approved')->count(),
+            'pending_count' => LoanAppointment::where('status', 'pending')->visibleAccount()->count(),
+            'approved_count' => LoanAppointment::where('status', 'approved')->visibleAccount()->count(),
             'upcoming_count' => LoanAppointment::where('status', 'approved')
                 ->whereDate('appointment_date', '>=', now()->toDateString())
+                ->visibleAccount()
                 ->count(),
         ];
 

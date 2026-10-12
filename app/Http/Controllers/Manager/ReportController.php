@@ -39,7 +39,10 @@ class ReportController extends Controller
         $paymentStatus = $request->get('payment_status');
         $category = $request->get('category');
 
-        $farmers = Farmer::where('status', 'approved')->orderBy('last_name')->get();
+        $farmers = Farmer::where('status', 'approved')
+            ->whereDoesntHave('account', fn ($q) => $q->where('status', 'inactive'))
+            ->orderBy('last_name')
+            ->get();
         $selectedFarmer = $memberId ? $farmers->firstWhere('id', $memberId) : null;
         $machines = Machine::whereNull('archived_at')->orderBy('name')->get();
         $selectedMachine = $machineId ? $machines->firstWhere('id', $machineId) : null;
@@ -140,7 +143,10 @@ class ReportController extends Controller
         $paymentStatus = $request->get('payment_status');
         $category = $request->get('category');
 
-        $farmers = Farmer::where('status', 'approved')->orderBy('last_name')->get();
+        $farmers = Farmer::where('status', 'approved')
+            ->whereDoesntHave('account', fn ($q) => $q->where('status', 'inactive'))
+            ->orderBy('last_name')
+            ->get();
         $selectedFarmer = $memberId ? $farmers->firstWhere('id', $memberId) : null;
         $machines = Machine::whereNull('archived_at')->orderBy('name')->get();
         $selectedMachine = $machineId ? $machines->firstWhere('id', $machineId) : null;
@@ -417,7 +423,8 @@ class ReportController extends Controller
     {
         $query = ScheduleRequest::with('user.farmer')
             ->whereNull('archived_at')
-            ->whereNotNull('harvest_yield');
+            ->whereNotNull('harvest_yield')
+            ->visibleAccount();
 
         if ($dateFrom) {
             $query->whereDate('scheduled_date', '>=', $dateFrom);
@@ -444,7 +451,8 @@ class ReportController extends Controller
     {
         $query = Loan::with(['loanRequest.farmer', 'payments'])
             ->whereNull('archived_at')
-            ->whereNotNull('disbursed_at');
+            ->whereNotNull('disbursed_at')
+            ->visibleAccount();
 
         if ($dateFrom) {
             $query->whereDate('disbursed_at', '>=', $dateFrom);
@@ -516,7 +524,8 @@ class ReportController extends Controller
     {
         $query = ScheduleRequest::with(['user.farmer', 'machine'])
             ->whereNull('archived_at')
-            ->whereIn('status', ['approved', 'completed']);
+            ->whereIn('status', ['approved', 'completed'])
+            ->visibleAccount();
 
         if ($dateFrom) {
             $query->whereDate('scheduled_date', '>=', $dateFrom);
@@ -539,7 +548,7 @@ class ReportController extends Controller
      */
     private function cbuRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
     {
-        $query = CbuTransaction::with(['cbu.farmer', 'recordedBy']);
+        $query = CbuTransaction::with(['cbu.farmer', 'recordedBy'])->visibleAccount();
 
         if ($dateFrom) {
             $query->whereDate('transaction_date', '>=', $dateFrom);
@@ -560,7 +569,7 @@ class ReportController extends Controller
      */
     private function complaintRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
     {
-        $query = Complaint::with('user.farmer')->where('status', '!=', 'draft');
+        $query = Complaint::with('user.farmer')->where('status', '!=', 'draft')->visibleAccount();
 
         if ($dateFrom) {
             $query->whereDate('created_at', '>=', $dateFrom);
@@ -603,7 +612,7 @@ class ReportController extends Controller
      */
     private function harvestPaymentRows(?string $dateFrom, ?string $dateTo, ?string $memberId)
     {
-        $query = HarvestPayment::with('farmer');
+        $query = HarvestPayment::with('farmer')->visibleAccount();
 
         if ($dateFrom) {
             $query->whereDate('payment_date', '>=', $dateFrom);
@@ -758,7 +767,7 @@ class ReportController extends Controller
             ['label' => 'Total Contributions', 'value' => peso($contributions)],
             ['label' => 'Total Withdrawals/Expenses', 'value' => peso($expenses)],
             ['label' => 'Net Change', 'value' => peso($contributions - $expenses), 'emphasis' => true],
-            ['label' => 'Current Balance, All Members', 'value' => peso(Cbu::sum('balance'))],
+            ['label' => 'Current Balance, All Members', 'value' => peso(Cbu::visibleAccount()->sum('balance'))],
         ]];
     }
 

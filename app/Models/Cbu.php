@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,6 +23,17 @@ class Cbu extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(CbuTransaction::class);
+    }
+
+    /**
+     * Opt-in filter for list/report queries only — see
+     * LoanRequest::scopeVisibleAccount(). Must never be called from
+     * recordTransaction()/recalculateBalances(), which must always see a
+     * farmer's complete real ledger regardless of their account status.
+     */
+    public function scopeVisibleAccount(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('farmer.account', fn ($q) => $q->where('status', 'inactive'));
     }
 
     /**
