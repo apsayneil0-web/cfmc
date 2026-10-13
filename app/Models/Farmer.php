@@ -173,6 +173,70 @@ class Farmer extends Model
     }
 
     /**
+     * One-loan-at-a-time rule: a farmer may only have one loan "in process"
+     * at any time, regardless of purpose, and may only start a new one once
+     * the previous loan is fully paid. Single source of truth for every
+     * place that creates/approves/finalizes a loan request or appointment,
+     * so they can't drift out of sync the way validateRequest() and
+     * index()'s farmersIneligibleForNewRequest list once did (the bug this
+     * method was introduced to fix — approved-but-unfinalized requests
+     * weren't blocking a second request from being created).
+     *
+     * Returns null if the farmer may borrow, otherwise a short reason.
+     * $ignoreRequestId excludes a specific LoanRequest from the check (when
+     * editing it, or submitting the appointment that owns it).
+     * $ignoreAppointmentId excludes a specific LoanAppointment (when
+     * submitting that same appointment to the Administrator).
+     */
+    public function loanInProcess(?int $ignoreRequestId = null, ?int $ignoreAppointmentId = null): ?string
+    {
+        $hasPendingRequest = $this->loanRequests()
+            ->where('status', 'pending')
+            ->whereNull('archived_at')
+            ->when($ignoreRequestId, fn ($q) => $q->where('id', '!=', $ignoreRequestId))
+            ->exists();
+
+        if ($hasPendingRequest) {
+            return 'Has a pending loan request';
+        }
+
+        $hasApprovedUnfinalized = $this->loanRequests()
+            ->where('status', 'approved')
+            ->whereNull('archived_at')
+            ->whereDoesntHave('loan')
+            ->when($ignoreRequestId, fn ($q) => $q->where('id', '!=', $ignoreRequestId))
+            ->exists();
+
+        if ($hasApprovedUnfinalized) {
+            return 'Has an approved loan request awaiting finalization';
+        }
+
+        $unpaidLoan = Loan::whereIn('status', ['pending_disbursement', 'active', 'overdue'])
+            ->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $this->id))
+            ->first();
+
+        if ($unpaidLoan) {
+            return $unpaidLoan->is_restricted
+                ? 'Restricted: penalized loan must be fully paid first'
+                : 'Has an unpaid loan';
+        }
+
+        if ($this->account_user_id) {
+            $hasOpenAppointment = LoanAppointment::where('user_id', $this->account_user_id)
+                ->whereIn('status', ['pending', 'approved'])
+                ->whereNull('loan_request_id')
+                ->when($ignoreAppointmentId, fn ($q) => $q->where('id', '!=', $ignoreAppointmentId))
+                ->exists();
+
+            if ($hasOpenAppointment) {
+                return 'Has a loan appointment in process';
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Document columns (documents_path, certificate_of_title_path, etc.)
      * store a JSON-encoded array of storage paths so each one can hold
      * multiple uploaded files. Older records predate this and still hold a

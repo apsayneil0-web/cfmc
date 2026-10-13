@@ -68,6 +68,13 @@ class LoanAppointmentController extends Controller
     {
         abort_if($loan_appointment->status !== 'pending', 422, 'Only pending appointments can be approved.');
 
+        $farmer = $loan_appointment->user->farmer;
+
+        if ($farmer) {
+            $reason = $farmer->loanInProcess(null, $loan_appointment->id);
+            abort_if($reason, 422, "This farmer already has a loan in process ({$reason}) and cannot have another appointment approved until it is resolved.");
+        }
+
         $loan_appointment->update(['status' => 'approved']);
 
         $name = $loan_appointment->user->farmer?->full_name ?? $loan_appointment->user->name;

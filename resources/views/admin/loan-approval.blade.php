@@ -24,10 +24,18 @@
 
 <!-- Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <x-stat-card label="Pending Requests" value="{{ $requests->total() + $pendingBatchMemberCount }}" icon="fa-hourglass-half" color="warning" />
+    <x-stat-card label="Pending Requests" value="{{ $pendingRegularCount + $pendingBatchMemberCount }}" icon="fa-hourglass-half" color="warning" />
     <x-stat-card label="Approved This Month" value="{{ $approvedThisMonth }}" icon="fa-check-circle" color="success" />
     <x-stat-card label="Denied This Month" value="{{ $deniedThisMonth }}" icon="fa-times-circle" color="danger" />
 </div>
+
+<!-- Search (filters both lists below) -->
+<form method="GET" action="{{ route('admin.loan-approval') }}" class="d-flex flex-wrap align-items-center gap-3 mb-4">
+    <x-live-search placeholder="Search farmer or batch..." width="280px" />
+    @if(request()->filled('search'))
+    <span class="text-sm text-muted">Showing pending requests matching &ldquo;{{ request('search') }}&rdquo;</span>
+    @endif
+</form>
 
 <!-- Pending Batch Loan Requests -->
 @if($batchGroups->isNotEmpty())
@@ -293,7 +301,7 @@
                 </div>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">No pending regular loan requests.</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">{{ request()->filled('search') ? 'No pending regular loan requests match your search.' : 'No pending regular loan requests.' }}</td>
                 </tr>
                 @endforelse
             </tbody>

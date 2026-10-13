@@ -27,9 +27,19 @@ class MembershipApprovalController extends Controller
             $status = 'pending';
         }
 
-        $applications = Farmer::with('crops')
-            ->where('status', $status)
-            ->orderBy('created_at', 'desc')
+        $query = Farmer::with('crops')->where('status', $status);
+
+        // Search by applicant name, barangay or contact number.
+        if ($request->filled('search')) {
+            $search = trim($request->string('search'));
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["%{$search}%"])
+                    ->orWhere('barangay', 'like', "%{$search}%")
+                    ->orWhere('contact_number', 'like', "%{$search}%");
+            });
+        }
+
+        $applications = $query->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 

@@ -19,13 +19,28 @@ class LoanApprovalController extends Controller
      */
     public function index(Request $request)
     {
+        // One search box filters both lists: regular requests by farmer name,
+        // batches by batch name ("Batch 3") or any member's name.
+        $search = $request->filled('search') ? trim($request->string('search')) : null;
+        $farmerNameMatches = fn ($q) => $q->whereRaw(
+            "CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?",
+            ["%{$search}%"]
+        );
+
         $requests = LoanRequest::with('farmer')
             ->where('status', 'pending')
             ->where('type', 'regular')
             ->visibleAccount()
+            ->when($search, fn ($q) => $q->whereHas('farmer', $farmerNameMatches))
             ->orderBy('created_at', 'desc')
             ->paginate(10, ['*'], 'requests_page')
             ->withQueryString();
+
+        // For the summary card: every pending regular request, unaffected by search.
+        $pendingRegularCount = LoanRequest::where('status', 'pending')
+            ->where('type', 'regular')
+            ->visibleAccount()
+            ->count();
 
         $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at')->visibleAccount();
         $batchGroups = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
@@ -39,6 +54,15 @@ class LoanApprovalController extends Controller
         // every batch, not just the ones on the current page — compute it
         // from the full set before paginating $batchGroups for display.
         $pendingBatchMemberCount = $batchGroups->sum(fn (LoanBatch $batch) => $batch->loanRequests->count());
+
+        // Search narrows the batch list only after the stat above is counted,
+        // so the summary cards always reflect everything awaiting approval.
+        if ($search) {
+            $needle = mb_strtolower($search);
+            $batchGroups = $batchGroups->filter(fn (LoanBatch $batch) => str_contains(mb_strtolower($batch->label), $needle)
+                || $batch->loanRequests->contains(fn ($member) => str_contains(mb_strtolower($member->farmer->full_name ?? ''), $needle))
+            )->values();
+        }
 
         // Two independent tables share this one page (regular requests,
         // batch groups), so each gets its own "page" query param.
@@ -54,7 +78,7 @@ class LoanApprovalController extends Controller
             ->visibleAccount()
             ->count();
 
-        return view('admin.loan-approval', compact('requests', 'batchGroups', 'pendingBatchMemberCount', 'approvedThisMonth', 'deniedThisMonth'));
+        return view('admin.loan-approval', compact('requests', 'batchGroups', 'pendingBatchMemberCount', 'pendingRegularCount', 'approvedThisMonth', 'deniedThisMonth'));
     }
 
     private function paginateCollection($items, Request $request, string $pageName, int $perPage = 10): LengthAwarePaginator
@@ -192,6 +216,12 @@ class LoanApprovalController extends Controller
     {
         abort_if($loan_request->status !== 'pending', 422, 'Only pending requests can be approved.');
 
+        // Defense in depth: this should already be the farmer's only request
+        // in process, but re-verify at the moment of approval too, in case
+        // of a stale record from before the one-loan-at-a-time fix.
+        $reason = $loan_request->farmer->loanInProcess($loan_request->id);
+        abort_if($reason, 422, "This farmer already has a loan in process ({$reason}). Deny this request instead, or resolve the other one first.");
+
         $loan_request->update(['status' => 'approved', 'denial_reason' => null]);
 
         $this->notifyFarmerOfDecision($loan_request, 'loan_approved', 'Loan Request Approved', 'Your loan request for '.peso($loan_request->requested_amount).' has been approved. The Manager will finalize your loan terms soon.');
@@ -232,14 +262,28 @@ class LoanApprovalController extends Controller
 
         abort_if($pendingRequests->isEmpty(), 422, 'This batch has no pending requests to approve.');
 
-        LoanRequest::whereIn('id', $pendingRequests->pluck('id'))->update(['status' => 'approved', 'denial_reason' => null]);
+        // Same defense-in-depth re-check as the single approve() — skip
+        // (don't block the whole batch over) a member who already has
+        // another loan in process, rather than silently approving them too.
+        $toApprove = $pendingRequests->reject(fn (LoanRequest $r) => $r->farmer->loanInProcess($r->id));
+        $skipped = $pendingRequests->diff($toApprove);
 
-        foreach ($pendingRequests as $loan_request) {
+        abort_if($toApprove->isEmpty(), 422, 'None of this batch\'s members could be approved — they all already have a loan in process.');
+
+        LoanRequest::whereIn('id', $toApprove->pluck('id'))->update(['status' => 'approved', 'denial_reason' => null]);
+
+        foreach ($toApprove as $loan_request) {
             $this->notifyFarmerOfDecision($loan_request, 'loan_approved', 'Loan Request Approved', 'Your loan request for '.peso($loan_request->requested_amount)." has been approved as part of {$batch->label}. The Manager will finalize your loan terms soon.");
         }
 
+        $message = "{$batch->label}'s {$toApprove->count()} loan requests have been approved.";
+
+        if ($skipped->isNotEmpty()) {
+            $message .= ' Skipped (already has a loan in process): '.$skipped->map(fn (LoanRequest $r) => $r->farmer->full_name)->implode(', ').'.';
+        }
+
         return redirect()->route('admin.loan-approval')
-            ->with('success', "{$batch->label}'s {$pendingRequests->count()} loan requests have been approved.");
+            ->with('success', $message);
     }
 
     /**

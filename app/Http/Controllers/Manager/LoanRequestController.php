@@ -103,13 +103,17 @@ class LoanRequestController extends Controller
             ->reject(fn (LoanBatch $batch) => $batch->is_full)
             ->values();
 
+        // Single source of truth (Farmer::loanInProcess()) so this list can
+        // never drift out of sync with what validateRequest() actually
+        // enforces on submit — that drift (this list not knowing about
+        // approved-but-unfinalized requests) was the one-loan-at-a-time bug.
         $farmersIneligibleForNewRequest = [];
-        foreach (LoanRequest::where('status', 'pending')->pluck('farmer_id') as $farmerId) {
-            $farmersIneligibleForNewRequest[$farmerId] = 'Has a pending loan request';
-        }
-        foreach (Loan::whereIn('status', ['pending_disbursement', 'active', 'overdue'])->with('loanRequest')->get() as $loan) {
-            $reason = $loan->is_restricted ? 'Restricted: penalized loan must be fully paid first' : 'Has an unpaid loan';
-            $farmersIneligibleForNewRequest[$loan->loanRequest->farmer_id] ??= $reason;
+        foreach ($farmers as $farmer) {
+            $reason = $farmer->loanInProcess();
+
+            if ($reason) {
+                $farmersIneligibleForNewRequest[$farmer->id] = $reason;
+            }
         }
 
         // Batches the Administrator has approved but that haven't been
@@ -209,7 +213,7 @@ class LoanRequestController extends Controller
         ]);
 
         try {
-            $validated = $this->validateRequest($syntheticRequest);
+            $validated = $this->validateRequest($syntheticRequest, excludeAppointmentId: $loan_appointment->id);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->route('manager.loan-appointment')
                 ->withErrors($e->validator);
@@ -275,6 +279,17 @@ class LoanRequestController extends Controller
         abort_if($loan_request->status !== 'approved', 422, 'Only approved requests can be finalized.');
         abort_if($loan_request->loan()->exists(), 422, 'This request has already been finalized.');
 
+        // Defense in depth: validateRequest() already blocks a second
+        // request from being created while one is in process, but this
+        // re-checks at the moment a Loan is actually about to be created,
+        // in case of a stale approved-unfinalized request that predates
+        // that fix, or any other way the farmer ended up with two.
+        $hasOtherUnpaidLoan = Loan::whereIn('status', ['pending_disbursement', 'active', 'overdue'])
+            ->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $loan_request->farmer_id))
+            ->exists();
+
+        abort_if($hasOtherUnpaidLoan, 422, 'This farmer already has an unpaid loan. Deny or archive this request instead.');
+
         $validated = $request->validate([
             'principal_amount' => 'required|numeric|min:1',
             'interest_rate' => 'required|numeric|min:0|max:100',
@@ -337,8 +352,23 @@ class LoanRequestController extends Controller
         ]);
 
         $isImmediate = now()->toDateString() >= $validated['disbursement_date'];
+        $skipped = [];
 
         foreach ($members as $member) {
+            // Same defense-in-depth re-check as finalize(): skip (don't
+            // abort the whole batch over) a member who already has an
+            // unpaid loan, e.g. from a stale approved-unfinalized request
+            // that predates the one-loan-at-a-time fix.
+            $hasOtherUnpaidLoan = Loan::whereIn('status', ['pending_disbursement', 'active', 'overdue'])
+                ->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $member->farmer_id))
+                ->exists();
+
+            if ($hasOtherUnpaidLoan) {
+                $skipped[] = $member->farmer->full_name;
+
+                continue;
+            }
+
             $loan = Loan::create([
                 'loan_request_id' => $member->id,
                 'principal_amount' => $member->requested_amount,
@@ -375,9 +405,20 @@ class LoanRequestController extends Controller
             }
         }
 
+        $finalizedCount = $members->count() - count($skipped);
+
+        if ($finalizedCount === 0) {
+            return redirect()->route('manager.batch-loan-management')
+                ->with('error', "None of {$batch->label}'s members could be finalized — they already have an unpaid loan: ".implode(', ', $skipped).'.');
+        }
+
         $message = $isImmediate
-            ? "{$batch->label}'s {$members->count()} loan(s) are finalized and disbursed."
-            : "{$batch->label}'s {$members->count()} loan(s) are finalized and scheduled for disbursement on ".now()->parse($validated['disbursement_date'])->format('M d, Y').'.';
+            ? "{$batch->label}'s {$finalizedCount} loan(s) are finalized and disbursed."
+            : "{$batch->label}'s {$finalizedCount} loan(s) are finalized and scheduled for disbursement on ".now()->parse($validated['disbursement_date'])->format('M d, Y').'.';
+
+        if ($skipped) {
+            $message .= ' Skipped (already has an unpaid loan): '.implode(', ', $skipped).'.';
+        }
 
         return redirect()->route('manager.batch-loan-management')
             ->with('success', $message);
@@ -427,32 +468,17 @@ class LoanRequestController extends Controller
             ->with('success', "{$farmerName} has been removed from {$batchLabel}.");
     }
 
-    private function validateRequest(Request $request, ?int $excludeRequestId = null, bool $requireCollateralProof = false): array
+    private function validateRequest(Request $request, ?int $excludeRequestId = null, bool $requireCollateralProof = false, ?int $excludeAppointmentId = null): array
     {
         return $request->validate([
             'farmer_id' => [
                 'required',
                 'exists:farmers,id',
-                function ($attribute, $value, $fail) use ($excludeRequestId) {
-                    $hasPending = LoanRequest::where('farmer_id', $value)
-                        ->where('status', 'pending')
-                        ->when($excludeRequestId, fn ($q) => $q->where('id', '!=', $excludeRequestId))
-                        ->exists();
+                function ($attribute, $value, $fail) use ($excludeRequestId, $excludeAppointmentId) {
+                    $reason = Farmer::find($value)?->loanInProcess($excludeRequestId, $excludeAppointmentId);
 
-                    if ($hasPending) {
-                        $fail('This farmer already has a pending loan request and cannot submit another until it is decided.');
-
-                        return;
-                    }
-
-                    $unpaidLoan = Loan::whereIn('status', ['pending_disbursement', 'active', 'overdue'])
-                        ->whereHas('loanRequest', fn ($q) => $q->where('farmer_id', $value))
-                        ->first();
-
-                    if ($unpaidLoan?->is_restricted) {
-                        $fail('This farmer\'s loan was penalized for missing its grace period and is restricted from new loans until the outstanding balance is fully paid.');
-                    } elseif ($unpaidLoan) {
-                        $fail('This farmer already has an unpaid loan and cannot request a new one until it is fully paid.');
+                    if ($reason) {
+                        $fail("This farmer already has a loan in process ({$reason}) and can only request a new loan after it is fully paid.");
                     }
                 },
             ],

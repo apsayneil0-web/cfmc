@@ -17,9 +17,23 @@ class CbuController extends Controller
      */
     public function index(Request $request)
     {
-        $farmers = Farmer::where('status', 'approved')
-            ->with(['cbu.transactions' => fn ($q) => $q->visibleAccount()->orderByDesc('transaction_date')->orderByDesc('created_at')])
-            ->orderBy('last_name')
+        $query = Farmer::where('status', 'approved')
+            ->with(['cbu.transactions' => fn ($q) => $q->visibleAccount()->orderByDesc('transaction_date')->orderByDesc('created_at')]);
+
+        if ($request->filled('search')) {
+            $search = trim($request->string('search'));
+            $query->whereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ["%{$search}%"]);
+        }
+
+        // CBU status: members without a CBU account yet count as Inactive,
+        // matching the badge shown in the list.
+        if ($request->input('cbu_status') === 'active') {
+            $query->whereHas('cbu', fn ($q) => $q->where('status', 'active'));
+        } elseif ($request->input('cbu_status') === 'inactive') {
+            $query->whereDoesntHave('cbu', fn ($q) => $q->where('status', 'active'));
+        }
+
+        $farmers = $query->orderBy('last_name')
             ->paginate(10)
             ->withQueryString();
 

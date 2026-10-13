@@ -14,10 +14,17 @@
 <!-- CBU by Farmer -->
 <div class="section-card">
     <div class="table-toolbar">
-        <div class="position-relative">
-            <input type="text" placeholder="Search members..." class="form-control ps-5" style="min-width: 240px;">
-            <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
-        </div>
+        <form method="GET" action="{{ route('admin.cbu') }}" class="d-flex flex-wrap align-items-center gap-3">
+            <x-live-search placeholder="Search members..." />
+            <select name="cbu_status" class="form-select" style="width: auto;" aria-label="CBU status" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+                <option value="">All Status</option>
+                <option value="active" @selected(request('cbu_status') === 'active')>Active</option>
+                <option value="inactive" @selected(request('cbu_status') === 'inactive')>Inactive</option>
+            </select>
+            @if(request()->anyFilled(['search', 'cbu_status']))
+            <a href="{{ route('admin.cbu') }}" class="btn btn-link btn-sm">Clear filters</a>
+            @endif
+        </form>
     </div>
 
     <div class="table-responsive">
@@ -44,7 +51,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">No approved farmers on file.</td>
+                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">{{ request()->anyFilled(['search', 'cbu_status']) ? 'No members match your search or filters.' : 'No approved farmers on file.' }}</td>
                 </tr>
                 @endforelse
             </tbody>

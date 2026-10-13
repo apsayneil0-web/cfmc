@@ -6,24 +6,31 @@
 @section('content')
 <div class="section-card">
     <div class="table-toolbar d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-3 flex-wrap">
+        <form method="GET" action="{{ route('admin.schedule') }}" id="scheduleFilterForm" class="d-flex align-items-center gap-3 flex-wrap">
             <div class="position-relative">
-                <input type="text" placeholder="Search schedule..." class="form-control ps-5 py-2" style="min-width: 240px;">
-                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
+                <input type="text" name="search" id="scheduleSearchInput" value="{{ request('search') }}" placeholder="Search farmer, machinery or location..." class="form-control ps-5 pe-5 py-2" style="min-width: 260px;" autocomplete="off">
+                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" id="scheduleSearchIcon" style="font-size: 14px;"></i>
+                <button type="button" id="scheduleSearchClear" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y text-muted p-0 pe-3 border-0 bg-transparent {{ request('search') ? '' : 'd-none' }}" title="Clear search" aria-label="Clear search">
+                    <i class="fas fa-times-circle"></i>
+                </button>
             </div>
-            <select class="form-select" style="width: auto;">
-                <option value="">All Machinery</option>
-                @foreach($machineryList as $machinery)
-                <option value="{{ $machinery }}">{{ $machinery }}</option>
+            <select name="type" class="form-select" style="width: auto;" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" aria-label="Machine type">
+                <option value="">All Machine Types</option>
+                @foreach($machineTypes as $type)
+                <option value="{{ $type }}" @selected(strcasecmp((string) request('type'), $type) === 0)>{{ $type }}</option>
                 @endforeach
             </select>
-            <select class="form-select" style="width: auto;">
+            <select name="status" class="form-select" style="width: auto;" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
                 <option value="">All Status</option>
-                <option value="approved">Approved</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
+                <option value="pending" @selected(request('status') === 'pending')>Pending</option>
+                <option value="approved" @selected(request('status') === 'approved')>Approved</option>
+                <option value="denied" @selected(request('status') === 'denied')>Denied</option>
+                <option value="completed" @selected(request('status') === 'completed')>Completed</option>
             </select>
-        </div>
+            @if(request()->anyFilled(['search', 'type', 'status']))
+            <a href="{{ route('admin.schedule') }}" class="btn btn-link btn-sm">Clear filters</a>
+            @endif
+        </form>
     </div>
 
     <div class="table-responsive">
@@ -56,7 +63,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No schedules recorded yet.</td>
+                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">{{ request()->anyFilled(['search', 'type', 'status']) ? 'No schedules match your search or filters.' : 'No schedules recorded yet.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -88,4 +95,44 @@
 <x-info-banner variant="info" title="Monitoring Only" class="mt-6">
     This view is for oversight of machinery usage across the cooperative. Schedule requests are created and processed by the Manager to avoid conflicts and support efficient planning.
 </x-info-banner>
+
+<script>
+    // Live search — same behaviour as the other list searches: results update
+    // shortly after you stop typing, Enter searches immediately, and the
+    // clear (x) button resets it. The dropdowns submit on change.
+    (function () {
+        var form = document.getElementById('scheduleFilterForm');
+        var input = document.getElementById('scheduleSearchInput');
+        var icon = document.getElementById('scheduleSearchIcon');
+        var clearBtn = document.getElementById('scheduleSearchClear');
+        if (!form || !input) return;
+        var timer;
+
+        form.addEventListener('submit', function () {
+            clearTimeout(timer);
+            icon.className = 'fas fa-spinner fa-spin position-absolute start-3 top-50 translate-middle-y text-muted';
+            input.readOnly = true;
+        });
+
+        input.addEventListener('input', function () {
+            clearBtn.classList.toggle('d-none', !input.value);
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            }, 500);
+        });
+
+        clearBtn.addEventListener('click', function () {
+            input.value = '';
+            clearBtn.classList.add('d-none');
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+        });
+
+        // After a search reloads the page, keep typing where you left off.
+        if (input.value) {
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+    })();
+</script>
 @endsection

@@ -32,6 +32,7 @@ class LoanAppointmentController extends Controller
             'loanTerms' => self::LOAN_TERMS,
             'loanEligibility' => Auth::user()->farmer?->regular_loan_eligibility,
             'appointmentSlots' => LoanAppointment::SLOTS,
+            'loanInProcessReason' => Auth::user()->farmer?->loanInProcess(),
         ]);
     }
 
@@ -146,10 +147,22 @@ class LoanAppointmentController extends Controller
                 'required',
                 'numeric',
                 'min:1',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($excludeId) {
                     $farmer = Auth::user()->farmer;
 
                     if (! $farmer) {
+                        return;
+                    }
+
+                    // One-loan-at-a-time: checked before CBU eligibility so a
+                    // farmer who already has a loan in process (a request, an
+                    // unpaid loan, or another open appointment) is told that
+                    // first, not shown an unrelated CBU-balance error.
+                    $reason = $farmer->loanInProcess(null, $excludeId);
+
+                    if ($reason) {
+                        $fail('You already have a loan in process. You can book a new loan appointment after your current loan is fully paid.');
+
                         return;
                     }
 

@@ -27,15 +27,23 @@
 @endphp
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-    <div class="p-4 p-md-6 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ $isRejectedView ? 'Rejected Applications' : 'Pending Applications' }}</h3>
-        <p class="text-sm text-muted mb-0">
+    <div class="p-4 p-md-6 border-b border-gray-200 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ $isRejectedView ? 'Rejected Applications' : 'Pending Applications' }}</h3>
+            <p class="text-sm text-muted mb-0">
+                @if($isRejectedView)
+                    Membership applications that were declined, along with the reason given at the time.
+                @else
+                    Review farmer membership applications against the cooperative's criteria and bylaws.
+                @endif
+            </p>
+        </div>
+        <form method="GET" action="{{ route('admin.membership-approval') }}" class="d-flex align-items-center gap-2">
             @if($isRejectedView)
-                Membership applications that were declined, along with the reason given at the time.
-            @else
-                Review farmer membership applications against the cooperative's criteria and bylaws.
+            <input type="hidden" name="status" value="rejected">
             @endif
-        </p>
+            <x-live-search placeholder="Search name, barangay or contact..." width="280px" />
+        </form>
     </div>
 
     @if($isRejectedView)
@@ -63,7 +71,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No rejected membership applications.</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">{{ request()->filled('search') ? 'No rejected applications match your search.' : 'No rejected membership applications.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -98,7 +106,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No pending membership applications.</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">{{ request()->filled('search') ? 'No pending applications match your search.' : 'No pending membership applications.' }}</td>
                 </tr>
                 @endforelse
             </tbody>

@@ -12,6 +12,12 @@
 </div>
 @endif
 
+@if($loanInProcessReason)
+<div class="alert alert-info d-flex align-items-center gap-2" role="alert">
+    <i class="fas fa-circle-info"></i>
+    <span>You already have a loan in process ({{ $loanInProcessReason }}). You can book a new loan appointment once your current loan is fully paid.</span>
+</div>
+@endif
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
     <div class="p-4 p-md-6 border-b border-gray-200 d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
@@ -19,10 +25,12 @@
             <h3 class="text-lg font-semibold text-gray-900 mb-0">My Loan Appointments</h3>
             <p class="text-sm text-muted mb-0">Schedule a meeting with cooperative management to discuss your loan.</p>
         </div>
+        @unless($loanInProcessReason)
         <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createModal">
             <i class="fas fa-plus"></i>
             <span>New Appointment</span>
         </button>
+        @endunless
     </div>
 
     <div class="table-responsive">
