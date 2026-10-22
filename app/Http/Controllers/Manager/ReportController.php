@@ -436,7 +436,7 @@ class ReportController extends Controller
             $query->whereHas('user.farmer', fn ($q) => $q->where('id', $memberId));
         }
 
-        return $query->orderByDesc('scheduled_date')->get();
+        return $query->orderByDesc('created_at')->get();
     }
 
     /**
@@ -491,6 +491,7 @@ class ReportController extends Controller
     {
         return Machine::whereNull('archived_at')
             ->when($machineId, fn ($q) => $q->where('id', $machineId))
+            ->orderByDesc('created_at')
             ->get()
             ->map(function (Machine $machine) use ($dateFrom, $dateTo) {
                 $completed = $machine->scheduleRequests()->where('status', 'completed')->whereNull('archived_at');
@@ -537,7 +538,7 @@ class ReportController extends Controller
             $query->whereHas('user.farmer', fn ($q) => $q->where('id', $memberId));
         }
 
-        return $query->orderByDesc('scheduled_date')->get();
+        return $query->orderByDesc('created_at')->get();
     }
 
     /**
@@ -560,7 +561,7 @@ class ReportController extends Controller
             $query->whereHas('cbu', fn ($q) => $q->where('farmer_id', $memberId));
         }
 
-        return $query->orderByDesc('transaction_date')->orderByDesc('created_at')->get();
+        return $query->orderByDesc('created_at')->get();
     }
 
     /**
@@ -602,7 +603,7 @@ class ReportController extends Controller
             $query->where('category', $category);
         }
 
-        return $query->orderByDesc('expense_date')->orderByDesc('created_at')->get();
+        return $query->orderByDesc('created_at')->get();
     }
 
     /**
@@ -624,7 +625,7 @@ class ReportController extends Controller
             $query->where('farmer_id', $memberId);
         }
 
-        return $query->orderByDesc('payment_date')->orderByDesc('created_at')->get();
+        return $query->orderByDesc('created_at')->get();
     }
 
     private function yieldByFarmer($rows)

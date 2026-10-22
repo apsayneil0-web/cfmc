@@ -195,7 +195,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($loan->payments->sortBy('created_at') as $payment)
+                @forelse($loan->payments->sortByDesc('created_at') as $payment)
                 <tr>
                     <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small">
@@ -239,16 +239,13 @@
                         <input type="date" name="disbursed_at" class="form-control" value="{{ now()->toDateString() }}" min="{{ now()->toDateString() }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Disbursement Method <span class="text-danger">*</span></label>
-                        <select name="disbursement_method" class="form-select" required>
-                            <option value="cash">Cash</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="check">Check</option>
-                        </select>
+                        <label class="form-label fw-semibold">Disbursement Method</label>
+                        <input type="text" class="form-control" value="Cash" disabled>
+                        <input type="hidden" name="disbursement_method" value="cash">
                     </div>
                     <div>
                         <label class="form-label fw-semibold">Reference No.</label>
-                        <input type="text" name="reference_no" class="form-control" placeholder="Check no. / transfer reference (optional)">
+                        <input type="text" name="reference_no" class="form-control" placeholder="Receipt/voucher no. (optional)">
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

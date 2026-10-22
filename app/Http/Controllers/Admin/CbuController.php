@@ -18,7 +18,7 @@ class CbuController extends Controller
     public function index(Request $request)
     {
         $query = Farmer::where('status', 'approved')
-            ->with(['cbu.transactions' => fn ($q) => $q->visibleAccount()->orderByDesc('transaction_date')->orderByDesc('created_at')]);
+            ->with(['cbu.transactions' => fn ($q) => $q->visibleAccount()->orderByDesc('created_at')]);
 
         if ($request->filled('search')) {
             $search = trim($request->string('search'));
@@ -33,7 +33,7 @@ class CbuController extends Controller
             $query->whereDoesntHave('cbu', fn ($q) => $q->where('status', 'active'));
         }
 
-        $farmers = $query->orderBy('last_name')
+        $farmers = $query->orderByDesc('created_at')
             ->paginate(10)
             ->withQueryString();
 

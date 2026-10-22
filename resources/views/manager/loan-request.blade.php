@@ -96,12 +96,9 @@
                             <input type="date" name="disbursement_date" class="form-control" value="{{ now()->toDateString() }}" min="{{ now()->toDateString() }}" required>
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
-                            <label class="form-label fw-semibold">Disbursement Method <span class="text-danger">*</span></label>
-                            <select name="disbursement_method" class="form-select" required>
-                                <option value="cash">Cash</option>
-                                <option value="bank_transfer">Bank Transfer</option>
-                                <option value="check">Check</option>
-                            </select>
+                            <label class="form-label fw-semibold">Disbursement Method</label>
+                            <input type="text" class="form-control" value="Cash" disabled>
+                            <input type="hidden" name="disbursement_method" value="cash">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Reference No.</label>

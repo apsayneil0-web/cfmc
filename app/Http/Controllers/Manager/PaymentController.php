@@ -15,6 +15,7 @@ use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -261,23 +262,44 @@ class PaymentController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $loan = Loan::findOrFail($validated['loan_id']);
+        // Locked for the duration of the transaction so two payments
+        // submitted for the same loan at the same moment can't both read the
+        // same remaining_balance and both pass the "doesn't exceed balance"
+        // check before either one's update is saved.
+        DB::transaction(function () use ($validated) {
+            $loan = Loan::lockForUpdate()->findOrFail($validated['loan_id']);
 
-        abort_if(in_array($loan->status, ['fully_paid', 'archived']), 422, 'This loan is already closed.');
-        abort_if($loan->status === 'pending_disbursement', 422, 'This loan has not been disbursed yet.');
-        abort_if((float) $validated['amount'] > (float) $loan->remaining_balance, 422, 'Payment exceeds remaining balance.');
+            abort_if(in_array($loan->status, ['fully_paid', 'archived']), 422, 'This loan is already closed.');
+            abort_if($loan->status === 'pending_disbursement', 422, 'This loan has not been disbursed yet.');
 
-        $loan->recordPayment($validated['amount'], $validated['notes'] ?? null, Auth::id(), $validated['type']);
+            // A Prepayment is capped at the payoff amount, not the full
+            // remaining balance — anything beyond what it actually costs to
+            // close the loan today is just overpaying for interest that
+            // hasn't accrued yet and would otherwise be waived, so there's
+            // no valid reason to let it through. Regular/partial payments
+            // keep the plain remaining-balance ceiling.
+            if ($validated['type'] === 'prepayment' && $loan->payoff_amount !== null) {
+                abort_if(
+                    (float) $validated['amount'] > $loan->payoff_amount + 0.01,
+                    422,
+                    'This prepayment is more than it costs to pay off the loan today ('.peso($loan->payoff_amount).'). Enter that exact amount to pay it off, or a smaller amount instead.'
+                );
+            } else {
+                abort_if((float) $validated['amount'] > (float) $loan->remaining_balance, 422, 'Payment exceeds remaining balance.');
+            }
 
-        if ($loan->farmer?->account_user_id) {
-            Notification::notify(
-                $loan->farmer->account_user_id,
-                'Payment Recorded',
-                'Your payment of '.peso($validated['amount']).' has been recorded against your loan. Remaining balance: '.peso($loan->remaining_balance).'.',
-                'payment_recorded',
-                ['loan_id' => $loan->id],
-            );
-        }
+            $loan->recordPayment($validated['amount'], $validated['notes'] ?? null, Auth::id(), $validated['type']);
+
+            if ($loan->farmer?->account_user_id) {
+                Notification::notify(
+                    $loan->farmer->account_user_id,
+                    'Payment Recorded',
+                    'Your payment of '.peso($validated['amount']).' has been recorded against your loan. Remaining balance: '.peso($loan->remaining_balance).'.',
+                    'payment_recorded',
+                    ['loan_id' => $loan->id],
+                );
+            }
+        });
 
         return redirect()->route('manager.payment')
             ->with('success', 'Payment recorded successfully.');

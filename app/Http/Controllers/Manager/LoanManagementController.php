@@ -119,7 +119,7 @@ class LoanManagementController extends Controller
 
         $validated = $request->validate([
             'disbursed_at' => 'required|date|after_or_equal:today',
-            'disbursement_method' => 'required|string|in:cash,bank_transfer,check',
+            'disbursement_method' => 'required|string|in:cash',
             'reference_no' => 'nullable|string|max:255',
         ]);
 

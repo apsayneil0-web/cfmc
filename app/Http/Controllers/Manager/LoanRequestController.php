@@ -347,7 +347,7 @@ class LoanRequestController extends Controller
         $validated = $request->validate([
             'interest_rate' => 'required|numeric|min:0|max:100',
             'disbursement_date' => 'required|date|after_or_equal:today',
-            'disbursement_method' => 'required|string|in:cash,bank_transfer,check',
+            'disbursement_method' => 'required|string|in:cash',
             'reference_no' => 'nullable|string|max:255',
         ]);
 

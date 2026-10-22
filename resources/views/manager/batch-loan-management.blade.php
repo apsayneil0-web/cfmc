@@ -222,7 +222,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($loan->payments->sortBy('created_at') as $payment)
+                @forelse($loan->payments->sortByDesc('created_at') as $payment)
                 <tr>
                     <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small">

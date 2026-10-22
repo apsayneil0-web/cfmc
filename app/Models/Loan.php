@@ -132,7 +132,9 @@ class Loan extends Model
      * persisted per-installment ledger. Installments before the current
      * next_due_date are assumed settled; the one at next_due_date is
      * "late" if the loan has gone overdue, otherwise "current"; the rest
-     * are "upcoming".
+     * are "upcoming" — except for a loan closed via an early payoff
+     * (paid_off_early), where next_due_date never advanced through the
+     * periods it waived, so every row is shown as paid instead.
      */
     public function getInstallmentScheduleAttribute(): array
     {
@@ -142,10 +144,12 @@ class Loan extends Model
             return [];
         }
 
+        $paidOffEarly = $this->paid_off_early;
         $schedule = [];
 
         for ($number = 1; $number <= $this->effective_term_months; $number++) {
             $status = match (true) {
+                $paidOffEarly => 'paid',
                 $number < $currentNumber => 'paid',
                 $number === $currentNumber && $this->status === 'overdue' => 'late',
                 $number === $currentNumber => 'current',
@@ -281,13 +285,36 @@ class Loan extends Model
      */
     public function getInterestChargedAttribute(): float
     {
-        $contractual = ($this->monthly_due * $this->effective_term_months) - (float) $this->principal_amount;
+        $contractual = round(($this->monthly_due * $this->effective_term_months) - (float) $this->principal_amount - $this->waived_interest, 2);
 
         $extra = (float) $this->payments->where('type', 'interest')
             ->reject(fn (LoanPayment $payment) => str_contains($payment->notes ?? '', 'penalty applied'))
             ->sum('amount');
 
         return round($contractual + $extra, 2);
+    }
+
+    /**
+     * How much future interest an early payoff waived, for reporting
+     * (getInterestChargedAttribute()/getTotalAmountAttribute() would
+     * otherwise overstate a paid-off-early loan's interest, since they
+     * assume the full term's interest was always charged). Recomputed from
+     * current_installment_number/effective_term_months rather than parsed
+     * back out of the payment note's text — both stay stable after
+     * payOffEarly() (next_due_date is deliberately never touched), so this
+     * reproduces the exact figure interest_saved had at the moment of
+     * payoff, reliably, without depending on a specific note wording.
+     */
+    public function getWaivedInterestAttribute(): float
+    {
+        if (! $this->paid_off_early || $this->current_installment_number === null) {
+            return 0.0;
+        }
+
+        $futurePeriods = max(0, $this->effective_term_months - $this->current_installment_number);
+        $interestPortion = round($this->monthly_due - (float) $this->installment_amount, 2);
+
+        return round($interestPortion * $futurePeriods, 2);
     }
 
     public function getTotalAmountAttribute(): float
@@ -311,11 +338,90 @@ class Loan extends Model
     }
 
     /**
+     * How much principal is still owed, for the Prepayment form's payoff
+     * preview — anchored to principal_amount directly (not derived from
+     * remaining_balance, which has interest folded in), matching how the
+     * payoff amount itself is built up from this same figure.
+     */
+    public function getRemainingPrincipalAttribute(): ?float
+    {
+        if ($this->current_installment_number === null) {
+            return null;
+        }
+
+        return max(0, round((float) $this->principal_amount - (float) $this->installment_amount * ($this->current_installment_number - 1), 2));
+    }
+
+    /**
+     * How much it costs to pay this loan off completely today: the real
+     * current balance, minus interest for every period that hasn't started
+     * yet. Today's own interest (and any overdue interest/penalty already
+     * charged — real, already-incurred debt, not a future period) stays;
+     * only interest for periods strictly after the current one is waived.
+     *
+     * Deliberately anchored to remaining_balance rather than rebuilt from
+     * principal_amount alone — remaining_balance already correctly folds in
+     * any overdue interest/grace penalty, which must still be collected in
+     * full. Rebuilding from principal would silently waive that too. This
+     * does mean the figure can differ from a hand calculation by a few
+     * centavos on some loans, for the same reason every other balance
+     * figure in this app can: installment_amount is principal_amount
+     * divided and rounded, so monthly_due × term doesn't land on exactly
+     * principal_amount + nominal interest — remaining_balance already
+     * carries that same small remainder from disbursement onward.
+     */
+    public function getPayoffAmountAttribute(): ?float
+    {
+        if (! in_array($this->status, ['active', 'overdue'], true) || $this->current_installment_number === null) {
+            return null;
+        }
+
+        $futurePeriods = max(0, $this->effective_term_months - $this->current_installment_number);
+        $interestPortion = round($this->monthly_due - (float) $this->installment_amount, 2);
+        $futureInterest = round($interestPortion * $futurePeriods, 2);
+
+        return max(0, round((float) $this->remaining_balance - $futureInterest, 2));
+    }
+
+    /**
+     * How much future interest paying off today, instead of on schedule,
+     * waives — for display ("pay now and save ₱X").
+     */
+    public function getInterestSavedAttribute(): float
+    {
+        if ($this->payoff_amount === null) {
+            return 0.0;
+        }
+
+        return round((float) $this->remaining_balance - $this->payoff_amount, 2);
+    }
+
+    /**
+     * Whether this loan was closed out via an early payoff (waiving future
+     * interest) rather than by running its full course — read back from the
+     * marker payOffEarly() leaves in its payment's notes, the same way
+     * getPenaltyChargedAttribute() distinguishes penalty-interest entries
+     * without a dedicated column.
+     */
+    public function getPaidOffEarlyAttribute(): bool
+    {
+        return $this->status === 'fully_paid'
+            && $this->payments->contains(fn (LoanPayment $payment) => str_contains($payment->notes ?? '', 'Paid off early'));
+    }
+
+    /**
      * Record a farmer payment against this loan, reducing the balance and
-     * closing the loan out once it reaches zero.
+     * closing the loan out once it reaches zero. A Prepayment for exactly
+     * the current payoff_amount is treated as an early payoff instead (see
+     * payOffEarly()) — everything else follows the normal period-by-period
+     * advancement below.
      */
     public function recordPayment(float $amount, ?string $notes, ?int $recordedBy, string $type = 'payment'): LoanPayment
     {
+        if ($type === 'prepayment' && $this->payoff_amount !== null && abs($amount - $this->payoff_amount) < 0.01) {
+            return $this->payOffEarly($amount, $notes, $recordedBy);
+        }
+
         $this->remaining_balance = max(0, round((float) $this->remaining_balance - $amount, 2));
         $this->status = $this->remaining_balance <= 0 ? 'fully_paid' : 'active';
 
@@ -334,19 +440,72 @@ class Loan extends Model
     }
 
     /**
-     * Applies a payment toward the current due period's running total and
-     * advances next_due_date one month at a time for every amount_due it
-     * fully covers — so a farmer making several payments toward the same
-     * period (or one large prepayment covering several periods at once)
-     * moves the due date forward automatically, without a manager having to
-     * edit it by hand. Applies identically to regular and batch loans, since
-     * both are plain Loan records going through this same method.
+     * Closes the loan out completely, waiving every remaining period's
+     * interest. Jumps straight to "fully paid" rather than routing through
+     * advanceDueDateForPayment()'s period-by-period loop, which can only
+     * close a period by paying its full nominal cost — the whole point of
+     * an early payoff is that future periods are NOT being paid in full.
+     * next_due_date is deliberately left as-is, matching how a loan paid
+     * off exactly on schedule already behaves (see advanceDueDateForPayment
+     * ()'s own early-exit once remaining_balance hits zero) — nothing reads
+     * it once the loan is closed; getInstallmentScheduleAttribute() uses
+     * status, not next_due_date, to tell "paid off early" from "in
+     * progress".
+     */
+    private function payOffEarly(float $amount, ?string $notes, ?int $recordedBy): LoanPayment
+    {
+        $waived = $this->interest_saved;
+
+        $this->remaining_balance = 0;
+        $this->current_period_paid = 0;
+        $this->carried_over_amount = 0;
+        $this->status = 'fully_paid';
+        $this->save();
+
+        $marker = $waived > 0 ? 'Paid off early — '.peso($waived).' in future interest waived.' : 'Paid off early.';
+
+        return $this->payments()->create([
+            'type' => 'prepayment',
+            'amount' => $amount,
+            'transaction_date' => now()->toDateString(),
+            'balance_after' => 0,
+            'notes' => trim($marker.($notes ? ' '.$notes : '')),
+            'recorded_by' => $recordedBy,
+        ]);
+    }
+
+    /**
+     * A full period's cost right now: the standard monthly_due, plus
+     * whatever shortfall a prior "partial" payment left behind. This is the
+     * amount a 'payment'/'prepayment' must clear to close the current
+     * period and roll forward to the next one.
+     */
+    private function currentPeriodCost(): float
+    {
+        return round($this->monthly_due + (float) $this->carried_over_amount, 2);
+    }
+
+    /**
+     * Applies a payment oldest-period-first: the payment (plus whatever was
+     * already paid toward the current period) is pooled, then that pool
+     * closes out as many full periods as it covers — one at a time, in due
+     * order, advancing next_due_date and clearing carried_over_amount for
+     * each one — before whatever's left over (less than a full period) is
+     * parked as progress toward the next open period. A single large
+     * prepayment can close several months at once this way, with the exact
+     * remainder carrying forward automatically. Applies identically to
+     * regular and batch loans, since both are plain Loan records going
+     * through this same method.
      *
      * A "partial" payment is the one exception: rather than leaving the
      * period open until it's topped up, it closes the period out
-     * immediately and rolls whatever's still short into carried_over_amount,
-     * which amount_due folds into the next period's due figure until it's
-     * paid off (see getAmountDueAttribute()).
+     * immediately — however much of it got paid — and rolls whatever's
+     * still short into carried_over_amount, which currentPeriodCost() folds
+     * into the next period's due figure until it's paid off.
+     *
+     * Amounts are rounded to 2 decimals at every step (pesos/centavos) so
+     * floating-point drift can never leave a fraction-of-a-centavo balance
+     * behind or loop forever chasing it.
      */
     private function advanceDueDateForPayment(float $amount, string $type): void
     {
@@ -360,18 +519,115 @@ class Loan extends Model
         $this->current_period_paid = round((float) $this->current_period_paid + $amount, 2);
 
         if ($type === 'partial') {
-            $this->carried_over_amount = max(0, round($this->amount_due - $this->current_period_paid, 2));
+            $periodCost = $this->currentPeriodCost();
+            $this->carried_over_amount = max(0, round($periodCost - $this->current_period_paid, 2));
             $this->current_period_paid = 0;
             $this->next_due_date = $this->next_due_date->copy()->addMonthNoOverflow();
 
             return;
         }
 
-        while ($this->amount_due > 0 && $this->current_period_paid >= $this->amount_due) {
-            $this->current_period_paid = round($this->current_period_paid - $this->amount_due, 2);
-            $this->carried_over_amount = 0;
-            $this->next_due_date = $this->next_due_date->copy()->addMonthNoOverflow();
+        $pool = $this->current_period_paid;
+        $this->current_period_paid = 0;
+
+        // A centavo's worth of float-rounding tolerance, so "pool exactly
+        // equals this period's cost" reliably closes the period instead of
+        // sometimes landing a hair short/over and either stalling the loop
+        // or leaving a phantom fraction of a centavo as "still owed".
+        $epsilon = 0.005;
+
+        while ($pool > $epsilon) {
+            $periodCost = $this->currentPeriodCost();
+
+            if ($pool + $epsilon >= $periodCost) {
+                $pool = round($pool - $periodCost, 2);
+                $this->carried_over_amount = 0;
+                $this->next_due_date = $this->next_due_date->copy()->addMonthNoOverflow();
+            } else {
+                $this->current_period_paid = $pool;
+                $pool = 0;
+            }
         }
+    }
+
+    /**
+     * Re-derive next_due_date/current_period_paid/carried_over_amount from
+     * this loan's own payment ledger, replayed from disbursement forward
+     * through the logic above — for loans whose schedule was corrupted by
+     * advanceDueDateForPayment()'s pre-fix bug (a payment reaching or
+     * exceeding one period's cost failed to advance the due date at all,
+     * silently stranding the overage). Leaves pending_disbursement/archived
+     * loans and penalty timestamps untouched.
+     *
+     * remaining_balance's own running subtraction was never part of this
+     * bug, so it's deliberately NOT recomputed from today's disburse()
+     * formula (monthly_due × term) — some real loans were disbursed under
+     * an earlier balance convention, and assuming today's formula applied
+     * retroactively would silently rewrite their actual terms. Instead the
+     * true starting balance is read back out of the ledger's own first
+     * entry, the replay is cross-checked against the loan's real current
+     * balance, and only loans where it matches get saved — anything else is
+     * reported back as a mismatch for a human to look at, rather than
+     * risking an incorrect write to real debt figures.
+     *
+     * @return array{changed: bool, mismatch: bool}
+     */
+    public function recalculateSchedule(): array
+    {
+        if (! $this->original_due_date || ! in_array($this->status, ['active', 'overdue', 'fully_paid'], true)) {
+            return ['changed' => false, 'mismatch' => false];
+        }
+
+        $ledger = $this->payments()
+            ->whereIn('type', ['payment', 'prepayment', 'partial', 'interest'])
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        $actualBalance = (float) $this->remaining_balance;
+        $workingBalance = $actualBalance;
+
+        if ($first = $ledger->first()) {
+            $workingBalance = $first->type === 'interest'
+                ? round((float) $first->balance_after - (float) $first->amount, 2)
+                : round((float) $first->balance_after + (float) $first->amount, 2);
+        }
+
+        $this->next_due_date = $this->original_due_date;
+        $this->current_period_paid = 0;
+        $this->carried_over_amount = 0;
+        $this->remaining_balance = $workingBalance;
+
+        foreach ($ledger as $entry) {
+            if ($entry->type === 'interest') {
+                $this->remaining_balance = round((float) $this->remaining_balance + (float) $entry->amount, 2);
+                $this->next_due_date = $this->next_due_date->copy()->addMonthNoOverflow();
+
+                continue;
+            }
+
+            $this->remaining_balance = max(0, round((float) $this->remaining_balance - (float) $entry->amount, 2));
+            $this->advanceDueDateForPayment((float) $entry->amount, $entry->type);
+        }
+
+        $mismatch = abs((float) $this->remaining_balance - $actualBalance) >= 0.01;
+
+        // The replayed balance is only a cross-check, never the value that
+        // gets saved — the loan's real, already-correct balance is what's
+        // kept either way.
+        $this->remaining_balance = $actualBalance;
+
+        $this->status = match (true) {
+            $this->remaining_balance <= 0 => 'fully_paid',
+            $this->next_due_date->isPast() => 'overdue',
+            default => 'active',
+        };
+
+        if (! $mismatch) {
+            $this->save();
+        }
+
+        return ['changed' => ! $mismatch, 'mismatch' => $mismatch];
     }
 
     /**

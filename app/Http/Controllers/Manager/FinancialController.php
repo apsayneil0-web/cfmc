@@ -18,7 +18,6 @@ class FinancialController extends Controller
     public function index()
     {
         $expenses = Expense::with('recordedBy')
-            ->orderByDesc('expense_date')
             ->orderByDesc('created_at')
             ->get();
 

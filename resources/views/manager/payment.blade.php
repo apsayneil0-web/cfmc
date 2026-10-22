@@ -176,7 +176,7 @@
                         <select name="loan_id" id="recordPaymentLoanSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
                             <option value="" disabled selected>Select a loan</option>
                             @forelse($payableLoans as $loan)
-                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->amount_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}">
+                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->amount_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}" data-remaining-principal="{{ $loan->remaining_principal }}" data-current-interest="{{ round($loan->monthly_due - $loan->installment_amount, 2) }}" data-payoff-amount="{{ $loan->payoff_amount }}" data-interest-saved="{{ $loan->interest_saved }}">
                                 LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — {{ $loan->farmer->full_name }} (Balance: {{ peso($loan->remaining_balance) }})
                             </option>
                             @empty
@@ -192,6 +192,19 @@
                             <option value="prepayment">Prepayment (ahead of the due date)</option>
                             <option value="partial">Partial Payment</option>
                         </select>
+                    </div>
+                    <div class="mb-3 d-none bg-success-subtle border border-success-subtle rounded-3 p-3" id="recordPaymentPayoffPreview">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-semibold small text-success"><i class="fas fa-flag-checkered me-1"></i>Pay off this loan today</span>
+                            <button type="button" class="btn btn-sm btn-success" id="recordPaymentPayFullBtn">Pay full amount</button>
+                        </div>
+                        <div class="row g-2 small">
+                            <div class="col-6"><span class="text-muted">Remaining principal:</span> <span id="recordPaymentPrincipalOut" class="fw-medium"></span></div>
+                            <div class="col-6"><span class="text-muted">Current month interest:</span> <span id="recordPaymentInterestOut" class="fw-medium"></span></div>
+                            <div class="col-6"><span class="text-muted">Payoff amount:</span> <span id="recordPaymentPayoffOut" class="fw-semibold text-success"></span></div>
+                            <div class="col-6"><span class="text-muted">Interest saved:</span> <span id="recordPaymentSavedOut" class="fw-semibold text-success"></span></div>
+                        </div>
+                        <p class="text-muted small mb-0 mt-2">Paying this exact amount as a Prepayment waives the remaining months' interest and closes the loan.</p>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Payment Amount <span class="text-danger">*</span></label>
@@ -434,7 +447,48 @@
         }
     }
 
-    document.getElementById('recordPaymentTypeSelect')?.addEventListener('change', recordPaymentAutoFillAmount);
+    document.getElementById('recordPaymentTypeSelect')?.addEventListener('change', function () {
+        recordPaymentAutoFillAmount();
+        recordPaymentUpdatePayoffPreview();
+    });
+
+    function pesoFormat(value) {
+        return '₱' + parseFloat(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // The payoff preview (remaining principal / current month interest /
+    // payoff amount / interest saved) only makes sense for a Prepayment —
+    // a Regular or Partial payment doesn't waive anything, so it's hidden
+    // for those instead of showing numbers that don't apply.
+    function recordPaymentUpdatePayoffPreview() {
+        var loanSelect = document.getElementById('recordPaymentLoanSelect');
+        var typeSelect = document.getElementById('recordPaymentTypeSelect');
+        var preview = document.getElementById('recordPaymentPayoffPreview');
+        var option = loanSelect.options[loanSelect.selectedIndex];
+        var payoffAmount = option ? option.getAttribute('data-payoff-amount') : null;
+
+        if (typeSelect.value !== 'prepayment' || !payoffAmount) {
+            preview.classList.add('d-none');
+
+            return;
+        }
+
+        document.getElementById('recordPaymentPrincipalOut').textContent = pesoFormat(option.getAttribute('data-remaining-principal') || 0);
+        document.getElementById('recordPaymentInterestOut').textContent = pesoFormat(option.getAttribute('data-current-interest') || 0);
+        document.getElementById('recordPaymentPayoffOut').textContent = pesoFormat(payoffAmount);
+        document.getElementById('recordPaymentSavedOut').textContent = pesoFormat(option.getAttribute('data-interest-saved') || 0);
+        preview.classList.remove('d-none');
+    }
+
+    document.getElementById('recordPaymentPayFullBtn')?.addEventListener('click', function () {
+        var loanSelect = document.getElementById('recordPaymentLoanSelect');
+        var option = loanSelect.options[loanSelect.selectedIndex];
+        var payoffAmount = option ? option.getAttribute('data-payoff-amount') : null;
+
+        if (payoffAmount) {
+            document.getElementById('recordPaymentAmount').value = parseFloat(payoffAmount).toFixed(2);
+        }
+    });
 
     document.getElementById('recordPaymentLoanSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];
@@ -459,6 +513,8 @@
             amountInput.removeAttribute('max');
             hint.textContent = '';
         }
+
+        recordPaymentUpdatePayoffPreview();
     });
 
     // Every entry recorded here is a contribution: a farmer's very first one

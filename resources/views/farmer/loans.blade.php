@@ -37,48 +37,7 @@
         <div class="col-6 col-md-3"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $activeLoan->collateral ?? '—' }}</p></div>
     </div>
 
-    @if(!empty($activeLoan->installment_schedule))
-    <h4 class="text-sm fw-semibold text-dark px-4 px-md-6 mb-3">Repayment Schedule</h4>
-    <div class="px-4 px-md-6 mb-4">
-        <div class="loan-timeline">
-            @foreach($activeLoan->installment_schedule as $row)
-            <div class="timeline-row">
-                <div class="timeline-marker timeline-marker-{{ $row->status }}">
-                    @if($row->status === 'paid')
-                    <i class="fas fa-check"></i>
-                    @endif
-                </div>
-                <div class="timeline-content">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="fw-semibold text-dark">
-                                {{ $row->due_date->format('M d, Y') }}
-                                @if($row->status === 'late')
-                                <span class="badge bg-danger ms-1">LATE</span>
-                                @endif
-                            </div>
-                            <div class="small text-muted">{{ $row->number }} of {{ $activeLoan->effective_term_months }}</div>
-                        </div>
-                        <div class="text-end">
-                            <div class="fw-semibold {{ $row->status === 'paid' ? 'text-muted text-decoration-line-through' : 'text-primary' }}">{{ peso($row->amount) }}</div>
-                            <button type="button" class="btn btn-sm btn-link p-0 text-muted text-decoration-none installment-toggle" data-target="installmentDetail{{ $activeLoan->id }}-{{ $row->number }}" aria-expanded="false">
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="small text-muted mt-1 d-none" id="installmentDetail{{ $activeLoan->id }}-{{ $row->number }}">
-                        Principal: {{ peso($activeLoan->installment_amount) }} &bull; Interest: {{ peso($activeLoan->monthly_due - $activeLoan->installment_amount) }}
-                        @if($row->status === 'current' && $activeLoan->carried_over_amount > 0)
-                        <br>Includes {{ peso($activeLoan->carried_over_amount) }} carried over from a previous partial payment.
-                        @endif
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-        <p class="text-muted small mb-0 mt-2"><i class="fas fa-info-circle me-1"></i> This is a projected schedule based on your current due date. Payments are recorded by your CFMC Manager &mdash; visit or contact the cooperative office to make a payment.</p>
-    </div>
-    @endif
+    <x-loan-repayment-schedule :loan="$activeLoan" />
 
     <h4 class="text-sm fw-semibold text-dark px-4 px-md-6 mb-2">Payment &amp; Interest History</h4>
     <div class="table-responsive">
@@ -92,7 +51,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($activeLoan->payments->sortBy('created_at') as $payment)
+                @forelse($activeLoan->payments->sortByDesc('created_at') as $payment)
                 <tr>
                     <td class="px-4 px-md-6 small" data-label="Date">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small" data-label="Type">
@@ -169,6 +128,8 @@
         <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
     </div>
 
+    <x-loan-repayment-schedule :loan="$loan" :padded="false" />
+
     <h4 class="text-sm fw-semibold text-dark mb-2">Payment &amp; Interest History</h4>
     <div class="table-responsive" style="max-height: 300px;">
         <table class="table table-sm mb-0">
@@ -181,7 +142,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($loan->payments->sortBy('created_at') as $payment)
+                @forelse($loan->payments->sortByDesc('created_at') as $payment)
                 <tr>
                     <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
                     <td class="small">
