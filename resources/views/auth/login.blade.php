@@ -100,13 +100,10 @@
             place-items: center;
             width: 4rem;
             height: 4rem;
-            margin: 0 auto 1.25rem;
-            border-radius: 1.1rem;
-            background: linear-gradient(135deg, var(--brand-success), var(--palette-field-hover) 55%, var(--brand-primary));
-            box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--palette-field) 45%, transparent);
-            color: #fff;
+            margin: 0 auto 1rem;
+            color: var(--palette-field);
         }
-        .brand-mark svg { width: 2rem; height: 2rem; }
+        .brand-mark svg { width: 3.25rem; height: 3.25rem; }
         .title { font-size: 2rem; font-weight: 600; line-height: 1.1; color: var(--text-primary); margin-bottom: 0.5rem; }
         .subtitle { color: var(--text-secondary); font-size: 0.95rem; }
 
@@ -243,7 +240,8 @@
 
             <div class="header">
                 <div class="brand-mark">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.97 0 9-4.03 9-9-4.97 0-9 4.03-9 9Z"/><path d="M12 22c-4.97 0-9-4.03-9-9 4.97 0 9 4.03 9 9Z"/><path d="M12 22V8"/><path d="M12 8c0-3.31 2.69-6 6-6-.5 3-2.5 5.5-6 6Z"/><path d="M12 8C12 4.69 9.31 2 6 2c.5 3 2.5 5.5 6 6Z"/></svg>
+                    {{-- Same sprout as the landing page logo: a stem and two outlined leaves. --}}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V9"/><path d="M12 14c-4.2 0-7.2-3-7.2-7.2 4.2 0 7.2 3 7.2 7.2Z"/><path d="M12 14c4.2 0 7.2-3 7.2-7.2-4.2 0-7.2 3-7.2 7.2Z"/></svg>
                 </div>
                 <h1 class="title">Welcome Back</h1>
                 <p class="subtitle">Sign in to your CFMC cooperative account</p>
@@ -272,7 +270,7 @@
                             autofocus
                             placeholder="Enter username or email"
                         >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
                     </div>
                     @error('username')
                         <div class="error">{{ $message }}</div>
@@ -291,9 +289,9 @@
                             placeholder="••••••••"
                             style="padding-right: 2.6rem;"
                         >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
-                            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                     </div>
                     @error('password')
