@@ -81,13 +81,8 @@
                     </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $user->Phonenumber ?? 'N/A' }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">
-                        @if($user->roleID == 1)
+                        @if($user->roleID == 1 || $user->temp_password)
                         <span>••••••••••</span>
-                        @elseif($user->temp_password)
-                        <span class="d-flex align-items-center gap-2">
-                            <span class="temp-password-mask" data-password="{{ $user->temp_password }}">••••••••••</span>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Show/hide password" onclick="toggleTempPassword(this)"><i class="fas fa-eye"></i></button>
-                        </span>
                         @else
                         &mdash;
                         @endif
@@ -941,19 +936,6 @@
     document.getElementById('createModal').addEventListener('hidden.bs.modal', function() {
         resetCreateForm();
     });
-
-    // Reveal/hide a farmer's system-generated temporary password in the table.
-    function toggleTempPassword(button) {
-        var mask = button.previousElementSibling;
-        var icon = button.querySelector('i');
-        if (mask.textContent === mask.dataset.password) {
-            mask.textContent = '••••••••••';
-            icon.className = 'fas fa-eye';
-        } else {
-            mask.textContent = mask.dataset.password;
-            icon.className = 'fas fa-eye-slash';
-        }
-    }
 
     // Toggle password visibility
     document.getElementById('togglePassword').addEventListener('click', function() {
