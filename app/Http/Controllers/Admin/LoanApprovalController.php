@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\LoanBatch;
 use App\Models\LoanRequest;
 use App\Models\Notification;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class LoanApprovalController extends Controller
 {
@@ -245,6 +247,12 @@ class LoanApprovalController extends Controller
 
         $loan_request->update(['status' => 'denied', 'denial_reason' => $validated['denial_reason']]);
 
+        // Permanent audit entry — denial_reason itself is a single mutable
+        // column that gets overwritten if this request is ever denied again
+        // after being resubmitted, so this is the one place the original
+        // reason survives for good.
+        ActivityLogger::log(Auth::user(), 'loan_request.denied', "Denied {$loan_request->farmer->full_name}'s loan request. Reason: {$validated['denial_reason']}", $loan_request);
+
         $this->notifyFarmerOfDecision($loan_request, 'loan_denied', 'Loan Request Denied', 'Your loan request for '.peso($loan_request->requested_amount).' has been denied. Reason: '.$validated['denial_reason']);
 
         return redirect()->route('admin.loan-approval')
@@ -306,6 +314,8 @@ class LoanApprovalController extends Controller
         LoanRequest::whereIn('id', $pendingRequests->pluck('id'))->update(['status' => 'denied', 'denial_reason' => $validated['denial_reason']]);
 
         foreach ($pendingRequests as $loan_request) {
+            ActivityLogger::log(Auth::user(), 'loan_request.denied', "Denied {$loan_request->farmer->full_name}'s loan request as part of {$batch->label}. Reason: {$validated['denial_reason']}", $loan_request);
+
             $this->notifyFarmerOfDecision($loan_request, 'loan_denied', 'Loan Request Denied', 'Your loan request for '.peso($loan_request->requested_amount)." as part of {$batch->label} has been denied. Reason: ".$validated['denial_reason']);
         }
 

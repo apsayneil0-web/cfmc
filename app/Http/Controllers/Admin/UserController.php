@@ -64,7 +64,7 @@ class UserController extends Controller
             'profile_picture' => 'nullable|image|max:2048',
             'username' => 'required|string|max:255|unique:users,username',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|string|min:6',
+            'password' => ['required', 'string', User::passwordComplexityRule()],
             'Phonenumber' => 'nullable|string|max:20',
         ]);
 
@@ -434,7 +434,7 @@ class UserController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'string', User::passwordComplexityRule(), 'confirmed'],
         ]);
 
         if ($validator->fails()) {

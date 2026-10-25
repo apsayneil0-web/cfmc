@@ -278,6 +278,165 @@ class Loan extends Model
     }
 
     /**
+     * Every system-applied charge for falling behind — missed-due-date
+     * interest and the grace/penalty charges alike, both stored as the same
+     * 'interest' ledger type — summed and counted together for the "Late
+     * charges added" line of the balance breakdown.
+     */
+    public function getLateChargesAttribute(): array
+    {
+        $charges = $this->payments->where('type', 'interest');
+
+        return [
+            'total' => round((float) $charges->sum('amount'), 2),
+            'count' => $charges->count(),
+        ];
+    }
+
+    /**
+     * A human-readable version of this loan's full history, for display: a
+     * synthetic "loan released" row (the disbursement isn't a ledger entry),
+     * followed by one row per payment/interest entry, each narrated against
+     * a replay of advanceDueDateForPayment() so it can say which due date a
+     * payment was for, whether it landed on time, and what the due date
+     * became afterward.
+     *
+     * The replay runs against a *clone*, never this loan's own loaded
+     * attributes — private methods are callable across instances of the
+     * same class in PHP, so the clone can still drive
+     * advanceDueDateForPayment()/currentPeriodCost() unchanged without this
+     * accessor corrupting the real $loan the rest of the page is rendering
+     * from. remaining_balance is replayed too (same ledger-derived
+     * starting-balance approach as recalculateSchedule()), purely so
+     * advanceDueDateForPayment()'s own "nothing left to advance" guard
+     * behaves correctly throughout — the displayed "balance" column always
+     * comes straight from each entry's own stored balance_after, never from
+     * the replay.
+     */
+    public function getNarratedHistoryAttribute(): array
+    {
+        $rows = [];
+
+        if ($this->disbursed_at) {
+            $totalToRepay = round($this->monthly_due * $this->repayment_terms_months, 2);
+            $rate = rtrim(rtrim(number_format((float) $this->interest_rate, 2), '0'), '.');
+
+            $rows[] = [
+                'date' => $this->disbursed_at,
+                'summary' => sprintf(
+                    '%s given in %s. Total to repay set to %s (includes %d months of %s%% interest).',
+                    peso($this->principal_amount),
+                    str_replace('_', ' ', $this->disbursement_method ?? 'cash'),
+                    peso($totalToRepay),
+                    $this->repayment_terms_months,
+                    $rate
+                ),
+                'paid' => null,
+                'charged' => null,
+                'balance' => $totalToRepay,
+            ];
+        }
+
+        if (! $this->original_due_date) {
+            return $rows;
+        }
+
+        $ledger = $this->payments()
+            ->whereIn('type', ['payment', 'prepayment', 'partial', 'interest'])
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        $clone = clone $this;
+        $clone->next_due_date = $this->original_due_date;
+        $clone->current_period_paid = 0;
+        $clone->carried_over_amount = 0;
+
+        if ($first = $ledger->first()) {
+            $clone->remaining_balance = $first->type === 'interest'
+                ? round((float) $first->balance_after - (float) $first->amount, 2)
+                : round((float) $first->balance_after + (float) $first->amount, 2);
+        }
+
+        foreach ($ledger as $entry) {
+            $dueBefore = $clone->next_due_date->copy();
+
+            if ($entry->type === 'interest') {
+                $clone->remaining_balance = round((float) $clone->remaining_balance + (float) $entry->amount, 2);
+                $clone->next_due_date = $dueBefore->copy()->addMonthNoOverflow();
+
+                $rows[] = [
+                    'date' => $entry->transaction_date,
+                    'summary' => $entry->notes ?: 'Interest applied for a missed due date.',
+                    'paid' => null,
+                    'charged' => (float) $entry->amount,
+                    'balance' => (float) $entry->balance_after,
+                ];
+
+                continue;
+            }
+
+            if (str_contains($entry->notes ?? '', 'Paid off early')) {
+                $clone->remaining_balance = 0;
+                $clone->current_period_paid = 0;
+                $clone->carried_over_amount = 0;
+
+                $rows[] = [
+                    'date' => $entry->transaction_date,
+                    'summary' => $entry->notes,
+                    'paid' => (float) $entry->amount,
+                    'charged' => null,
+                    'balance' => (float) $entry->balance_after,
+                ];
+
+                continue;
+            }
+
+            $clone->remaining_balance = max(0, round((float) $clone->remaining_balance - (float) $entry->amount, 2));
+            $clone->advanceDueDateForPayment((float) $entry->amount, $entry->type);
+
+            $dueAfter = $clone->next_due_date->copy();
+            $monthsClosed = (int) round($dueBefore->diffInMonths($dueAfter));
+
+            $summary = match (true) {
+                $entry->type === 'partial' => sprintf(
+                    'Partial payment for the %s due date — %s carried forward. Next due %s.',
+                    $dueBefore->format('M j, Y'),
+                    peso((float) $clone->carried_over_amount),
+                    $dueAfter->format('M j, Y')
+                ),
+                $monthsClosed === 0 => sprintf(
+                    'Payment toward the %s due date — not yet enough to close it.',
+                    $dueBefore->format('M j, Y')
+                ),
+                $monthsClosed === 1 => $entry->transaction_date->lte($dueBefore)
+                    ? sprintf('On time, for the %s due date. Next due %s.', $dueBefore->format('M j, Y'), $dueAfter->format('M j, Y'))
+                    : sprintf('Counted for the %s due date. Next due %s.', $dueBefore->format('M j, Y'), $dueAfter->format('M j, Y')),
+                default => sprintf(
+                    'Covers %d installments starting %s. Next due %s.',
+                    $monthsClosed,
+                    $dueBefore->format('M j, Y'),
+                    $dueAfter->format('M j, Y')
+                ),
+            };
+
+            if ($entry->notes) {
+                $summary .= ' '.$entry->notes;
+            }
+
+            $rows[] = [
+                'date' => $entry->transaction_date,
+                'summary' => $summary,
+                'paid' => (float) $entry->amount,
+                'charged' => null,
+                'balance' => (float) $entry->balance_after,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
      * Total interest: the contractual interest already folded into
      * remaining_balance at disbursement (monthly_due * term - principal),
      * plus any extra overdue/grace interest charged since. Excludes the

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class LoanRequest extends Model
 {
@@ -50,6 +51,17 @@ class LoanRequest extends Model
     public function loan(): HasOne
     {
         return $this->hasOne(Loan::class);
+    }
+
+    /**
+     * Permanent audit trail for this request (denials, resubmissions) — see
+     * ActivityLogger. Kept even after denial_reason itself is overwritten
+     * by a later decision, so a Manager can still see what was wrong the
+     * first time around.
+     */
+    public function activityLogs(): MorphMany
+    {
+        return $this->morphMany(ActivityLog::class, 'subject')->latest();
     }
 
     /**

@@ -86,9 +86,18 @@
                     <td class="px-4 px-md-6 py-4">{{ $group->loans->count() }} farmer(s)</td>
                     <td class="px-4 px-md-6 py-4">{{ peso($group->loans->sum('principal_amount')) }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($group->loans->sum('remaining_balance')) }}</td>
-                    <td class="px-4 px-md-6 py-4">
-                        @foreach($group->loans->groupBy(fn($loan) => $loan->archived_at ? 'archived' : $loan->status) as $status => $members)
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $members->count() }} {{ ucwords(str_replace('_', ' ', $status)) }}</span>
+                    <td class="px-4 px-md-6 py-4" style="min-width: 180px;">
+                        @php
+                            $statusBreakdown = $group->loans->groupBy(fn($loan) => $loan->archived_at ? 'archived' : $loan->status);
+                            $statusColors = ['active' => 'success', 'overdue' => 'danger', 'fully_paid' => 'secondary', 'pending_disbursement' => 'warning', 'archived' => 'dark'];
+                        @endphp
+                        <div class="progress mb-1" style="height: 6px;">
+                            @foreach($statusBreakdown as $status => $members)
+                            <div class="progress-bar bg-{{ $statusColors[$status] ?? 'secondary' }}" style="width: {{ $group->loans->count() > 0 ? round($members->count() / $group->loans->count() * 100) : 0 }}%"></div>
+                            @endforeach
+                        </div>
+                        @foreach($statusBreakdown as $status => $members)
+                        <span class="badge bg-{{ $statusColors[$status] ?? 'secondary' }}-subtle text-{{ $statusColors[$status] ?? 'secondary' }} border border-{{ $statusColors[$status] ?? 'secondary' }}-subtle me-1">{{ $members->count() }} {{ ucwords(str_replace('_', ' ', $status)) }}</span>
                         @endforeach
                     </td>
                     <td class="px-4 px-md-6 py-4">
@@ -113,6 +122,30 @@
      first row's modals out of the table, breaking every row after the first. --}}
 @foreach($batchGroups as $group)
 <x-modal id="batchDetailModal{{ $group->batch->id }}" title="{{ $group->batch->label }} Members" size="modal-xl">
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-4">
+            <div class="border rounded-3 p-3">
+                <p class="text-muted small mb-1">Total Principal</p>
+                <p class="fw-semibold mb-0">{{ peso($group->loans->sum('principal_amount')) }}</p>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="border rounded-3 p-3">
+                <p class="text-muted small mb-1">Total Outstanding</p>
+                <p class="fw-semibold mb-0">{{ peso($group->loans->sum('remaining_balance')) }}</p>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="border rounded-3 p-3">
+                <p class="text-muted small mb-1">Status of {{ $group->loans->count() }} loan(s)</p>
+                <p class="mb-0">
+                    @foreach($group->loans->groupBy(fn($loan) => $loan->archived_at ? 'archived' : $loan->status) as $status => $members)
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $members->count() }} {{ ucwords(str_replace('_', ' ', $status)) }}</span>
+                    @endforeach
+                </p>
+            </div>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table table-sm table-hover mb-0">
             <thead class="table-light">
@@ -210,41 +243,59 @@
     </div>
     @endif
 
-    <h4 class="text-sm fw-semibold text-dark mb-2">Payment &amp; Interest History</h4>
-    <div class="table-responsive" style="max-height: 240px;">
+    @if(in_array($loan->status, ['active', 'overdue', 'fully_paid'], true))
+    <h4 class="text-sm fw-semibold text-dark mb-2">How the Balance Adds Up</h4>
+    <div class="border rounded-3 p-3 mb-3 small">
+        <div class="d-flex justify-content-between mb-1">
+            <span>Total to repay ({{ peso($loan->principal_amount) }} borrowed + {{ peso(round($loan->monthly_due * $loan->repayment_terms_months - $loan->principal_amount, 2)) }} interest for {{ $loan->repayment_terms_months }} months)</span>
+            <span class="fw-medium">{{ peso(round($loan->monthly_due * $loan->repayment_terms_months, 2)) }}</span>
+        </div>
+        @if($loan->late_charges['count'] > 0)
+        <div class="d-flex justify-content-between mb-1 text-danger">
+            <span>Late charges added ({{ $loan->late_charges['count'] }} charge{{ $loan->late_charges['count'] === 1 ? '' : 's' }} for missed due dates)</span>
+            <span class="fw-medium">+ {{ peso($loan->late_charges['total']) }}</span>
+        </div>
+        @endif
+        <div class="d-flex justify-content-between mb-1">
+            <span>Paid by farmer ({{ $loan->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->count() }} payment{{ $loan->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->count() === 1 ? '' : 's' }})</span>
+            <span class="fw-medium">&minus; {{ peso($loan->amount_paid) }}</span>
+        </div>
+        <hr class="my-2">
+        <div class="d-flex justify-content-between fw-semibold">
+            <span>Remaining balance</span>
+            <span>{{ peso($loan->remaining_balance) }}</span>
+        </div>
+    </div>
+    @endif
+
+    <h4 class="text-sm fw-semibold text-dark mb-2">History</h4>
+    <div class="table-responsive" style="max-height: 280px;">
         <table class="table table-sm mb-0">
             <thead class="table-light">
                 <tr>
                     <th class="small">Date</th>
-                    <th class="small">Type</th>
-                    <th class="small">Amount</th>
-                    <th class="small">Balance After</th>
+                    <th class="small">What Happened</th>
+                    <th class="small text-end">Paid</th>
+                    <th class="small text-end">Charged</th>
+                    <th class="small text-end">Balance</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($loan->payments->sortByDesc('created_at') as $payment)
+                @forelse(array_reverse($loan->narrated_history) as $row)
                 <tr>
-                    <td class="small">{{ $payment->transaction_date->format('M d, Y') }}</td>
-                    <td class="small">
-                        @if($payment->type === 'payment')
-                        <span class="badge bg-success-subtle text-success border border-success-subtle">Payment</span>
-                        @elseif($payment->type === 'prepayment')
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Prepayment</span>
-                        @elseif($payment->type === 'partial')
-                        <span class="badge bg-info-subtle text-info border border-info-subtle">Partial Payment</span>
-                        @else
-                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Interest</span>
-                        @endif
-                    </td>
-                    <td class="small">{{ $payment->type === 'interest' ? '+' : '-' }}{{ peso($payment->amount) }}</td>
-                    <td class="small">{{ peso($payment->balance_after) }}</td>
+                    <td class="small text-nowrap">{{ $row['date']->format('M d, Y') }}</td>
+                    <td class="small">{{ $row['summary'] }}</td>
+                    <td class="small text-end">{{ $row['paid'] !== null ? '-'.peso($row['paid']) : '' }}</td>
+                    <td class="small text-end text-danger">{{ $row['charged'] !== null ? '+'.peso($row['charged']) : '' }}</td>
+                    <td class="small text-end fw-medium">{{ peso($row['balance']) }}</td>
                 </tr>
                 @empty
-                <tr><td colspan="4" class="text-center text-muted small py-3">No transactions yet.</td></tr>
+                <tr><td colspan="5" class="text-center text-muted small py-3">No transactions yet.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+    <p class="text-muted small mb-0 mt-2">Only <strong>Paid</strong> is money the farmer gave. <strong>Charged</strong> is added to what the farmer owes.</p>
 
     <div class="mt-3 text-end">
         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchModal('viewModal{{ $loan->id }}', 'batchDetailModal{{ $group->batch->id }}')">

@@ -131,6 +131,7 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::get('/manager/loan-request', [LoanRequestController::class, 'index'])->name('manager.loan-request');
     Route::post('/manager/loan-request', [LoanRequestController::class, 'store'])->name('manager.loan-request.store');
     Route::put('/manager/loan-request/{loan_request}', [LoanRequestController::class, 'update'])->name('manager.loan-request.update');
+    Route::put('/manager/loan-request/{loan_request}/resubmit', [LoanRequestController::class, 'resubmit'])->name('manager.loan-request.resubmit');
     Route::post('/manager/loan-request/{loan_request}/finalize', [LoanRequestController::class, 'finalize'])->name('manager.loan-request.finalize');
     Route::post('/manager/loan-request/batch/{batch}/finalize', [LoanRequestController::class, 'finalizeBatch'])->name('manager.loan-request.batch-finalize');
     Route::patch('/manager/loan-request/{loan_request}/archive', [LoanRequestController::class, 'archive'])->name('manager.loan-request.archive');

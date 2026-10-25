@@ -107,16 +107,17 @@
                 <div class="form-group">
                     <label for="password">New Password</label>
                     <div class="input-wrap">
-                        <input type="password" id="password" name="password" required autofocus placeholder="••••••••" minlength="8">
+                        <input type="password" id="password" name="password" required autofocus placeholder="••••••••" minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" title="At least 8 characters, with uppercase, lowercase, a number, and a symbol.">
                         <button type="button" class="toggle-password" data-target="password" aria-label="Show password">
                             <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                     </div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.4rem;">At least 8 characters, with uppercase, lowercase, a number, and a symbol.</div>
                 </div>
                 <div class="form-group">
                     <label for="password_confirmation">Confirm Password</label>
                     <div class="input-wrap">
-                        <input type="password" id="password_confirmation" name="password_confirmation" required placeholder="••••••••" minlength="8">
+                        <input type="password" id="password_confirmation" name="password_confirmation" required placeholder="••••••••" minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$">
                         <button type="button" class="toggle-password" data-target="password_confirmation" aria-label="Show password">
                             <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>

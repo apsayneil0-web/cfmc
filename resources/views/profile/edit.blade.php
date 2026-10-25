@@ -63,10 +63,11 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">New Password</label>
-                        <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required minlength="8">
+                        <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" title="At least 8 characters, with uppercase, lowercase, a number, and a symbol.">
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+                        <div class="form-text">At least 8 characters, with uppercase, lowercase, a number, and a symbol.</div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Confirm New Password</label>

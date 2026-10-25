@@ -9,6 +9,7 @@ use App\Models\LoanAppointment;
 use App\Models\LoanBatch;
 use App\Models\LoanRequest;
 use App\Models\Notification;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -35,7 +36,7 @@ class LoanRequestController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch'])->visibleAccount();
+        $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch', 'activityLogs'])->visibleAccount();
 
         // Archived requests live in their own view ("View Archived",
         // ?archived=1; old ?status=archived links too). Only denied requests
@@ -125,6 +126,33 @@ class LoanRequestController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Full batches still awaiting the Administrator's approve/deny
+        // decision — read-only visibility only (mirrors
+        // LoanApprovalController::index()'s own query exactly); the Manager
+        // can see this stage now without switching roles, but the decision
+        // itself still only happens on the Admin's Loan Approval page.
+        $batchesWithAdministrator = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
+            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with('farmer')->orderBy('created_at', 'desc')])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->filter(fn (LoanBatch $batch) => $batch->is_full)
+            ->values();
+
+        // Batches already turned into loans — a lightweight summary only,
+        // linking out to Batch Loans (manager.batch-loan-management), which
+        // stays the one place their repayment is actually tracked/managed.
+        $batchesFinalized = LoanBatch::whereHas('loanRequests.loan')
+            ->with(['loanRequests.loan'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn (LoanBatch $batch) => (object) [
+                'batch' => $batch,
+                'loan_count' => $batch->loanRequests->filter(fn ($r) => $r->loan)->count(),
+                'total_principal' => $batch->loanRequests->sum(fn ($r) => $r->loan->principal_amount ?? 0),
+                'total_outstanding' => $batch->loanRequests->sum(fn ($r) => $r->loan->remaining_balance ?? 0),
+            ])
+            ->values();
+
         return view('manager.loan-request', [
             'requests' => $requests,
             'regularRequests' => $regularRequests,
@@ -132,7 +160,9 @@ class LoanRequestController extends Controller
             'farmers' => $farmers,
             'batches' => $batches,
             'batchesInProgress' => $batchesInProgress,
+            'batchesWithAdministrator' => $batchesWithAdministrator,
             'batchesReadyToFinalize' => $batchesReadyToFinalize,
+            'batchesFinalized' => $batchesFinalized,
             'purposes' => self::PURPOSES,
             'termOptions' => self::TERMS,
             'farmersIneligibleForNewRequest' => $farmersIneligibleForNewRequest,
@@ -269,6 +299,53 @@ class LoanRequestController extends Controller
 
         return redirect()->route('manager.loan-request')
             ->with('success', 'Loan request updated.');
+    }
+
+    /**
+     * Correct a denied request and send it back to the Administrator,
+     * instead of making the Manager re-encode it from scratch. Reuses the
+     * exact same validation a new/edited request goes through — including
+     * the batch capacity check, which matters here specifically: a denied
+     * batch member doesn't count toward its batch's 10-member cap (see
+     * LoanBatch::getMemberCountAttribute()), so without re-checking, a
+     * resubmitted member could push a batch that backfilled its freed slot
+     * past capacity. The original denial_reason is cleared from the live
+     * record here, but survives permanently in this request's ActivityLog
+     * entry (see deny()/denyBatch() in Admin\LoanApprovalController).
+     */
+    public function resubmit(Request $request, LoanRequest $loan_request)
+    {
+        abort_if($loan_request->status !== 'denied', 422, 'Only denied requests can be resubmitted.');
+        abort_if($loan_request->archived_at, 422, 'Restore this request from the archive before resubmitting it.');
+
+        $validated = $this->validateRequest($request, $loan_request->id);
+
+        $documentsPath = $loan_request->documents_path;
+        if ($request->hasFile('documents')) {
+            if ($documentsPath) {
+                Storage::disk('public')->delete($documentsPath);
+            }
+            $document = $request->file('documents');
+            $documentsPath = $document->storeAs('loan_documents', time().'_'.$document->getClientOriginalName(), 'public');
+        }
+
+        $loan_request->update([
+            'farmer_id' => $validated['farmer_id'],
+            'type' => $validated['type'],
+            'batch_id' => $validated['type'] === 'batch' ? $validated['batch_id'] : null,
+            'requested_amount' => $validated['requested_amount'],
+            'purpose' => $validated['purpose'],
+            'repayment_terms_months' => $validated['repayment_terms_months'],
+            'collateral' => $validated['collateral'] ?? null,
+            'documents_path' => $documentsPath,
+            'status' => 'pending',
+            'denial_reason' => null,
+        ]);
+
+        ActivityLogger::log(Auth::user(), 'loan_request.resubmitted', "Resubmitted {$loan_request->farmer->full_name}'s loan request to the Administrator after correcting it.", $loan_request);
+
+        return redirect()->route('manager.loan-request')
+            ->with('success', "{$loan_request->farmer->full_name}'s loan request has been corrected and resubmitted to the Administrator.");
     }
 
     /**

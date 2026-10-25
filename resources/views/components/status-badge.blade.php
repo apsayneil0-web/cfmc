@@ -11,6 +11,7 @@
         'archived' => 'secondary', 'inactive' => 'secondary', 'non-member' => 'secondary', 'cancelled' => 'secondary',
         'partial' => 'info',
         'member' => 'primary', 'in use' => 'primary', 'new' => 'primary', 'assigned' => 'primary',
+        'collecting members' => 'warning', 'with administrator' => 'info', 'ready to finalize' => 'success', 'finalized' => 'secondary',
         'cbu contribution' => 'info', 'cbu expense' => 'danger', 'billing' => 'info', 'loan payment' => 'primary', 'interest charge' => 'warning',
         'operational expense' => 'warning',
         'harvest payment (member)' => 'success', 'harvest payment (non-member)' => 'info',

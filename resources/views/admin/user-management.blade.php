@@ -370,12 +370,13 @@
                             <div class="col-12">
                                 <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
                                 <div class="input-group input-group-lg">
-                                    <input type="password" class="form-control" placeholder="Enter password" name="password" id="staffPasswordInput" required>
+                                    <input type="password" class="form-control" placeholder="Enter password" name="password" id="staffPasswordInput" minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" required>
                                     <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
-                                <div class="invalid-feedback">Please enter password.</div>
+                                <div class="form-text">At least 8 characters, with uppercase, lowercase, a number, and a symbol.</div>
+                                <div class="invalid-feedback">Password must be at least 8 characters, with uppercase, lowercase, a number, and a symbol.</div>
                             </div>
                         </div>
                     </div>
@@ -743,13 +744,13 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">New Password <span class="text-danger">*</span></label>
                         <div class="input-group input-group-lg">
-                            <input type="password" class="form-control" name="password" id="newPasswordInput" minlength="8" required>
+                            <input type="password" class="form-control" name="password" id="newPasswordInput" minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$" required>
                             <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('newPasswordInput', this)">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
-                        <div class="form-text">Minimum 8 characters.</div>
-                        <div class="invalid-feedback">Password must be at least 8 characters.</div>
+                        <div class="form-text">At least 8 characters, with uppercase, lowercase, a number, and a symbol.</div>
+                        <div class="invalid-feedback">Password must be at least 8 characters, with uppercase, lowercase, a number, and a symbol.</div>
                     </div>
                     <div class="mb-0">
                         <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>

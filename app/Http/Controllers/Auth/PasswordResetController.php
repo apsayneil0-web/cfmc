@@ -118,7 +118,7 @@ class PasswordResetController extends Controller
         }
 
         $request->validate([
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', User::passwordComplexityRule(), 'confirmed'],
         ]);
 
         $userId = $request->session()->get('password_reset_user_id');

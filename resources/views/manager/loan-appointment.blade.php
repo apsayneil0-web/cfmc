@@ -99,9 +99,9 @@
 
                             @if($appt->status === 'approved' && $appt->requested_amount && ! $appt->loan_request_id)
                                 @if($appt->user->farmer)
-                                <x-dropdown-item icon="fa-paper-plane" color="info" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}">Submit Loan Request to Admin</x-dropdown-item>
+                                <x-dropdown-item icon="fa-paper-plane" color="info" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}">Verify &amp; Send to Admin</x-dropdown-item>
                                 @else
-                                <li><span class="dropdown-item disabled text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle me-2 fa-fw"></i>Submit Loan Request to Admin</span></li>
+                                <li><span class="dropdown-item disabled text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle me-2 fa-fw"></i>Verify &amp; Send to Admin</span></li>
                                 @endif
                             @endif
 
@@ -154,7 +154,7 @@
                         @if($appt->user->farmer)
                         <div class="mt-3 text-end">
                             <button type="button" class="btn btn-info btn-sm text-white" onclick="switchModal('viewModal{{ $appt->id }}', 'submitLoanRequestModal{{ $appt->id }}')">
-                                <i class="fas fa-paper-plane me-1"></i> Submit for Loan Request
+                                <i class="fas fa-paper-plane me-1"></i> Verify &amp; Send to Admin
                             </button>
                         </div>
                         @else
@@ -170,7 +170,7 @@
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header bg-info text-white">
-                                <h5 class="modal-title fw-bold"><i class="fas fa-paper-plane me-2"></i>Submit for Loan Request</h5>
+                                <h5 class="modal-title fw-bold"><i class="fas fa-paper-plane me-2"></i>Verify &amp; Send to Admin</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -188,7 +188,7 @@
                                 <form action="{{ route('manager.loan-appointment.submit-loan-request', $appt) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-info text-white">
-                                        <i class="fas fa-paper-plane me-1"></i> Submit to Admin
+                                        <i class="fas fa-paper-plane me-1"></i> Verify &amp; Send to Admin
                                     </button>
                                 </form>
                             </div>
@@ -214,7 +214,7 @@
                                 <form action="{{ route('manager.loan-appointment.approve', $appt) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="btn btn-success">Approve</button>
+                                    <button type="submit" class="btn btn-success">Approve Appointment</button>
                                 </form>
                             </div>
                         </div>

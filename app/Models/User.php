@@ -7,11 +7,24 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Validation\Rules\Password;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * The password complexity bar for every place in the app that sets an
+     * account's password (self-service change, admin/manager reset, forgot-
+     * password, and manual account creation) — one shared definition so
+     * they can't drift apart. Combine with 'required', 'string', and
+     * 'confirmed' (where that field exists) at each call site.
+     */
+    public static function passwordComplexityRule(): Password
+    {
+        return Password::min(8)->mixedCase()->numbers()->symbols();
+    }
 
     /**
      * Get the role associated with the user.

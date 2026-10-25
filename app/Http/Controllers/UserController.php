@@ -194,7 +194,7 @@ class UserController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'string', User::passwordComplexityRule(), 'confirmed'],
         ]);
 
         if ($validator->fails()) {
