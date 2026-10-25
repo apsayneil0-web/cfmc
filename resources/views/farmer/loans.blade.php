@@ -125,7 +125,11 @@
         <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
         <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months</p></div>
+        @if($loan->paid_off_early)
+        <div class="col-6"><label class="text-muted small d-block">Interest Saved</label><p class="fw-medium mb-0 text-success">{{ peso($loan->waived_interest) }}</p></div>
+        @else
         <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
+        @endif
     </div>
 
     <x-loan-repayment-schedule :loan="$loan" :padded="false" />

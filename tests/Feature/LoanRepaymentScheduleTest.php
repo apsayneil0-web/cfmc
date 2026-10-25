@@ -177,6 +177,18 @@ class LoanRepaymentScheduleTest extends TestCase
 
         $this->assertEquals('fully_paid', $loan->status);
         $this->assertEquals(0.0, (float) $loan->remaining_balance);
+
+        // Regression check: a plain full Payment zeroes remaining_balance
+        // before advanceDueDateForPayment() ever runs, so next_due_date/
+        // current_installment_number stay frozen at month 1 — without the
+        // fully_paid branch in getInstallmentScheduleAttribute(), this
+        // schedule would still show "1 of 12, current" despite the loan
+        // being fully paid.
+        $schedule = $loan->installment_schedule;
+        $this->assertEquals('paid', $schedule[0]->status);
+        $this->assertTrue($schedule[0]->closing);
+        $this->assertEqualsWithDelta($fullBalance, $schedule[0]->amount, 0.01);
+        $this->assertEquals('collapsed', $schedule[1]->status);
     }
 
     public function test_payment_locks_the_loan_row_inside_a_transaction(): void

@@ -132,9 +132,8 @@ class Loan extends Model
      * persisted per-installment ledger. Installments before the current
      * next_due_date are assumed settled; the one at next_due_date is
      * "late" if the loan has gone overdue, otherwise "current"; the rest
-     * are "upcoming" — except for a loan closed via an early payoff
-     * (paid_off_early), where next_due_date never advanced through the
-     * periods it waived, so every row is shown as paid instead.
+     * are "upcoming". A fully paid loan is handled entirely differently —
+     * see fullyPaidInstallmentSchedule().
      */
     public function getInstallmentScheduleAttribute(): array
     {
@@ -144,12 +143,14 @@ class Loan extends Model
             return [];
         }
 
-        $paidOffEarly = $this->paid_off_early;
+        if ($this->status === 'fully_paid') {
+            return $this->fullyPaidInstallmentSchedule($currentNumber);
+        }
+
         $schedule = [];
 
         for ($number = 1; $number <= $this->effective_term_months; $number++) {
             $status = match (true) {
-                $paidOffEarly => 'paid',
                 $number < $currentNumber => 'paid',
                 $number === $currentNumber && $this->status === 'overdue' => 'late',
                 $number === $currentNumber => 'current',
@@ -175,6 +176,63 @@ class Loan extends Model
                     default => $this->monthly_due,
                 },
                 'status' => $status,
+            ];
+        }
+
+        return $schedule;
+    }
+
+    /**
+     * Schedule for a loan that has reached ₱0 balance. Every closing
+     * payment type (payment/prepayment/partial, and payOffEarly()) leaves
+     * current_installment_number frozen at the first period it never
+     * individually advanced through — advanceDueDateForPayment() exits the
+     * moment remaining_balance hits zero, before touching next_due_date.
+     * That frozen number ($anchor) is exactly the period the closing
+     * payment landed on:
+     *   - periods before it were genuinely settled one at a time (same
+     *     'paid'/monthly_due treatment as an active loan's past periods);
+     *   - the anchor period shows the real closing payment's own ledger
+     *     amount instead of a nominal monthly_due, since that one payment
+     *     may have covered several periods' worth at once (a lump
+     *     Payment/Prepayment, or payOffEarly()'s waived-interest payoff);
+     *   - periods after the anchor were never paid individually at all,
+     *     so instead of repeating "nothing was paid here on its own" once
+     *     per leftover period, they collapse into a single closing row.
+     */
+    private function fullyPaidInstallmentSchedule(int $anchor): array
+    {
+        $schedule = [];
+
+        for ($number = 1; $number < $anchor; $number++) {
+            $schedule[] = (object) [
+                'number' => $number,
+                'due_date' => $this->original_due_date->copy()->addMonthsNoOverflow($number - 1),
+                'amount' => $this->monthly_due,
+                'status' => 'paid',
+                'closing' => false,
+            ];
+        }
+
+        $closingPayment = $this->payments
+            ->whereIn('type', ['payment', 'prepayment', 'partial'])
+            ->sortBy([['transaction_date', 'asc'], ['id', 'asc']])
+            ->last();
+
+        $schedule[] = (object) [
+            'number' => $anchor,
+            'due_date' => $this->original_due_date->copy()->addMonthsNoOverflow($anchor - 1),
+            'amount' => $closingPayment ? (float) $closingPayment->amount : $this->monthly_due,
+            'status' => 'paid',
+            'closing' => true,
+            'closing_type' => $closingPayment?->type,
+        ];
+
+        if ($anchor < $this->effective_term_months) {
+            $schedule[] = (object) [
+                'status' => 'collapsed',
+                'from' => $anchor + 1,
+                'to' => $this->effective_term_months,
             ];
         }
 

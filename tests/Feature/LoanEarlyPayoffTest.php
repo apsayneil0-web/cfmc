@@ -134,9 +134,20 @@ class LoanEarlyPayoffTest extends TestCase
         $this->assertEquals('fully_paid', $loan->status);
         $this->assertTrue($loan->paid_off_early);
         $this->assertEquals(0.0, (float) $loan->remaining_balance);
-        foreach ($loan->installment_schedule as $row) {
-            $this->assertEquals('paid', $row->status);
-        }
+
+        // Paid off on installment 1 itself: that row shows the real payoff
+        // amount (not the nominal monthly_due), and the other 11 months —
+        // never individually paid — collapse into one closing row instead
+        // of each repeating "paid" with no amount of their own.
+        $schedule = $loan->installment_schedule;
+        $this->assertCount(2, $schedule);
+        $this->assertEquals('paid', $schedule[0]->status);
+        $this->assertEquals(1, $schedule[0]->number);
+        $this->assertTrue($schedule[0]->closing);
+        $this->assertEqualsWithDelta($payoff, $schedule[0]->amount, 0.01);
+        $this->assertEquals('collapsed', $schedule[1]->status);
+        $this->assertEquals(2, $schedule[1]->from);
+        $this->assertEquals(12, $schedule[1]->to);
     }
 
     public function test_payoff_after_some_installments_already_paid_matches_spec_example(): void
