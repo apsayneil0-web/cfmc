@@ -45,12 +45,22 @@ class MachineController extends Controller
 
         $existingTypes = Machine::whereNull('archived_at')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
 
+        // Type chips count what the current list (active or archived) holds.
+        $typeCounts = ($showArchived ? Machine::whereNotNull('archived_at') : Machine::whereNull('archived_at'))
+            ->whereNotNull('type')
+            ->selectRaw('type, count(*) as total')
+            ->groupBy('type')
+            ->orderBy('type')
+            ->pluck('total', 'type');
+
+        $viewMode = $request->string('view')->toString() === 'list' ? 'list' : 'cards';
+
         // Live "next serial" preview per known type, shown as a placeholder
         // hint on the Add/Edit form — the server still generates the real
         // one at save time, so a stale preview here is harmless.
         $serialPreview = $existingTypes->mapWithKeys(fn ($type) => [$type => Machine::generateSerialNumber($type)]);
 
-        return view('manager.machinery', compact('machines', 'stats', 'existingTypes', 'serialPreview', 'showArchived'));
+        return view('manager.machinery', compact('machines', 'stats', 'existingTypes', 'serialPreview', 'showArchived', 'typeCounts', 'viewMode'));
     }
 
     public function store(Request $request)
@@ -85,7 +95,10 @@ class MachineController extends Controller
         $machine->update(['archived_at' => now()]);
 
         return redirect()->route('manager.machinery')
-            ->with('success', "{$machine->name} archived.");
+            ->with('undo', [
+                'message' => "{$machine->name} archived.",
+                'url' => route('manager.machinery.unarchive', $machine),
+            ]);
     }
 
     /**
@@ -104,6 +117,10 @@ class MachineController extends Controller
         }
 
         $machine->update(['archived_at' => null]);
+
+        if (request()->boolean('undo')) {
+            return back()->with('undo_done', "{$machine->name} restored to the active fleet.");
+        }
 
         return redirect()->route('manager.machinery', ['archived' => 1])
             ->with('success', "{$machine->name} restored to the active fleet.");

@@ -8,7 +8,7 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
     /* Scaled up from Tailwind's defaults (12/14/16/18/20/24px) for readability
@@ -29,16 +29,16 @@
     /* Tailwind's gray scale is used directly in the views (text-gray-*,
        border-gray-*, bg-gray-*); re-tint it toward the Field & Grain
        neutrals so those utilities match the theme without editing markup. */
-    --color-gray-50: #f9f8f5;
+    --color-gray-50: #fafbf8;
     --color-gray-100: #efeee8;
-    --color-gray-200: #e4e2da;
+    --color-gray-200: #dde2da;
     --color-gray-300: #d6d3c9;
     --color-gray-400: #a3a69e;
-    --color-gray-500: #6b7069;
+    --color-gray-500: #5e625b;
     --color-gray-600: #4a5249;
     --color-gray-700: #3a4339;
     --color-gray-800: #2a342c;
-    --color-gray-900: #1f2a22;
+    --color-gray-900: #22261f;
 }
 
 /* =========================================================================
@@ -77,8 +77,8 @@
     --brand-success-text: var(--palette-field);
 
     --brand-danger: var(--palette-clay);
-    --brand-danger-hover: #9c4532;
-    --brand-danger-active: #833a2a;
+    --brand-danger-hover: #933d28;
+    --brand-danger-active: #7c3322;
     --brand-danger-light: var(--palette-clay-tint);
     --brand-danger-border: var(--palette-clay-border);
     --brand-danger-text: var(--palette-clay-text);
@@ -105,8 +105,8 @@
 
     /* Neutral (Bootstrap "secondary"): cancel / filter buttons, inactive */
     --brand-secondary: var(--palette-muted);
-    --brand-secondary-hover: #5a5f58;
-    --brand-secondary-active: #4b4f49;
+    --brand-secondary-hover: #4f534c;
+    --brand-secondary-active: #43473f;
     --brand-secondary-light: #efeee8;
     --brand-secondary-text: var(--palette-text-secondary);
     --brand-on-tone: #ffffff;
@@ -115,7 +115,7 @@
     --brand-bg: var(--palette-paper);
     --brand-surface: var(--palette-surface);
     --brand-surface-muted: var(--palette-surface-muted);
-    --brand-surface-hover: #f4f3ee;
+    --brand-surface-hover: #f3f5f1;
     --brand-border: var(--palette-stone);
     --brand-input-border: var(--palette-input-border);
     --brand-input-border-hover: var(--palette-input-border-hover);
@@ -123,7 +123,9 @@
     --text-secondary: var(--palette-text-secondary);
     --text-muted: var(--palette-muted);
     --focus-ring: rgba(47, 93, 58, 0.22);
-    --focus-ring-danger: rgba(181, 82, 59, 0.2);
+    --focus-ring-danger: rgba(169, 71, 47, 0.2);
+
+    --font-heading: 'Bitter', Georgia, 'Times New Roman', serif;
 
     --radius-sm: 0.5rem;
     --radius-md: 0.75rem;
@@ -140,19 +142,19 @@
     --bs-primary: var(--brand-primary);
     --bs-primary-rgb: 47, 93, 58;
     --bs-secondary: var(--brand-secondary);
-    --bs-secondary-rgb: 107, 112, 105;
+    --bs-secondary-rgb: 94, 98, 91;
     --bs-success: var(--brand-success);
     --bs-success-rgb: 47, 93, 58;
     --bs-danger: var(--brand-danger);
-    --bs-danger-rgb: 181, 82, 59;
+    --bs-danger-rgb: 169, 71, 47;
     --bs-warning: var(--brand-warning);
     --bs-warning-rgb: 200, 162, 74;
     --bs-info: var(--brand-info);
     --bs-info-rgb: 79, 111, 106;
     --bs-light: var(--brand-surface-muted);
-    --bs-light-rgb: 249, 248, 245;
+    --bs-light-rgb: 250, 251, 248;
     --bs-dark: var(--palette-ink);
-    --bs-dark-rgb: 31, 42, 34;
+    --bs-dark-rgb: 34, 38, 31;
 
     --bs-primary-text-emphasis: var(--brand-primary-text);
     --bs-primary-bg-subtle: var(--brand-primary-light);
@@ -180,20 +182,20 @@
     --bs-dark-border-subtle: var(--brand-input-border);
 
     --bs-body-color: var(--text-primary);
-    --bs-body-color-rgb: 31, 42, 34;
+    --bs-body-color-rgb: 34, 38, 31;
     --bs-body-bg: var(--brand-surface);
     --bs-body-bg-rgb: 255, 255, 255;
     --bs-body-font-family: var(--font-sans);
     --bs-emphasis-color: var(--palette-ink);
-    --bs-emphasis-color-rgb: 31, 42, 34;
+    --bs-emphasis-color-rgb: 34, 38, 31;
     --bs-heading-color: var(--text-primary);
     --bs-secondary-color: var(--text-muted);
-    --bs-secondary-color-rgb: 107, 112, 105;
+    --bs-secondary-color-rgb: 94, 98, 91;
     --bs-secondary-bg: var(--brand-surface-muted);
-    --bs-secondary-bg-rgb: 249, 248, 245;
+    --bs-secondary-bg-rgb: 250, 251, 248;
     --bs-tertiary-color: var(--text-muted);
     --bs-tertiary-bg: var(--brand-surface-muted);
-    --bs-tertiary-bg-rgb: 249, 248, 245;
+    --bs-tertiary-bg-rgb: 250, 251, 248;
     --bs-border-color: var(--brand-border);
     --bs-border-color-translucent: rgba(31, 42, 34, 0.1);
     --bs-link-color: var(--brand-primary);
@@ -224,6 +226,23 @@ body {
 
 body.bg-light {
     background-color: var(--brand-bg) !important;
+}
+
+/* Bitter for page/section headings and headline numbers; body text stays
+   Public Sans. Small h4-h6 labels inside cards keep the sans face. */
+h1, h2, h3,
+.modal-title,
+.card-title,
+.stat-card .text-xl {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+}
+
+/* Peso amounts, counts and dates line up in columns */
+table,
+.stat-card,
+.badge {
+    font-variant-numeric: tabular-nums;
 }
 
 ::selection {
@@ -464,7 +483,7 @@ body.bg-light {
 }
 .form-select {
     padding-right: 2.25rem;
-    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%231f2a22' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2322261f' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
 }
 .form-control::placeholder {
     color: var(--text-muted);
@@ -1024,6 +1043,95 @@ span.flatpickr-weekday { font-size: 0.75rem; font-weight: 600; color: var(--text
     }
 }
 
+/* -------------------------------------------------------------------------
+   Farmer portal on phones: bottom tab bar + "More" sheet
+   ------------------------------------------------------------------------- */
+.farmer-tabbar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background-color: var(--brand-surface);
+    border-top: 1px solid var(--brand-border);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.farmer-tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 4rem;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.farmer-tab i {
+    font-size: 1.15rem;
+}
+.farmer-tab.active {
+    color: var(--brand-primary);
+}
+.farmer-tab.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 30%;
+    right: 30%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background-color: var(--brand-primary);
+}
+.farmer-more-sheet {
+    height: auto;
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    background-color: var(--brand-surface);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.farmer-more-link {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: left;
+}
+.farmer-more-link i {
+    width: 1.25rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+.farmer-more-link.active {
+    background-color: var(--brand-primary-light);
+    color: var(--brand-primary);
+}
+.farmer-more-link.text-danger i {
+    color: inherit;
+}
+@media (max-width: 991.98px) {
+    /* Keep the last bit of every page clear of the fixed tab bar, and keep
+       farmer text at 16px+ for reading outdoors. */
+    .has-tabbar .app-main-content {
+        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
+        font-size: 1rem;
+    }
+}
+
+
 /* Desktop sidebar collapse (Gmail-style icon rail), persisted via
    localStorage. Keyed off a class on <html> (set synchronously in <head>,
    same trick as the theme script above) rather than on the sidebar itself,
@@ -1527,7 +1635,7 @@ span.flatpickr-weekday { font-size: 0.75rem; font-weight: 600; color: var(--text
     --bs-primary-rgb: 47, 93, 58;
     --bs-secondary-rgb: 90, 96, 88;
     --bs-success-rgb: 61, 112, 72;
-    --bs-danger-rgb: 181, 82, 59;
+    --bs-danger-rgb: 169, 71, 47;
     --bs-warning-rgb: 214, 183, 101;
     --bs-info-rgb: 79, 111, 106;
     --bs-light-rgb: 23, 32, 25;
@@ -1625,4 +1733,702 @@ span.flatpickr-weekday { font-size: 0.75rem; font-weight: 600; color: var(--text
         animation-duration: 0.001ms !important;
         transition-duration: 0.001ms !important;
     }
+}
+
+/* Farmer schedule request: machine picker cards */
+.machine-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-md);
+    background-color: var(--brand-surface);
+    cursor: pointer;
+    transition: border-color 150ms var(--ease), background-color 150ms var(--ease);
+}
+.machine-option:hover {
+    border-color: var(--brand-input-border-hover);
+}
+.machine-option-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.machine-option-detail {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+.btn-check:checked + .machine-option {
+    border: 2px solid var(--brand-primary);
+    padding: calc(0.85rem - 1px) calc(1rem - 1px);
+    background-color: var(--brand-primary-light);
+}
+.btn-check:focus-visible + .machine-option {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+}
+.btn-check:disabled + .machine-option {
+    cursor: not-allowed;
+    background-color: var(--brand-surface-muted);
+}
+.btn-check:disabled + .machine-option .machine-option-name {
+    color: var(--text-muted);
+}
+.schedule-finish-note {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    background-color: var(--brand-primary-light);
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+}
+
+/* "Archived. Undo" toast */
+.undo-toast {
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1.5rem;
+    z-index: 1090;
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    padding: 0.75rem 0.75rem 0.75rem 1.1rem;
+    border-radius: var(--radius-md);
+    background-color: var(--palette-field-deep);
+    color: #f1ede2;
+    box-shadow: var(--shadow-lg);
+    animation: fade-in-up 220ms var(--ease);
+    transition: opacity 250ms var(--ease);
+}
+.undo-toast.is-leaving {
+    opacity: 0;
+}
+.undo-toast-icon {
+    color: #a9c79a;
+}
+.undo-toast-message {
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+.undo-toast-btn {
+    padding: 0.35rem 0.9rem;
+    border: 1px solid #8fb07c;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: #cfe3c3;
+    font-weight: 600;
+}
+.undo-toast-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.undo-toast-close {
+    border: 0;
+    background: transparent;
+    color: #a3a69e;
+    padding: 0.25rem 0.4rem;
+}
+
+/* Filter chips (e.g. machinery types) */
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--brand-border);
+    border-radius: 999px;
+    background-color: var(--brand-surface);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 150ms var(--ease), background-color 150ms var(--ease);
+}
+.filter-chip:hover {
+    border-color: var(--brand-input-border-hover);
+    color: var(--text-primary);
+}
+.filter-chip-count {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+.filter-chip.active {
+    border-color: var(--palette-field-deep);
+    background-color: var(--palette-field-deep);
+    color: #ffffff;
+}
+.filter-chip.active .filter-chip-count {
+    color: #cfe3c3;
+}
+
+/* Two-option segmented switch (Cards / List) */
+.segmented {
+    display: inline-flex;
+    padding: 0.2rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--brand-secondary-light);
+}
+.segmented a {
+    padding: 0.3rem 0.85rem;
+    border-radius: calc(var(--radius-sm) - 0.15rem);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.segmented a.active {
+    background-color: var(--brand-surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Machinery cards */
+.machine-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--brand-surface);
+    box-shadow: var(--shadow-sm);
+}
+.machine-card-art {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 9.5rem;
+    background: linear-gradient(160deg, #e3ece6 0%, #f4f7f3 100%);
+    color: var(--palette-info);
+}
+.machine-card-art.is-wheat {
+    background: linear-gradient(160deg, #f3ead2 0%, #faf6ec 100%);
+    color: var(--palette-wheat-deep);
+}
+.machine-illustration {
+    width: 7rem;
+    height: auto;
+}
+.machine-card-type,
+.machine-card-status {
+    position: absolute;
+    top: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.92);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.machine-card-type {
+    left: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.machine-card-status {
+    right: 0.75rem;
+    font-weight: 600;
+}
+.machine-card-status .dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+}
+.machine-card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 1rem 1.15rem 1.15rem;
+}
+:root[data-bs-theme="dark"] .machine-card-art {
+    background: linear-gradient(160deg, #1f2b22 0%, #18221a 100%);
+    color: #8fb0a9;
+}
+:root[data-bs-theme="dark"] .machine-card-art.is-wheat {
+    background: linear-gradient(160deg, #2c2615 0%, #211d12 100%);
+    color: var(--palette-wheat);
+}
+:root[data-bs-theme="dark"] .machine-card-type,
+:root[data-bs-theme="dark"] .machine-card-status {
+    background-color: rgba(20, 27, 21, 0.85);
+}
+
+/* Small variant of the filter chip, with an optional status dot */
+.filter-chip-sm {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8125rem;
+}
+.filter-chip .dot,
+.machine-strip-meta .dot {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+}
+
+/* Machine Scheduling: machine strip */
+.machine-strip {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(13rem, 1fr);
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+.machine-strip-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-md);
+    background-color: var(--brand-surface);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: border-color 150ms var(--ease);
+}
+.machine-strip-card:hover {
+    border-color: var(--brand-input-border-hover);
+    color: var(--text-primary);
+}
+.machine-strip-card.active {
+    border: 2px solid var(--brand-primary);
+    padding: calc(0.75rem - 1px);
+}
+.machine-strip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    background-color: var(--brand-primary-light);
+    color: var(--palette-info);
+    font-size: 1.25rem;
+}
+.machine-strip-icon.is-wheat {
+    background-color: var(--brand-warning-light);
+    color: var(--palette-wheat-deep);
+}
+.machine-strip-icon .machine-illustration {
+    width: 2rem;
+    stroke-width: 6;
+}
+.machine-strip-name {
+    display: block;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.machine-strip-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+/* Machine Scheduling: month grid */
+.schedule-month .calendar-cell {
+    min-height: 7rem;
+    cursor: pointer;
+    background-color: var(--brand-surface-muted);
+}
+.schedule-month .calendar-cell.calendar-cell-empty {
+    background: transparent;
+    cursor: default;
+}
+.schedule-month .calendar-cell:hover {
+    border-color: var(--brand-input-border-hover);
+}
+.schedule-month .calendar-cell.is-focused {
+    border: 2px solid var(--brand-primary);
+    background-color: var(--brand-primary-light);
+}
+.schedule-month .calendar-cell-date {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.calendar-cell-date.is-today {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    background-color: var(--palette-field-deep);
+    color: #ffffff !important;
+}
+.schedule-chip {
+    display: block;
+    padding: 0.1rem 0.4rem;
+    border-left: 3px solid currentColor;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.schedule-chip strong {
+    font-weight: 600;
+}
+.schedule-chip.is-approved { background-color: var(--brand-success-light); color: var(--brand-success-text); }
+.schedule-chip.is-pending { background-color: var(--brand-warning-light); color: var(--brand-warning-text); }
+.schedule-chip.is-completed { background-color: var(--brand-info-light); color: var(--brand-info-text); }
+.schedule-chip.is-denied {
+    background-color: var(--brand-danger-light);
+    color: var(--brand-danger-text);
+    text-decoration: line-through;
+}
+.schedule-chip-more {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.day-booking {
+    padding: 0.9rem;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-md);
+    background-color: var(--brand-surface);
+}
+@media (max-width: 575.98px) {
+    .schedule-month .calendar-cell {
+        min-height: 4.5rem !important;
+    }
+    .schedule-chip {
+        font-size: 0;
+        height: 0.4rem;
+        padding: 0;
+        border-left: 0;
+    }
+}
+
+/* Batch Loans */
+.stat-card-highlight {
+    border: 2px solid var(--brand-warning) !important;
+    border-left-width: 6px !important;
+}
+.batch-name {
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.status-bar {
+    display: flex;
+    gap: 2px;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background-color: var(--brand-secondary-light);
+}
+.status-bar span {
+    flex-basis: 0;
+    min-width: 4px;
+}
+.badge-dot {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.35rem;
+    border-radius: 999px;
+    vertical-align: middle;
+}
+
+/* Loan rules ladder */
+.loan-rule-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 1rem;
+    margin-bottom: 0.6rem;
+}
+.loan-rule-track::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    margin-left: 0.5rem;
+    background-color: var(--brand-border);
+}
+.loan-rule-dot {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex-shrink: 0;
+    border-radius: 999px;
+}
+.loan-rule-dot.is-warning { background-color: var(--brand-warning); }
+.loan-rule-dot.is-danger { background-color: var(--brand-danger); }
+.loan-rule-dot.is-deep { background-color: #5c2416; }
+.segmented-count {
+    margin-left: 0.2rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Loan Requests: Regular / Batch switch */
+.view-switch {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 15rem;
+    padding: 0.75rem 1.1rem;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-md);
+    background-color: var(--brand-surface);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+.view-switch:hover {
+    border-color: var(--brand-input-border-hover);
+    color: var(--text-primary);
+}
+.view-switch.active {
+    border: 2px solid var(--brand-primary);
+    padding: calc(0.75rem - 1px) calc(1.1rem - 1px);
+    background-color: var(--brand-primary-light);
+}
+.view-switch-title {
+    font-weight: 700;
+}
+.view-switch-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+/* "Batch 2 is approved…  [Finalize Batch 2]" call-to-action */
+.action-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--brand-primary);
+    border-left-width: 6px;
+    border-radius: var(--radius-md);
+    background-color: var(--brand-surface);
+}
+
+/* Batch request cards */
+.batch-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.15rem;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--brand-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+/* "How a … moves" explainer strip */
+.flow-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    padding: 0.9rem 1.25rem;
+    border-radius: var(--radius-md);
+    background-color: var(--brand-info-light);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+.flow-strip-title {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.flow-strip-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.flow-strip-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid var(--brand-border);
+    border-radius: 999px;
+    background-color: var(--brand-surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.flow-strip-arrow {
+    margin-left: 0.35rem;
+    color: var(--text-muted);
+}
+
+/* Manage Batch: numbered member slots */
+.batch-slots {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.batch-slot {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.6rem;
+    padding: 0.55rem 1.25rem;
+    border-bottom: 1px solid var(--brand-border);
+}
+.batch-slot:last-child {
+    border-bottom: 0;
+}
+.batch-slot-num {
+    width: 1.5rem;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.batch-slot-open {
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.85rem;
+    border: 1px dashed var(--brand-input-border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    text-align: left;
+}
+.batch-slot-add {
+    font-weight: 600;
+    color: var(--brand-primary);
+    opacity: 0;
+    transition: opacity 150ms var(--ease);
+}
+.batch-slot-open:hover,
+.batch-slot-open:focus-visible {
+    border-color: var(--brand-primary);
+    color: var(--text-primary);
+}
+.batch-slot-open:hover .batch-slot-add,
+.batch-slot-open:focus-visible .batch-slot-add {
+    opacity: 1;
+}
+
+/* "More" menus grouped into Change / Status / Remove */
+.grouped-menu {
+    min-width: 14rem;
+    padding: 0.35rem;
+}
+.grouped-menu .dropdown-header {
+    padding: 0.45rem 0.75rem 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.grouped-menu .dropdown-item {
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+}
+.grouped-menu .dropdown-divider {
+    margin: 0.3rem 0;
+}
+
+/* Membership Approval: applicant list + detail */
+.applicant-list {
+    overflow: hidden;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--brand-surface);
+}
+.applicant-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-bottom: 1px solid var(--brand-border);
+    background: transparent;
+}
+.applicant-item:last-child {
+    border-bottom: 0;
+}
+.applicant-item:hover {
+    background-color: var(--brand-surface-hover);
+}
+.applicant-item.active {
+    background-color: var(--brand-primary-light);
+    box-shadow: inset 3px 0 0 var(--brand-primary);
+}
+.detail-label {
+    margin-bottom: 0.15rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.detail-value {
+    margin-bottom: 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+.document-tile {
+    padding: 0.75rem;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius-md);
+}
+.document-tile-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 4.5rem;
+    margin-bottom: 0.6rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--brand-secondary-light);
+    color: var(--text-secondary);
+    font-size: 1.35rem;
+}
+.document-tile.is-missing .document-tile-preview {
+    background-color: var(--brand-danger-light);
+    color: var(--brand-danger);
+}
+
+/* Row actions: [Primary] [More ▾] */
+.row-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+/* Tables using [Primary] [More]: keep the actions column flush right */
+td:has(> .row-actions),
+.table:has(.row-actions) > thead th:last-child {
+    text-align: right;
+}
+
+/* Keep sidebar labels on one line ("Loan Appointment") */
+.sidebar-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

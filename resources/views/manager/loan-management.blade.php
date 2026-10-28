@@ -25,119 +25,148 @@
 </div>
 @endif
 
-<!-- Loans Table -->
+@php
+    $statusName = fn ($status) => ucwords(str_replace('_', ' ', $status));
+    $delinquencyLabels = ['grace' => '2% Grace Interest', 'penalized' => '10% Penalty · Restricted', 'barangay_summon' => 'Barangay Summons', 'legal_action' => 'Legal Action'];
+    $loanTabs = ['all' => 'All', 'pending_disbursement' => 'Pending Disbursement', 'active' => 'Active', 'overdue' => 'Overdue', 'fully_paid' => 'Fully Paid'];
+    $tabCount = fn ($status) => $status === 'all' ? $statusCounts->sum() : (int) ($statusCounts[$status] ?? 0);
+@endphp
+
+<p class="text-sm text-gray-500 mb-4">
+    Release approved regular loans and track what each farmer still owes.
+    Batch loans are tracked in <a href="{{ route('manager.batch-loan-management') }}" class="text-brand">Batch Loans</a>.
+</p>
+
+<!-- Summary -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4 {{ $stats['pending_disbursement_count'] > 0 ? 'stat-card-highlight' : '' }}">
+        <p class="text-sm {{ $stats['pending_disbursement_count'] > 0 ? 'text-warning fw-semibold' : 'text-gray-500' }} mb-1">Pending Disbursement</p>
+        <p class="text-xl font-bold text-gray-900 mb-1">{{ $stats['pending_disbursement_count'] }} {{ Str::plural('loan', $stats['pending_disbursement_count']) }}</p>
+        @if($stats['pending_disbursement_count'] > 0)
+        <p class="text-xs text-gray-500 mb-0">Waiting to be released to farmers</p>
+        @endif
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Active Loans</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ number_format($stats['active_count']) }}</p>
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Total Outstanding</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ peso($stats['total_outstanding']) }}</p>
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Due This Month</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ peso($stats['due_this_month']) }}</p>
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Interest Earned</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ peso($stats['interest_earned']) }}</p>
+    </div>
+</div>
+
+<!-- Loans -->
 <div class="section-card">
-    <x-table-toolbar>
-        <x-slot:filters>
-            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Loans</h3>
-            <form method="GET" action="{{ route('manager.loan-management') }}" class="d-flex flex-wrap align-items-center gap-3" id="loanManagementFilterForm">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-4 px-md-5 py-4">
+        @if($showArchived)
+        <h3 class="text-lg font-semibold text-gray-900 mb-0">Archived loans</h3>
+        @else
+        <div class="segmented" role="group" aria-label="Filter by loan status">
+            @foreach($loanTabs as $value => $label)
+            <a href="{{ route('manager.loan-management', array_filter(['status' => $value, 'search' => request('search')])) }}"
+                class="{{ $currentStatus === $value ? 'active' : '' }}">{{ $label }} <span class="segmented-count">{{ $tabCount($value) }}</span></a>
+            @endforeach
+        </div>
+        @endif
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.loan-management') }}" id="loanManagementFilterForm" class="position-relative m-0">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
+                @else
+                <input type="hidden" name="status" value="{{ $currentStatus }}">
                 @endif
-                <div class="position-relative">
-                    <input type="text" name="search" id="loanManagementSearchInput" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;" autocomplete="off">
-                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
-                </div>
-                @unless($showArchived)
-                <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                    <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
-                    <option value="pending_disbursement" {{ ! request()->has('status') || request('status') == 'pending_disbursement' ? 'selected' : '' }}>Pending Disbursement</option>
-                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                    <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
-                    <option value="fully_paid" {{ request('status') == 'fully_paid' ? 'selected' : '' }}>Fully Paid</option>
-                </select>
-                @endunless
-                @if(request()->filled('search') || (! $showArchived && request('status') !== null))
-                <a href="{{ route('manager.loan-management', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
-                @endif
+                <input type="text" name="search" id="loanManagementSearchInput" value="{{ request('search') }}" placeholder="Search farmer" class="form-control ps-5" style="min-width: 240px;" autocomplete="off">
+                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
             </form>
-        </x-slot:filters>
-        <x-slot:actions>
-            <x-archive-toggle route="manager.loan-management" :showing="$showArchived" />
-        </x-slot:actions>
-    </x-table-toolbar>
+            @if($showArchived)
+            <a href="{{ route('manager.loan-management') }}" class="text-sm fw-semibold text-brand text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Back to Active</a>
+            @else
+            <a href="{{ route('manager.loan-management', ['archived' => 1]) }}" class="text-sm fw-semibold text-brand text-decoration-none">View Archived ({{ $stats['archived_count'] }})</a>
+            @endif
+        </div>
+    </div>
 
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan ID</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Principal</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Remaining Balance</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Monthly Due</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Next Due</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted">Farmer</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted text-end">Principal</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted text-end">Remaining Balance</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted text-end">Monthly Due</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted">Next Due</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($loans as $loan)
+                @php
+                    $isPending = $loan->status === 'pending_disbursement' && ! $loan->archived_at;
+                    $hasSchedule = in_array($loan->status, ['active', 'overdue'], true) && ! $loan->archived_at;
+                @endphp
                 <tr>
-                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ $loan->farmer->full_name }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ peso($loan->principal_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ peso($loan->amount_due) }}</td>
-                    <td class="px-4 px-md-6 py-4 {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
-                    <td class="px-4 px-md-6 py-4">
-                        @if($loan->archived_at)
-                        <x-status-badge status="Archived" />
-                        @else
-                        <x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" />
-                        @endif
-                        @if($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
-                        <div class="small text-muted">Auto-disburses {{ $loan->scheduled_disbursement_date->format('M d, Y') }}</div>
-                        @endif
-                        @if($loan->delinquency_stage)
-                        <div class="mt-1">
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
-                                @switch($loan->delinquency_stage)
-                                    @case('grace') 2% Grace Interest @break
-                                    @case('penalized') 10% Penalty &mdash; Restricted @break
-                                    @case('barangay_summon') Barangay Summons @break
-                                    @case('legal_action') Legal Action @break
-                                @endswitch
-                            </span>
-                        </div>
+                    <td class="px-4 px-md-5 py-3">
+                        <p class="text-sm fw-semibold text-gray-900 mb-0">{{ $loan->farmer->full_name }}</p>
+                        <p class="text-xs text-gray-500 mb-0">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' · now month '.$loan->current_installment_number : '' }}</p>
+                    </td>
+                    <td class="px-3 py-3 text-sm text-end text-gray-700">{{ peso($loan->principal_amount) }}</td>
+                    <td class="px-3 py-3 text-sm text-end fw-semibold text-gray-900">{{ $loan->remaining_balance !== null && $loan->status !== 'pending_disbursement' ? peso($loan->remaining_balance) : '—' }}</td>
+                    <td class="px-3 py-3 text-sm text-end text-gray-700">{{ $loan->status === 'fully_paid' ? '—' : peso($loan->amount_due) }}</td>
+                    <td class="px-3 py-3 text-sm {{ $loan->status === 'overdue' ? 'text-danger fw-semibold' : 'text-gray-700' }}">{{ $hasSchedule ? ($loan->next_due_date?->format('M j, Y') ?? '—') : '—' }}</td>
+                    <td class="px-3 py-3">
+                        <x-status-badge :status="$loan->archived_at ? 'Archived' : $statusName($loan->status)" />
+                        @if($isPending && $loan->scheduled_disbursement_date)
+                        <div class="text-xs text-gray-500 mt-1">Auto-disburses {{ $loan->scheduled_disbursement_date->format('M j, Y') }}</div>
+                        @elseif($loan->delinquency_stage && ! $loan->archived_at)
+                        <div class="text-xs fw-semibold text-danger mt-1">{{ $delinquencyLabels[$loan->delinquency_stage] ?? '' }}</div>
                         @endif
                     </td>
-                    <td class="px-4 px-md-6 py-4">
-                        <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $loan->id }}">View</x-dropdown-item>
-                            @if(!$loan->archived_at)
-                                @if($loan->status === 'pending_disbursement')
-                                <x-dropdown-item icon="fa-money-check-alt" color="success" data-bs-toggle="modal" data-bs-target="#disburseModal{{ $loan->id }}">Mark Disbursed</x-dropdown-item>
+                    <td class="px-4 px-md-5 py-3 text-end text-nowrap">
+                        @if($isPending)
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#disburseModal{{ $loan->id }}">Mark Disbursed</button>
+                        @else
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ $loan->id }}">View</button>
+                        @endif
+                        <div class="dropdown d-inline-block">
+                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @if($isPending)
+                                <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#viewModal{{ $loan->id }}"><i class="fas fa-eye me-2 text-gray-500"></i>View</button></li>
                                 @endif
-                                @if(!in_array($loan->status, ['fully_paid', 'pending_disbursement']))
-                                <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $loan->id }}">Edit</x-dropdown-item>
+                                @if(! $loan->archived_at)
+                                    @if(! in_array($loan->status, ['fully_paid', 'pending_disbursement'], true))
+                                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editModal{{ $loan->id }}"><i class="fas fa-pen me-2 text-gray-500"></i>Edit loan</button></li>
+                                    @endif
+                                    @if($isPending || $loan->status !== 'fully_paid')
+                                    <li><hr class="dropdown-divider"></li>
+                                    @endif
+                                    <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}"><i class="fas fa-archive me-2"></i>Archive loan</button></li>
+                                @else
+                                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $loan->id }}"><i class="fas fa-box-open me-2 text-success"></i>Restore loan</button></li>
                                 @endif
-                                <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}">Archive</x-dropdown-item>
-                            @else
-                                <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $loan->id }}">Restore</x-dropdown-item>
-                            @endif
-                        </x-action-dropdown>
+                            </ul>
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived loans.' : 'No loans found.' }}</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived loans.' : 'No loans found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
     <x-pagination-footer :paginator="$loans" />
-</div>
-
-<!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-6 gap-6 mt-6">
-    <x-stat-card label="Pending Disbursement" value="{{ $stats['pending_disbursement_count'] }}" icon="fa-money-check-alt" color="warning" />
-    <x-stat-card label="Active Loans" value="{{ $stats['active_count'] }}" icon="fa-file-invoice-dollar" color="primary" />
-    <x-stat-card label="Total Outstanding" value="{{ peso($stats['total_outstanding']) }}" icon="fa-hand-holding-usd" color="danger" />
-    <x-stat-card label="Due This Month" value="{{ peso($stats['due_this_month']) }}" icon="fa-calendar-day" color="warning" />
-    <x-stat-card label="Interest Earned" value="{{ peso($stats['interest_earned']) }}" icon="fa-chart-line" color="success" />
-    <x-stat-card label="Archived" value="{{ $stats['archived_count'] }}" icon="fa-box-archive" color="secondary" />
 </div>
 
 {{-- Modals rendered outside <tbody>: a <div> is not valid directly inside a
@@ -345,15 +374,7 @@
 @endif
 @endforeach
 
-<!-- Interest Computation Info -->
-<x-info-banner variant="info" title="Interest Computation: 2% every due date" class="mt-6">
-    Interest is automatically calculated and added to the loan balance whenever a due date passes without payment.
-</x-info-banner>
-
-<!-- Delinquency Policy Info -->
-<x-info-banner variant="warning" title="Grace Period &amp; Penalty Policy" class="mt-4">
-    If a due date passes with a balance still unpaid, a one-time 2% grace-period interest applies. If it's still unpaid after the 30-day grace period, a one-time 10% penalty applies and the farmer is restricted from new loan requests until fully paid. Accounts unpaid for 5 months are flagged for Barangay summons, and for 6 months for legal action &mdash; both notify the Administrator.
-</x-info-banner>
+<x-loan-rules class="mt-6" />
 
 <script>
     // Debounced live search: Status already auto-submits on change, so the

@@ -107,9 +107,7 @@
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark" data-label="Total Paid">{{ peso($loan->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->sum('amount')) }}</td>
                     <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge status="Fully Paid" /></td>
                     <td class="px-4 px-md-6 py-4" data-label="Actions">
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#paidLoanModal{{ $loan->id }}">
-                            <i class="fas fa-eye me-1"></i> View
-                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#paidLoanModal{{ $loan->id }}">View</button>
                     </td>
                 </tr>
                 @endforeach

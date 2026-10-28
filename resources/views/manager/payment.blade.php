@@ -29,7 +29,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
     <x-stat-card label="Loan Payments" value="₱{{ number_format($stats['loan_payments'], 2) }}" icon="fa-hand-holding-usd" color="primary" />
     <x-stat-card label="CBU Contributions" value="₱{{ number_format($stats['cbu_contributions'], 2) }}" icon="fa-piggy-bank" color="info" />
-    <x-stat-card label="Harvest Payments" value="₱{{ number_format($stats['harvest_payments'], 2) }}" icon="fa-seedling" color="success" />
+    <x-stat-card label="Machine Payments" value="₱{{ number_format($stats['harvest_payments'], 2) }}" icon="fa-seedling" color="success" />
     <x-stat-card label="Operational Expenses" value="₱{{ number_format($stats['operational_expenses'], 2) }}" icon="fa-file-invoice" color="warning" />
     <x-stat-card label="Replaceable Parts" value="₱{{ number_format($stats['replaceable_parts'], 2) }}" icon="fa-cogs" color="danger" />
 </div>
@@ -48,7 +48,7 @@
                     <option value="Loan Payment" {{ request('type') == 'Loan Payment' ? 'selected' : '' }}>Loan Payment</option>
                     <option value="CBU Payment" {{ request('type') == 'CBU Payment' ? 'selected' : '' }}>CBU Payment</option>
                     <option value="Expense Payment" {{ request('type') == 'Expense Payment' ? 'selected' : '' }}>Expense Payment</option>
-                    <option value="Harvesting Payment" {{ request('type') == 'Harvesting Payment' ? 'selected' : '' }}>Harvesting Payment</option>
+                    <option value="Machine Payment" {{ request('type') == 'Machine Payment' ? 'selected' : '' }}>Machine Payment</option>
                 </select>
                 <input type="date" name="date" value="{{ request('date') }}" class="form-control" style="width: auto;" onchange="this.form.submit()">
                 @if(request()->anyFilled(['search', 'type', 'date']))
@@ -79,7 +79,7 @@
                     </li>
                     <li>
                         <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#recordHarvestPaymentModal">
-                            <i class="fas fa-seedling text-success"></i>Harvesting Payment
+                            <i class="fas fa-seedling text-success"></i>Machine Payment
                         </a>
                     </li>
                 </ul>
@@ -111,9 +111,9 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->status_label" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewPaymentModal{{ $payment->kind }}{{ $payment->id }}">View</x-dropdown-item>
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewPaymentModal{{ $payment->kind }}{{ $payment->id }}">View</button></x-slot:primary>
                             @if($payment->kind === 'loan')
-                            <x-dropdown-item icon="fa-receipt" color="secondary" href="{{ route('manager.payment.receipt', $payment->id) }}" target="_blank">Receipt</x-dropdown-item>
+                            <x-dropdown-item icon="fa-receipt" href="{{ route('manager.payment.receipt', $payment->id) }}" target="_blank">Print receipt</x-dropdown-item>
                             @endif
                         </x-action-dropdown>
                     </td>
@@ -168,7 +168,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-money-bill-wave me-2"></i>Record Loan Payment</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('manager.payment.record') }}" method="POST">
+            <form action="{{ route('manager.payment.record') }}" method="POST" id="recordPaymentForm">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -220,6 +220,34 @@
                     <button type="submit" class="btn btn-primary">Record Payment</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Loan Payment Modal: the Record Payment form's submit is
+     intercepted into here instead of posting right away, so a manager
+     gets one more look at exactly what they're about to record (farmer,
+     type, amount) before it's final. -->
+<div class="modal fade" id="paymentConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fas fa-check-circle me-2"></i>Confirm Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Record this payment?</p>
+                <div class="bg-light rounded-3 p-3 small">
+                    <div class="d-flex justify-content-between mb-1"><span class="text-muted">Loan</span><span id="paymentConfirmLoan" class="fw-medium text-end"></span></div>
+                    <div class="d-flex justify-content-between mb-1"><span class="text-muted">Type</span><span id="paymentConfirmType" class="fw-medium"></span></div>
+                    <div class="d-flex justify-content-between"><span class="text-muted">Amount</span><span id="paymentConfirmAmount" class="fw-semibold"></span></div>
+                </div>
+                <p class="text-muted small mb-0 mt-2">This can't be undone from here &mdash; double-check the amount before confirming.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="paymentConfirmSubmitBtn">Confirm &amp; Record Payment</button>
+            </div>
         </div>
     </div>
 </div>
@@ -305,12 +333,12 @@
     </div>
 </div>
 
-<!-- Record Harvesting Payment Modal -->
+<!-- Record Machine Payment Modal -->
 <div class="modal fade" id="recordHarvestPaymentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="fas fa-seedling me-2"></i>Record Harvesting Payment</h5>
+                <h5 class="modal-title fw-bold"><i class="fas fa-seedling me-2"></i>Record Machine Payment</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('manager.payment.record-harvest') }}" method="POST" id="recordHarvestForm">
@@ -347,11 +375,6 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Total Harvest Amount <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" min="0.01" name="harvest_amount" id="harvestAmountInput" class="form-control" required>
-                    </div>
-                    <div class="text-center mb-3">
-                        <button type="button" id="harvestCalculateBtn" class="btn btn-outline-success btn-sm">
-                            <i class="fas fa-calculator me-1"></i>Calculate
-                        </button>
                     </div>
                     <div id="harvestPreview" class="bg-light rounded p-3 mb-3 d-none">
                         <div class="d-flex justify-content-between small mb-1">
@@ -517,6 +540,46 @@
         recordPaymentUpdatePayoffPreview();
     });
 
+    // Intercepts the Record Payment form's submit into a confirmation step
+    // instead of posting straight away — swaps to paymentConfirmModal
+    // showing exactly what's about to be recorded, and only the modal's own
+    // "Confirm & Record Payment" button actually submits the form.
+    document.getElementById('recordPaymentForm')?.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var loanSelect = document.getElementById('recordPaymentLoanSelect');
+        var typeSelect = document.getElementById('recordPaymentTypeSelect');
+        var amountInput = document.getElementById('recordPaymentAmount');
+        var loanOption = loanSelect.options[loanSelect.selectedIndex];
+
+        document.getElementById('paymentConfirmLoan').textContent = loanOption ? loanOption.textContent.trim() : '';
+        document.getElementById('paymentConfirmType').textContent = typeSelect.options[typeSelect.selectedIndex].textContent.trim();
+        document.getElementById('paymentConfirmAmount').textContent = amountInput.value ? pesoFormat(amountInput.value) : '';
+
+        switchModal('recordPaymentModal', 'paymentConfirmModal');
+    });
+
+    document.getElementById('paymentConfirmSubmitBtn')?.addEventListener('click', function () {
+        document.getElementById('recordPaymentForm').submit();
+    });
+
+    // Hides one modal and, once it's fully closed, opens another — Bootstrap
+    // doesn't support two open modals cleanly.
+    function switchModal(fromModalId, toModalId) {
+        var fromEl = document.getElementById(fromModalId);
+        var fromModal = bootstrap.Modal.getInstance(fromEl);
+        var openTarget = function () {
+            new bootstrap.Modal(document.getElementById(toModalId)).show();
+        };
+
+        if (fromModal) {
+            fromEl.addEventListener('hidden.bs.modal', openTarget, { once: true });
+            fromModal.hide();
+        } else {
+            openTarget();
+        }
+    }
+
     // Every entry recorded here is a contribution: a farmer's very first one
     // must meet their land-area-based minimum (₱4,000-₱12,000); every one
     // after that only needs to clear a flat ₱1,000.
@@ -553,7 +616,7 @@
         updateCbuMinimumHint();
     });
 
-    // Harvesting Payment: toggles between an existing member (dropdown) and
+    // Machine Payment: toggles between an existing member (dropdown) and
     // a manually-typed non-member name, and previews the 9%/12% calculation
     // client-side. The server always recomputes the rate/amount itself —
     // this preview is only for the Manager's confirmation, never trusted as-is.
@@ -609,7 +672,6 @@
         updateHarvestPreview();
     });
     document.getElementById('harvestAmountInput')?.addEventListener('input', updateHarvestPreview);
-    document.getElementById('harvestCalculateBtn')?.addEventListener('click', updateHarvestPreview);
 
 </script>
 @endsection

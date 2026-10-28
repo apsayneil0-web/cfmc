@@ -90,23 +90,29 @@
                     </td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($appt->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
+                        @php
+                            // The one clear next step: approve a new appointment, or send an
+                            // approved one with an amount on to the Administrator.
+                            $canSendToAdmin = $appt->status === 'approved' && $appt->requested_amount && ! $appt->loan_request_id && $appt->user->farmer;
+                        @endphp
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $appt->id }}">View Details</x-dropdown-item>
-
-                            @if($appt->status === 'pending')
-                            <x-dropdown-item icon="fa-check" color="success" data-bs-toggle="modal" data-bs-target="#approveModal{{ $appt->id }}">Approve Appointment</x-dropdown-item>
-                            @endif
-
-                            @if($appt->status === 'approved' && $appt->requested_amount && ! $appt->loan_request_id)
-                                @if($appt->user->farmer)
-                                <x-dropdown-item icon="fa-paper-plane" color="info" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}">Verify &amp; Send to Admin</x-dropdown-item>
+                            <x-slot:primary>
+                                @if($appt->status === 'pending')
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal{{ $appt->id }}">Approve</button>
+                                @elseif($canSendToAdmin)
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#submitLoanRequestModal{{ $appt->id }}">Send to Admin</button>
                                 @else
-                                <li><span class="dropdown-item disabled text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle me-2 fa-fw"></i>Verify &amp; Send to Admin</span></li>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ $appt->id }}">View</button>
                                 @endif
+                            </x-slot:primary>
+                            @if($appt->status === 'pending' || $canSendToAdmin)
+                            <x-dropdown-item icon="fa-eye" data-bs-toggle="modal" data-bs-target="#viewModal{{ $appt->id }}">View details</x-dropdown-item>
                             @endif
-
+                            @if($appt->status === 'approved' && $appt->requested_amount && ! $appt->loan_request_id && ! $appt->user->farmer)
+                            <li><span class="dropdown-item disabled text-muted" title="This account has no linked farmer membership record, so a loan request can't be created for it." style="cursor: help;"><i class="fas fa-exclamation-triangle me-2 fa-fw"></i>Verify &amp; Send to Admin</span></li>
+                            @endif
                             @if($appt->status !== 'cancelled' && ! $appt->loan_request_id)
-                            <x-dropdown-item icon="fa-calendar-alt" color="warning" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $appt->id }}">Reschedule Appointment</x-dropdown-item>
+                            <x-dropdown-item icon="fa-calendar-alt" data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ $appt->id }}">Reschedule appointment</x-dropdown-item>
                             @endif
                         </x-action-dropdown>
                     </td>

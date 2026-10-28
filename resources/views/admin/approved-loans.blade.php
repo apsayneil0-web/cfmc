@@ -48,11 +48,11 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="request('status') === 'archived' ? 'Archived' : 'Approved'" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#approvedBatchModal{{ $batch->id }}">View</x-dropdown-item>
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#approvedBatchModal{{ $batch->id }}">View</button></x-slot:primary>
                             @if(request('status') === 'archived')
-                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveBatchModal{{ $batch->id }}">Unarchive</x-dropdown-item>
+                            <x-dropdown-item icon="fa-box-open" data-bs-toggle="modal" data-bs-target="#unarchiveBatchModal{{ $batch->id }}">Unarchive</x-dropdown-item>
                             @else
-                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveBatchModal{{ $batch->id }}">Archive</x-dropdown-item>
+                            <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveBatchModal{{ $batch->id }}">Archive</x-dropdown-item>
                             @endif
                         </x-action-dropdown>
                     </td>
@@ -154,11 +154,13 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $loan->updated_at->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$loan->archived_at ? 'Archived' : 'Approved'" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        @if($loan->archived_at)
-                        <x-icon-button icon="fa-box-open" color="success" title="Unarchive" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $loan->id }}" />
-                        @else
-                        <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}" />
-                        @endif
+                        <x-action-dropdown>
+                            @if($loan->archived_at)
+                            <x-dropdown-item icon="fa-box-open" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $loan->id }}">Unarchive</x-dropdown-item>
+                            @else
+                            <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $loan->id }}">Archive</x-dropdown-item>
+                            @endif
+                        </x-action-dropdown>
                     </td>
                 </tr>
                 @empty

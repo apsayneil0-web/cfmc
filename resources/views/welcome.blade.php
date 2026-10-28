@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Centrala Farmers Marketing Cooperative - CFMC</title>
     <meta name="description" content="The cooperative management system of Centrala Farmers Marketing Cooperative: membership, farmer loans, CBU and machine rental in one place.">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
+    @include('partials.fonts')
     @vite('resources/css/palette.css')
     <script>
         document.documentElement.classList.add('js');
@@ -25,8 +24,8 @@
     </script>
     <style>
         :root {
-            --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
-            --sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+            --serif: 'Bitter', Georgia, 'Times New Roman', serif;
+            --sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
             --sprout-soft: color-mix(in srgb, var(--palette-sprout) 60%, var(--palette-paper));
             --shadow-color: var(--palette-ink);
             --shadow-card: 0 1px 2px color-mix(in srgb, var(--shadow-color) 4%, transparent);

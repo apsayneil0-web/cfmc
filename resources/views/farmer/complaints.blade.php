@@ -60,17 +60,17 @@
                     </td>
                     <td class="px-4 px-md-6 py-4" data-label="Actions">
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $complaint->id }}">View</x-dropdown-item>
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ $complaint->id }}">View</button></x-slot:primary>
                             @if($complaint->status == 'draft')
-                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $complaint->id }}">Edit</x-dropdown-item>
-                            <x-dropdown-item icon="fa-trash" color="danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $complaint->id }}">Delete</x-dropdown-item>
+                            <x-dropdown-item icon="fa-pen" data-bs-toggle="modal" data-bs-target="#editModal{{ $complaint->id }}">Edit</x-dropdown-item>
+                            <x-dropdown-item icon="fa-trash" :danger="true" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $complaint->id }}">Delete</x-dropdown-item>
                             @endif
                             @if($complaint->status == 'resolved')
                             <li>
                                 <form action="{{ route('farmer.complaints.reopen', $complaint->id) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="dropdown-item"><i class="fas fa-rotate-left me-2 fa-fw text-secondary"></i>Reopen</button>
+                                    <button type="submit" class="dropdown-item"><i class="fas fa-rotate-left me-2 fa-fw text-gray-500"></i>Reopen</button>
                                 </form>
                             </li>
                             @endif

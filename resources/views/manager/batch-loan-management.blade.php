@@ -1,7 +1,7 @@
 @extends('manager.layout')
 
 @section('title', 'Batch Loans')
-@section('header', 'Batch Loan Management')
+@section('header', 'Batch Loans')
 
 @section('content')
 @if(session('success'))
@@ -25,90 +25,130 @@
 </div>
 @endif
 
-<!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-6 gap-6 mb-8">
-    <x-stat-card label="Pending Disbursement" value="{{ $stats['pending_disbursement_count'] }}" icon="fa-money-check-alt" color="warning" />
-    <x-stat-card label="Active Loans" value="{{ $stats['active_count'] }}" icon="fa-file-invoice-dollar" color="primary" />
-    <x-stat-card label="Total Outstanding" value="{{ peso($stats['total_outstanding']) }}" icon="fa-hand-holding-usd" color="danger" />
-    <x-stat-card label="Due This Month" value="{{ peso($stats['due_this_month']) }}" icon="fa-calendar-day" color="warning" />
-    <x-stat-card label="Interest Earned" value="{{ peso($stats['interest_earned']) }}" icon="fa-chart-line" color="success" />
-    <x-stat-card label="Archived" value="{{ $stats['archived_count'] }}" icon="fa-box-archive" color="secondary" />
+@php
+    // One color per loan state, same as the status badges.
+    $statusTones = ['active' => 'success', 'overdue' => 'danger', 'fully_paid' => 'info', 'pending_disbursement' => 'warning', 'archived' => 'secondary'];
+    $statusOrder = ['active', 'overdue', 'fully_paid', 'pending_disbursement', 'archived'];
+    $statusName = fn ($status) => ucwords(str_replace('_', ' ', $status));
+    $loanState = fn ($loan) => $loan->archived_at ? 'archived' : $loan->status;
+    $delinquencyLabels = ['grace' => '2% Grace Interest', 'penalized' => '10% Penalty · Restricted', 'barangay_summon' => 'Barangay Summons', 'legal_action' => 'Legal Action'];
+    $batchTabs = ['' => 'All', 'pending_disbursement' => 'Pending Disbursement', 'active' => 'Active', 'overdue' => 'Overdue', 'fully_paid' => 'Fully Paid'];
+@endphp
+
+<p class="text-sm text-gray-500 mb-4">
+    Track finalized batches. Each batch is reviewed together; open one to see every member's loan.
+    Regular loans are in <a href="{{ route('manager.loan-management') }}" class="text-brand">Loan Management</a>.
+</p>
+
+<!-- Summary -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5">
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4 {{ $stats['pending_disbursement_count'] > 0 ? 'stat-card-highlight' : '' }}">
+        <p class="text-sm {{ $stats['pending_disbursement_count'] > 0 ? 'text-warning fw-semibold' : 'text-gray-500' }} mb-1">Pending Disbursement</p>
+        <p class="text-xl font-bold text-gray-900 mb-1">{{ $stats['pending_disbursement_count'] }} {{ Str::plural('loan', $stats['pending_disbursement_count']) }}</p>
+        @if($stats['pending_disbursement_count'] > 0)
+        <p class="text-xs text-gray-500 mb-0">
+            {{ $stats['scheduled_disbursement_count'] === $stats['pending_disbursement_count'] ? 'Scheduled to release automatically' : 'Waiting to be released to farmers' }}
+        </p>
+        @endif
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Active Loans</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ number_format($stats['active_count']) }}</p>
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Total Outstanding</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ peso($stats['total_outstanding']) }}</p>
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Due This Month</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ peso($stats['due_this_month']) }}</p>
+    </div>
+    <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <p class="text-sm text-gray-500 mb-1">Interest Earned</p>
+        <p class="text-xl font-bold text-gray-900 mb-0">{{ peso($stats['interest_earned']) }}</p>
+    </div>
 </div>
 
-<!-- Batches Table -->
+<!-- Batches -->
 <div class="section-card">
-    <x-table-toolbar>
-        <x-slot:filters>
-            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Batch Loans</h3>
-            <form method="GET" action="{{ route('manager.batch-loan-management') }}" class="d-flex flex-wrap align-items-center gap-3" id="batchLoanFilterForm">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-4 px-md-5 py-4">
+        @if($showArchived)
+        <h3 class="text-lg font-semibold text-gray-900 mb-0">Archived batch loans</h3>
+        @else
+        <div class="segmented" role="group" aria-label="Filter by loan status">
+            @foreach($batchTabs as $value => $label)
+            <a href="{{ route('manager.batch-loan-management', array_filter(['status' => $value, 'search' => request('search')])) }}"
+                class="{{ request('status', '') === $value ? 'active' : '' }}">{{ $label }}</a>
+            @endforeach
+        </div>
+        @endif
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.batch-loan-management') }}" id="batchLoanFilterForm" class="position-relative m-0">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
+                @elseif(request()->filled('status'))
+                <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
-                <div class="position-relative">
-                    <input type="text" name="search" id="batchLoanSearchInput" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 200px;" autocomplete="off">
-                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
-                </div>
-                @unless($showArchived)
-                <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Status</option>
-                    <option value="pending_disbursement" {{ request('status') == 'pending_disbursement' ? 'selected' : '' }}>Pending Disbursement</option>
-                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                    <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
-                    <option value="fully_paid" {{ request('status') == 'fully_paid' ? 'selected' : '' }}>Fully Paid</option>
-                </select>
-                @endunless
-                @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
-                <a href="{{ route('manager.batch-loan-management', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
-                @endif
+                <input type="text" name="search" id="batchLoanSearchInput" value="{{ request('search') }}" placeholder="Search farmer or batch" class="form-control ps-5" style="min-width: 240px;" autocomplete="off">
+                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
             </form>
-        </x-slot:filters>
-        <x-slot:actions>
-            <x-archive-toggle route="manager.batch-loan-management" :showing="$showArchived" />
-        </x-slot:actions>
-    </x-table-toolbar>
+            @if($showArchived)
+            <a href="{{ route('manager.batch-loan-management') }}" class="text-sm fw-semibold text-brand text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Back to Active</a>
+            @else
+            <a href="{{ route('manager.batch-loan-management', ['archived' => 1]) }}" class="text-sm fw-semibold text-brand text-decoration-none">View Archived ({{ $stats['archived_count'] }})</a>
+            @endif
+        </div>
+    </div>
 
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Members</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Total Principal</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Total Outstanding</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status Breakdown</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
+                    <th class="px-4 py-3 text-xs font-medium text-uppercase text-muted text-end">Total Principal</th>
+                    <th class="px-4 py-3 text-xs font-medium text-uppercase text-muted text-end">Total Outstanding</th>
+                    <th class="px-4 py-3 text-xs font-medium text-uppercase text-muted" style="min-width: 260px;">Member Loan Status</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($batchGroups as $group)
+                @php
+                    $breakdown = $group->loans->groupBy($loanState)->sortBy(fn ($members, $status) => array_search($status, $statusOrder));
+                    $allPending = $group->loans->every(fn ($loan) => $loan->status === 'pending_disbursement' && ! $loan->archived_at);
+                    $nextRelease = $group->loans->where('status', 'pending_disbursement')->whereNull('archived_at')->min('scheduled_disbursement_date');
+                @endphp
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $group->batch->label }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ $group->loans->count() }} farmer(s)</td>
-                    <td class="px-4 px-md-6 py-4">{{ peso($group->loans->sum('principal_amount')) }}</td>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($group->loans->sum('remaining_balance')) }}</td>
-                    <td class="px-4 px-md-6 py-4" style="min-width: 180px;">
-                        @php
-                            $statusBreakdown = $group->loans->groupBy(fn($loan) => $loan->archived_at ? 'archived' : $loan->status);
-                            $statusColors = ['active' => 'success', 'overdue' => 'danger', 'fully_paid' => 'secondary', 'pending_disbursement' => 'warning', 'archived' => 'dark'];
-                        @endphp
-                        <div class="progress mb-1" style="height: 6px;">
-                            @foreach($statusBreakdown as $status => $members)
-                            <div class="progress-bar bg-{{ $statusColors[$status] ?? 'secondary' }}" style="width: {{ $group->loans->count() > 0 ? round($members->count() / $group->loans->count() * 100) : 0 }}%"></div>
+                    <td class="px-4 px-md-5 py-3">
+                        <p class="batch-name mb-0">{{ $group->batch->label }}</p>
+                        <p class="text-sm text-gray-500 mb-0">{{ $group->loans->count() }} {{ Str::plural('farmer', $group->loans->count()) }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-end text-gray-700">{{ peso($group->loans->sum('principal_amount')) }}</td>
+                    <td class="px-4 py-3 text-end fw-semibold text-gray-900">{{ $allPending ? '—' : peso($group->loans->sum('remaining_balance')) }}</td>
+                    <td class="px-4 py-3">
+                        <div class="status-bar mb-2" aria-hidden="true">
+                            @foreach($breakdown as $status => $members)
+                            <span class="bg-{{ $statusTones[$status] ?? 'secondary' }}" style="flex-grow: {{ $members->count() }};"></span>
                             @endforeach
                         </div>
-                        @foreach($statusBreakdown as $status => $members)
-                        <span class="badge bg-{{ $statusColors[$status] ?? 'secondary' }}-subtle text-{{ $statusColors[$status] ?? 'secondary' }} border border-{{ $statusColors[$status] ?? 'secondary' }}-subtle me-1">{{ $members->count() }} {{ ucwords(str_replace('_', ' ', $status)) }}</span>
-                        @endforeach
-                    </td>
-                    <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="Review Members" data-bs-toggle="modal" data-bs-target="#batchDetailModal{{ $group->batch->id }}" />
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach($breakdown as $status => $members)
+                            <span class="badge bg-{{ $statusTones[$status] ?? 'secondary' }}-subtle text-{{ $statusTones[$status] ?? 'secondary' }} border border-{{ $statusTones[$status] ?? 'secondary' }}-subtle">
+                                <span class="badge-dot bg-{{ $statusTones[$status] ?? 'secondary' }}"></span>{{ $members->count() }} {{ $statusName($status) }}
+                            </span>
+                            @endforeach
                         </div>
+                        @if($nextRelease)
+                        <p class="text-xs text-gray-500 mb-0 mt-1">Auto-disburses {{ \Carbon\Carbon::parse($nextRelease)->format('M j, Y') }}</p>
+                        @endif
+                    </td>
+                    <td class="px-4 px-md-5 py-3 text-end">
+                        <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#batchDetailModal{{ $group->batch->id }}">Review Members</button>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived batch loans.' : 'No batch loans found.' }}</td>
+                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived batch loans.' : 'No batch loans found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -121,188 +161,273 @@
      table body, and browsers "correct" that by ejecting everything after the
      first row's modals out of the table, breaking every row after the first. --}}
 @foreach($batchGroups as $group)
-<x-modal id="batchDetailModal{{ $group->batch->id }}" title="{{ $group->batch->label }} Members" size="modal-xl">
-    <div class="row g-3 mb-3">
-        <div class="col-6 col-md-4">
-            <div class="border rounded-3 p-3">
-                <p class="text-muted small mb-1">Total Principal</p>
-                <p class="fw-semibold mb-0">{{ peso($group->loans->sum('principal_amount')) }}</p>
+@php
+    $groupStates = $group->loans->groupBy($loanState)->sortBy(fn ($members, $status) => array_search($status, $statusOrder));
+    $finalizedAt = $group->loans->min('created_at');
+    $rate = $group->loans->first()?->interest_rate;
+@endphp
+<div class="modal fade" id="batchDetailModal{{ $group->batch->id }}" tabindex="-1" aria-labelledby="batchDetailModal{{ $group->batch->id }}Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header align-items-start border-0 pb-2">
+                <div>
+                    <h5 class="modal-title text-2xl fw-bold d-flex align-items-center gap-2 mb-0" id="batchDetailModal{{ $group->batch->id }}Label">
+                        {{ $group->batch->label }} Members <x-status-badge status="Finalized" class="text-xs" />
+                    </h5>
+                    <p class="text-sm text-gray-500 mb-0">
+                        {{ $group->loans->count() }} {{ Str::plural('farmer', $group->loans->count()) }}
+                        @if($finalizedAt) &middot; finalized {{ \Carbon\Carbon::parse($finalizedAt)->format('M j, Y') }} @endif
+                        @if($rate !== null) &middot; {{ rtrim(rtrim(number_format($rate, 2), '0'), '.') }}% interest per due date @endif
+                    </p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </div>
-        <div class="col-6 col-md-4">
-            <div class="border rounded-3 p-3">
-                <p class="text-muted small mb-1">Total Outstanding</p>
-                <p class="fw-semibold mb-0">{{ peso($group->loans->sum('remaining_balance')) }}</p>
+            <div class="modal-body pt-2" data-batch-members>
+                @php $groupPending = $group->loans->every(fn ($loan) => $loan->status === 'pending_disbursement' && ! $loan->archived_at); @endphp
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <div class="rounded-3 p-3 bg-light">
+                        <p class="text-xs text-gray-500 mb-1">Total principal</p>
+                        <p class="text-xl font-bold text-gray-900 mb-0">{{ peso($group->loans->sum('principal_amount')) }}</p>
+                    </div>
+                    <div class="rounded-3 p-3 bg-light">
+                        <p class="text-xs text-gray-500 mb-1">Total outstanding</p>
+                        <p class="text-xl font-bold text-gray-900 mb-0">{{ $groupPending ? '—' : peso($group->loans->sum('remaining_balance')) }}</p>
+                    </div>
+                    <div class="rounded-3 p-3 bg-light">
+                        <p class="text-xs text-gray-500 mb-1">Status of {{ $group->loans->count() }} {{ Str::plural('loan', $group->loans->count()) }}</p>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach($groupStates as $status => $members)
+                            <span class="badge bg-{{ $statusTones[$status] ?? 'secondary' }}-subtle text-{{ $statusTones[$status] ?? 'secondary' }} border border-{{ $statusTones[$status] ?? 'secondary' }}-subtle">{{ $members->count() }} {{ $statusName($status) }}</span>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div class="segmented" role="group" aria-label="Filter members">
+                        <a href="#" class="active" data-member-filter="">All {{ $group->loans->count() }}</a>
+                        @foreach($groupStates as $status => $members)
+                        <a href="#" data-member-filter="{{ $status }}">{{ $statusName($status) }} {{ $members->count() }}</a>
+                        @endforeach
+                    </div>
+                    <div class="position-relative">
+                        <input type="search" class="form-control form-control-sm ps-5" placeholder="Find a farmer" data-member-search style="min-width: 220px;" aria-label="Find a farmer">
+                        <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 13px;"></i>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-xs text-uppercase text-muted">Farmer</th>
+                                <th class="text-xs text-uppercase text-muted text-end">Principal</th>
+                                <th class="text-xs text-uppercase text-muted text-end">Balance</th>
+                                <th class="text-xs text-uppercase text-muted text-end">Monthly Due</th>
+                                <th class="text-xs text-uppercase text-muted">Next Due</th>
+                                <th class="text-xs text-uppercase text-muted">Status</th>
+                                <th class="text-xs text-uppercase text-muted text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($group->loans as $loan)
+                            @php
+                                $state = $loanState($loan);
+                                $hasSchedule = in_array($loan->status, ['active', 'overdue'], true) && ! $loan->archived_at;
+                            @endphp
+                            <tr data-member-row data-status="{{ $state }}" data-name="{{ strtolower($loan->farmer->full_name) }}">
+                                <td>
+                                    <p class="text-sm fw-semibold text-gray-900 mb-0">{{ $loan->farmer->full_name }}</p>
+                                    <p class="text-xs text-gray-500 mb-0">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' · now month '.$loan->current_installment_number : '' }}</p>
+                                </td>
+                                <td class="text-sm text-end text-gray-700">{{ peso($loan->principal_amount) }}</td>
+                                <td class="text-sm text-end fw-semibold text-gray-900">{{ $loan->remaining_balance !== null && $loan->status !== 'pending_disbursement' ? peso($loan->remaining_balance) : '—' }}</td>
+                                <td class="text-sm text-end text-gray-700">{{ $hasSchedule ? peso($loan->amount_due) : '—' }}</td>
+                                <td class="text-sm {{ $loan->status === 'overdue' ? 'text-danger fw-semibold' : 'text-gray-700' }}">{{ $hasSchedule ? ($loan->next_due_date?->format('M j, Y') ?? '—') : '—' }}</td>
+                                <td>
+                                    <x-status-badge :status="$statusName($state)" />
+                                    @if($loan->delinquency_stage && ! $loan->archived_at)
+                                    <div class="text-xs text-danger mt-1">{{ $delinquencyLabels[$loan->delinquency_stage] ?? '' }}</div>
+                                    @elseif($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
+                                    <div class="text-xs text-gray-500 mt-1">Auto-disburses {{ $loan->scheduled_disbursement_date->format('M j, Y') }}</div>
+                                    @endif
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'viewModal{{ $loan->id }}')">View</button>
+                                    <div class="dropdown d-inline-block">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            @if(! $loan->archived_at)
+                                                @if(! in_array($loan->status, ['fully_paid', 'pending_disbursement'], true))
+                                                <li><button type="button" class="dropdown-item" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'editModal{{ $loan->id }}')"><i class="fas fa-pen me-2 text-gray-500"></i>Edit loan</button></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                @endif
+                                                <li><button type="button" class="dropdown-item text-danger" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'archiveModal{{ $loan->id }}')"><i class="fas fa-archive me-2"></i>Archive loan</button></li>
+                                            @else
+                                                <li><button type="button" class="dropdown-item" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'unarchiveModal{{ $loan->id }}')"><i class="fas fa-box-open me-2 text-success"></i>Restore loan</button></li>
+                                            @endif
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforeach
+                            <tr class="d-none" data-member-empty><td colspan="7" class="text-center text-muted py-4">No farmers match.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-        <div class="col-12 col-md-4">
-            <div class="border rounded-3 p-3">
-                <p class="text-muted small mb-1">Status of {{ $group->loans->count() }} loan(s)</p>
-                <p class="mb-0">
-                    @foreach($group->loans->groupBy(fn($loan) => $loan->archived_at ? 'archived' : $loan->status) as $status => $members)
-                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">{{ $members->count() }} {{ ucwords(str_replace('_', ' ', $status)) }}</span>
-                    @endforeach
-                </p>
+            <div class="modal-footer justify-content-between bg-light">
+                <p class="text-xs text-gray-500 mb-0">More holds Edit (while the loan is active or overdue) and Archive. Archived loans show Restore instead.</p>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
-    <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="d-none small">Loan ID</th>
-                    <th class="small">Farmer</th>
-                    <th class="small">Principal</th>
-                    <th class="small">Repayment Terms</th>
-                    <th class="small">Balance</th>
-                    <th class="small">Monthly Due</th>
-                    <th class="small">Next Due</th>
-                    <th class="small">Status</th>
-                    <th class="small">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($group->loans as $loan)
-                <tr>
-                    <td class="d-none small fw-medium text-dark">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</td>
-                    <td class="small">{{ $loan->farmer->full_name }}</td>
-                    <td class="small">{{ peso($loan->principal_amount) }}</td>
-                    <td class="small text-muted">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' (now '.$loan->current_installment_number.')' : '' }}</td>
-                    <td class="small fw-medium text-dark">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</td>
-                    <td class="small text-muted">{{ peso($loan->amount_due) }}</td>
-                    <td class="small {{ $loan->status === 'overdue' ? 'text-danger' : 'text-muted' }}">{{ $loan->next_due_date?->format('M d, Y') ?? '—' }}</td>
-                    <td class="small">
-                        @if($loan->archived_at)
-                        <x-status-badge status="Archived" />
-                        @else
-                        <x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" />
-                        @endif
-                        @if($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
-                        <div class="text-muted" style="font-size: 0.7rem;">Auto-disburses {{ $loan->scheduled_disbursement_date->format('M d, Y') }}</div>
-                        @endif
-                    </td>
-                    <td class="small">
-                        <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'viewModal{{ $loan->id }}'); return false;">View</x-dropdown-item>
-                            @if(!$loan->archived_at)
-                                @if(!in_array($loan->status, ['fully_paid', 'pending_disbursement']))
-                                <x-dropdown-item icon="fa-edit" color="warning" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'editModal{{ $loan->id }}'); return false;">Edit</x-dropdown-item>
-                                @endif
-                                <x-dropdown-item icon="fa-archive" color="secondary" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'archiveModal{{ $loan->id }}'); return false;">Archive</x-dropdown-item>
-                            @else
-                                <x-dropdown-item icon="fa-box-open" color="success" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'unarchiveModal{{ $loan->id }}'); return false;">Restore</x-dropdown-item>
-                            @endif
-                        </x-action-dropdown>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-</x-modal>
+</div>
 @endforeach
 
 @foreach($batchGroups as $group)
 @foreach($group->loans as $loan)
-<!-- View Modal (details + payment history) -->
-<x-modal id="viewModal{{ $loan->id }}" title="Loan Details">
-    <div class="row g-3 mb-3">
-        <div class="d-none col-6"><label class="text-muted small d-block">Loan ID</label><p class="fw-medium mb-0">LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $loan->farmer->full_name }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Loan Type</label><p class="fw-medium mb-0">{{ $group->batch->label }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Principal Amount</label><p class="fw-medium mb-0">{{ peso($loan->principal_amount) }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Remaining Balance</label><p class="fw-medium mb-0">{{ $loan->remaining_balance !== null ? peso($loan->remaining_balance) : '—' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Repayment Terms</label><p class="fw-medium mb-0">{{ $loan->repayment_terms_months }} months{{ $loan->effective_term_months > $loan->repayment_terms_months ? ' — extended, now on month '.$loan->current_installment_number : '' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Interest Rate</label><p class="fw-medium mb-0">{{ $loan->interest_rate }}% per due date</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Collateral</label><p class="fw-medium mb-0">{{ $loan->collateral ?? '—' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucwords(str_replace('_', ' ', $loan->status))" /></div>
-        @if($loan->disbursed_at)
-        <div class="col-6"><label class="text-muted small d-block">Disbursed</label><p class="fw-medium mb-0">{{ $loan->disbursed_at->format('M d, Y') }} &mdash; {{ ucwords(str_replace('_', ' ', $loan->disbursement_method)) }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Released By</label><p class="fw-medium mb-0">{{ $loan->disbursedBy->name ?? '—' }}</p></div>
-        @elseif($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
-        <div class="col-6"><label class="text-muted small d-block">Scheduled Disbursement</label><p class="fw-medium mb-0">{{ $loan->scheduled_disbursement_date->format('M d, Y') }} &mdash; {{ ucwords(str_replace('_', ' ', $loan->disbursement_method ?? 'cash')) }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Scheduled By</label><p class="fw-medium mb-0">{{ $loan->scheduledBy->name ?? '—' }}</p></div>
-        @endif
-        @if($loan->notes)
-        <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $loan->notes }}</p></div>
-        @endif
-    </div>
+@php
+    $state = $loanState($loan);
+    $hasSchedule = in_array($loan->status, ['active', 'overdue'], true) && ! $loan->archived_at;
+    $farmerPayments = $loan->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->count();
+    $totalToRepay = round($loan->monthly_due * $loan->repayment_terms_months, 2);
+    $penalties = [
+        ['label' => '2% grace interest', 'at' => $loan->partial_penalty_applied_at, 'none' => 'Not applied'],
+        ['label' => '10% grace penalty and restriction', 'at' => $loan->grace_penalty_applied_at, 'none' => 'Not applied'],
+        ['label' => 'Barangay summons', 'at' => $loan->barangay_summon_at, 'none' => 'Not flagged'],
+        ['label' => 'Legal action', 'at' => $loan->legal_action_at, 'none' => 'Not flagged'],
+    ];
+@endphp
+<!-- Farmer loan (details + history) -->
+<div class="modal fade" id="viewModal{{ $loan->id }}" tabindex="-1" aria-labelledby="viewModal{{ $loan->id }}Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header align-items-start border-0 pb-0">
+                <div class="flex-grow-1">
+                    <button type="button" class="btn btn-light btn-sm fw-semibold mb-2" onclick="switchModal('viewModal{{ $loan->id }}', 'batchDetailModal{{ $group->batch->id }}')">
+                        <i class="fas fa-chevron-left me-1"></i>{{ $group->batch->label }} Members
+                    </button>
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div>
+                            <h5 class="modal-title text-2xl fw-bold mb-0" id="viewModal{{ $loan->id }}Label">{{ $loan->farmer->full_name }}</h5>
+                            <p class="text-sm text-gray-500 mb-0">Batch loan &middot; {{ $group->batch->label }} &middot; {{ $loan->repayment_terms_months }} months</p>
+                        </div>
+                        <x-status-badge :status="$statusName($state)" class="mt-1" />
+                    </div>
+                </div>
+                <button type="button" class="btn-close ms-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <div class="rounded-3 p-3 bg-light">
+                        <p class="text-xs text-gray-500 mb-1">Remaining balance</p>
+                        <p class="text-2xl font-bold text-gray-900 mb-0">{{ $loan->remaining_balance !== null && $loan->status !== 'pending_disbursement' ? peso($loan->remaining_balance) : '—' }}</p>
+                    </div>
+                    @if($loan->status === 'pending_disbursement')
+                    <div class="rounded-3 p-3 bg-warning-subtle">
+                        <p class="text-xs text-warning mb-1">Release date</p>
+                        <p class="text-2xl font-bold text-warning mb-0">{{ $loan->scheduled_disbursement_date?->format('M j, Y') ?? 'Not scheduled' }}</p>
+                    </div>
+                    @else
+                    <div class="rounded-3 p-3 {{ $loan->status === 'overdue' ? 'bg-danger-subtle' : 'bg-light' }}">
+                        <p class="text-xs {{ $loan->status === 'overdue' ? 'text-danger' : 'text-gray-500' }} mb-1">Next due</p>
+                        <p class="text-2xl font-bold {{ $loan->status === 'overdue' ? 'text-danger' : 'text-gray-900' }} mb-0">{{ $hasSchedule ? ($loan->next_due_date?->format('M j, Y') ?? '—') : '—' }}</p>
+                    </div>
+                    @endif
+                </div>
 
-    @if($loan->original_due_date)
-    <h4 class="text-sm fw-semibold text-dark mb-2">Delinquency &amp; Penalties</h4>
-    <div class="row g-3 mb-3">
-        <div class="col-6"><label class="text-muted small d-block">Original Due Date</label><p class="fw-medium mb-0">{{ $loan->original_due_date->format('M d, Y') }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Grace Period Ends</label><p class="fw-medium mb-0">{{ $loan->original_due_date->copy()->addDays(30)->format('M d, Y') }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">2% Grace Interest</label><p class="fw-medium mb-0">{{ $loan->partial_penalty_applied_at?->format('M d, Y') ?? 'Not applied' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">10% Grace Penalty</label><p class="fw-medium mb-0">{{ $loan->grace_penalty_applied_at?->format('M d, Y') ?? 'Not applied' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Barangay Summons</label><p class="fw-medium mb-0">{{ $loan->barangay_summon_at?->format('M d, Y') ?? 'Not flagged' }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Legal Action</label><p class="fw-medium mb-0">{{ $loan->legal_action_at?->format('M d, Y') ?? 'Not flagged' }}</p></div>
-        @if($loan->is_restricted)
-        <div class="col-12"><p class="fw-medium mb-0 text-danger"><i class="fas fa-ban me-1"></i> This farmer is restricted from new loan requests until this balance is fully paid.</p></div>
-        @endif
-    </div>
-    @endif
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 mb-4">
+                    <div><p class="text-xs text-gray-500 mb-0">Principal</p><p class="text-sm fw-semibold mb-0">{{ peso($loan->principal_amount) }}</p></div>
+                    <div><p class="text-xs text-gray-500 mb-0">Interest rate</p><p class="text-sm fw-semibold mb-0">{{ rtrim(rtrim(number_format($loan->interest_rate, 2), '0'), '.') }}% per due date</p></div>
+                    <div><p class="text-xs text-gray-500 mb-0">Monthly due</p><p class="text-sm fw-semibold mb-0">{{ $hasSchedule ? peso($loan->amount_due) : '—' }}</p></div>
+                    @if($loan->disbursed_at)
+                    <div><p class="text-xs text-gray-500 mb-0">Released</p><p class="text-sm fw-semibold mb-0">{{ $loan->disbursed_at->format('M j, Y') }} &middot; {{ $statusName($loan->disbursement_method ?? 'cash') }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
+                    <div><p class="text-xs text-gray-500 mb-0">Released by</p><p class="text-sm fw-semibold mb-0">{{ $loan->disbursedBy->name ?? '—' }}</p></div>
+                    @elseif($loan->status === 'pending_disbursement' && $loan->scheduled_disbursement_date)
+                    <div><p class="text-xs text-gray-500 mb-0">Release method</p><p class="text-sm fw-semibold mb-0">{{ $statusName($loan->disbursement_method ?? 'cash') }}{{ $loan->reference_no ? ' (Ref: '.$loan->reference_no.')' : '' }}</p></div>
+                    <div><p class="text-xs text-gray-500 mb-0">Scheduled by</p><p class="text-sm fw-semibold mb-0">{{ $loan->scheduledBy->name ?? '—' }}</p></div>
+                    @endif
+                    <div><p class="text-xs text-gray-500 mb-0">Collateral</p><p class="text-sm fw-semibold mb-0">{{ $loan->collateral ?? '—' }}</p></div>
+                    @if($loan->notes)
+                    <div class="col-span-full"><p class="text-xs text-gray-500 mb-0">Notes</p><p class="text-sm fw-semibold mb-0">{{ $loan->notes }}</p></div>
+                    @endif
+                </div>
 
-    @if(in_array($loan->status, ['active', 'overdue', 'fully_paid'], true))
-    <h4 class="text-sm fw-semibold text-dark mb-2">How the Balance Adds Up</h4>
-    <div class="border rounded-3 p-3 mb-3 small">
-        <div class="d-flex justify-content-between mb-1">
-            <span>Total to repay ({{ peso($loan->principal_amount) }} borrowed + {{ peso(round($loan->monthly_due * $loan->repayment_terms_months - $loan->principal_amount, 2)) }} interest for {{ $loan->repayment_terms_months }} months)</span>
-            <span class="fw-medium">{{ peso(round($loan->monthly_due * $loan->repayment_terms_months, 2)) }}</span>
-        </div>
-        @if($loan->late_charges['count'] > 0)
-        <div class="d-flex justify-content-between mb-1 text-danger">
-            <span>Late charges added ({{ $loan->late_charges['count'] }} charge{{ $loan->late_charges['count'] === 1 ? '' : 's' }} for missed due dates)</span>
-            <span class="fw-medium">+ {{ peso($loan->late_charges['total']) }}</span>
-        </div>
-        @endif
-        <div class="d-flex justify-content-between mb-1">
-            <span>Paid by farmer ({{ $loan->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->count() }} payment{{ $loan->payments->whereIn('type', ['payment', 'prepayment', 'partial'])->count() === 1 ? '' : 's' }})</span>
-            <span class="fw-medium">&minus; {{ peso($loan->amount_paid) }}</span>
-        </div>
-        <hr class="my-2">
-        <div class="d-flex justify-content-between fw-semibold">
-            <span>Remaining balance</span>
-            <span>{{ peso($loan->remaining_balance) }}</span>
-        </div>
-    </div>
-    @endif
+                @if($loan->original_due_date)
+                <h4 class="text-base fw-semibold text-gray-900 mb-2">Delinquency and penalties</h4>
+                <ul class="list-unstyled mb-2">
+                    @foreach($penalties as $penalty)
+                    <li class="d-flex align-items-center justify-content-between gap-3 py-2 {{ $loop->last ? '' : 'border-bottom' }}">
+                        <span class="text-sm d-flex align-items-center gap-2">
+                            <i class="{{ $penalty['at'] ? 'fas fa-circle-exclamation text-danger' : 'far fa-circle text-gray-400' }}"></i>{{ $penalty['label'] }}
+                        </span>
+                        <span class="text-sm {{ $penalty['at'] ? 'text-danger fw-semibold' : 'text-gray-500' }}">{{ $penalty['at'] ? $penalty['at']->format('M j, Y') : $penalty['none'] }}</span>
+                    </li>
+                    @endforeach
+                </ul>
+                <p class="text-xs text-gray-500 mb-4">Grace period for the original due date ({{ $loan->original_due_date->format('M j, Y') }}) ends {{ $loan->original_due_date->copy()->addDays(30)->format('M j, Y') }}.</p>
+                @if($loan->is_restricted)
+                <p class="text-sm fw-semibold text-danger mb-4"><i class="fas fa-ban me-1"></i>This farmer is restricted from new loan requests until this balance is fully paid.</p>
+                @endif
+                @endif
 
-    <h4 class="text-sm fw-semibold text-dark mb-2">History</h4>
-    <div class="table-responsive" style="max-height: 280px;">
-        <table class="table table-sm mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="small">Date</th>
-                    <th class="small">What Happened</th>
-                    <th class="small text-end">Paid</th>
-                    <th class="small text-end">Charged</th>
-                    <th class="small text-end">Balance</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse(array_reverse($loan->narrated_history) as $row)
-                <tr>
-                    <td class="small text-nowrap">{{ $row['date']->format('M d, Y') }}</td>
-                    <td class="small">{{ $row['summary'] }}</td>
-                    <td class="small text-end">{{ $row['paid'] !== null ? '-'.peso($row['paid']) : '' }}</td>
-                    <td class="small text-end text-danger">{{ $row['charged'] !== null ? '+'.peso($row['charged']) : '' }}</td>
-                    <td class="small text-end fw-medium">{{ peso($row['balance']) }}</td>
-                </tr>
-                @empty
-                <tr><td colspan="5" class="text-center text-muted small py-3">No transactions yet.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-    <p class="text-muted small mb-0 mt-2">Only <strong>Paid</strong> is money the farmer gave. <strong>Charged</strong> is added to what the farmer owes.</p>
+                @if(in_array($loan->status, ['active', 'overdue', 'fully_paid'], true))
+                <h4 class="text-base fw-semibold text-gray-900 mb-2">How the balance adds up</h4>
+                <div class="border rounded-3 px-3 mb-4">
+                    <div class="d-flex justify-content-between gap-3 py-2 border-bottom text-sm">
+                        <span><strong>Total to repay</strong> ({{ peso($loan->principal_amount) }} borrowed + {{ peso(round($totalToRepay - $loan->principal_amount, 2)) }} interest for {{ $loan->repayment_terms_months }} months)</span>
+                        <span class="fw-semibold text-nowrap">{{ peso($totalToRepay) }}</span>
+                    </div>
+                    @if($loan->late_charges['count'] > 0)
+                    <div class="d-flex justify-content-between gap-3 py-2 border-bottom text-sm text-danger">
+                        <span><strong>Late charges added</strong> ({{ $loan->late_charges['count'] }} {{ Str::plural('charge', $loan->late_charges['count']) }} for missed due dates)</span>
+                        <span class="fw-semibold text-nowrap">+ {{ peso($loan->late_charges['total']) }}</span>
+                    </div>
+                    @endif
+                    <div class="d-flex justify-content-between gap-3 py-2 text-sm">
+                        <span><strong>Paid by farmer</strong> ({{ $farmerPayments }} {{ Str::plural('payment', $farmerPayments) }})</span>
+                        <span class="fw-semibold text-nowrap">&minus; {{ peso($loan->amount_paid) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between gap-3 py-2 border-top border-2 border-dark">
+                        <span class="fw-bold">Remaining balance</span>
+                        <span class="text-xl fw-bold text-nowrap">{{ peso($loan->remaining_balance) }}</span>
+                    </div>
+                </div>
+                @endif
 
-    <div class="mt-3 text-end">
-        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchModal('viewModal{{ $loan->id }}', 'batchDetailModal{{ $group->batch->id }}')">
-            <i class="fas fa-arrow-left me-1"></i> Back to {{ $group->batch->label }}
-        </button>
+                <h4 class="text-base fw-semibold text-gray-900 mb-2">History</h4>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0 align-top">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-xs text-uppercase text-muted">Date</th>
+                                <th class="text-xs text-uppercase text-muted">What happened</th>
+                                <th class="text-xs text-uppercase text-muted text-end">Paid</th>
+                                <th class="text-xs text-uppercase text-muted text-end">Charged</th>
+                                <th class="text-xs text-uppercase text-muted text-end">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(array_reverse($loan->narrated_history) as $row)
+                            <tr>
+                                <td class="text-sm text-nowrap text-gray-700">{{ $row['date']->format('M j, Y') }}</td>
+                                <td class="text-sm {{ $row['charged'] !== null ? 'text-danger' : 'text-gray-900' }}">{{ $row['summary'] }}</td>
+                                <td class="text-sm text-end text-nowrap">{{ $row['paid'] !== null ? '− '.peso($row['paid']) : '' }}</td>
+                                <td class="text-sm text-end text-nowrap text-danger">{{ $row['charged'] !== null ? '+ '.peso($row['charged']) : '' }}</td>
+                                <td class="text-sm text-end text-nowrap fw-semibold">{{ peso($row['balance']) }}</td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="5" class="text-center text-muted text-sm py-3">No transactions yet.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-gray-500 mb-0 mt-2">Only <strong>Paid</strong> is money the farmer gave. <strong class="text-danger">Charged</strong> is added to what the farmer owes.</p>
+            </div>
+        </div>
     </div>
-</x-modal>
+</div>
 
 @if(!$loan->archived_at && !in_array($loan->status, ['fully_paid', 'pending_disbursement']))
 <!-- Edit Modal -->
@@ -392,15 +517,7 @@
 @endforeach
 @endforeach
 
-<!-- Interest Computation Info -->
-<x-info-banner variant="info" title="Interest Computation: 2% every due date" class="mt-6">
-    Interest is automatically calculated and added to the loan balance whenever a due date passes without payment.
-</x-info-banner>
-
-<!-- Delinquency Policy Info -->
-<x-info-banner variant="warning" title="Grace Period &amp; Penalty Policy" class="mt-4">
-    If a due date passes with a balance still unpaid, a one-time 2% grace-period interest applies. If it's still unpaid after the 30-day grace period, a one-time 10% penalty applies and the farmer is restricted from new loan requests until fully paid. Accounts unpaid for 5 months are flagged for Barangay summons, and for 6 months for legal action &mdash; both notify the Administrator.
-</x-info-banner>
+<x-loan-rules class="mt-6" />
 
 <script>
     // Hides one modal and, once it's fully closed, opens another. Bootstrap
@@ -423,5 +540,34 @@
     }
 
     wireDebouncedSearch('batchLoanSearchInput', 'batchLoanFilterForm');
+
+    // Batch members modal: status tabs and "Find a farmer" filter the rows in place.
+    document.querySelectorAll('[data-batch-members]').forEach(function (panel) {
+        var search = panel.querySelector('[data-member-search]');
+        var rows = panel.querySelectorAll('[data-member-row]');
+        var empty = panel.querySelector('[data-member-empty]');
+        var status = '';
+
+        function apply() {
+            var term = search.value.trim().toLowerCase();
+            var shown = 0;
+            rows.forEach(function (row) {
+                var match = (!status || row.dataset.status === status) && (!term || row.dataset.name.indexOf(term) !== -1);
+                row.classList.toggle('d-none', !match);
+                if (match) { shown++; }
+            });
+            empty.classList.toggle('d-none', shown > 0);
+        }
+
+        panel.querySelectorAll('[data-member-filter]').forEach(function (tab) {
+            tab.addEventListener('click', function (e) {
+                e.preventDefault();
+                status = tab.dataset.memberFilter;
+                panel.querySelectorAll('[data-member-filter]').forEach(function (t) { t.classList.toggle('active', t === tab); });
+                apply();
+            });
+        });
+        search.addEventListener('input', apply);
+    });
 </script>
 @endsection

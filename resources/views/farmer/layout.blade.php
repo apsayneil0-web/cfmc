@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     @include('partials.favicon')
+    @include('partials.fonts')
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="session-timeout-minutes" content="{{ config('session.inactivity_timeout') }}">
@@ -21,7 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-light min-h-screen">
+<body class="bg-light min-h-screen has-tabbar">
     <div class="app-shell">
         <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
@@ -77,7 +78,7 @@
             <!-- Top Header -->
             <header class="app-topbar bg-white border-b border-gray-200 px-4 px-md-8 py-4 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="icon-btn text-secondary sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+                    <button type="button" class="icon-btn text-secondary sidebar-toggle d-none d-lg-inline-flex" id="sidebarToggle" aria-label="Toggle navigation">
                         <i class="fas fa-bars"></i>
                     </button>
                     <h1 class="text-xl font-semibold text-gray-900 mb-0">@yield('header', 'Dashboard')</h1>
@@ -104,6 +105,46 @@
                 @yield('content')
             </div>
         </main>
+    </div>
+
+    <!-- Bottom tab bar (phones only; desktop keeps the sidebar) -->
+    @php
+        $moreActive = request()->routeIs('farmer.loan-appointment', 'farmer.cbu', 'farmer.complaints');
+    @endphp
+    <nav class="farmer-tabbar d-lg-none" aria-label="Main">
+        <a href="{{ route('farmer.dashboard') }}" class="farmer-tab {{ request()->routeIs('farmer.dashboard') ? 'active' : '' }}">
+            <i class="fas fa-house"></i><span>Home</span>
+        </a>
+        <a href="{{ route('farmer.schedule') }}" class="farmer-tab {{ request()->routeIs('farmer.schedule') ? 'active' : '' }}">
+            <i class="fas fa-tractor"></i><span>Request</span>
+        </a>
+        <a href="{{ route('farmer.loans') }}" class="farmer-tab {{ request()->routeIs('farmer.loans') ? 'active' : '' }}">
+            <i class="fas fa-file-invoice-dollar"></i><span>My Loans</span>
+        </a>
+        <button type="button" class="farmer-tab {{ $moreActive ? 'active' : '' }}" data-bs-toggle="offcanvas" data-bs-target="#farmerMoreSheet" aria-controls="farmerMoreSheet">
+            <i class="fas fa-ellipsis"></i><span>More</span>
+        </button>
+    </nav>
+
+    <div class="offcanvas offcanvas-bottom farmer-more-sheet d-lg-none" tabindex="-1" id="farmerMoreSheet" aria-labelledby="farmerMoreSheetLabel">
+        <div class="offcanvas-header pb-2">
+            <h5 class="offcanvas-title fw-bold" id="farmerMoreSheetLabel">More</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body pt-0">
+            <a href="{{ route('farmer.loan-appointment') }}" class="farmer-more-link {{ request()->routeIs('farmer.loan-appointment') ? 'active' : '' }}">
+                <i class="fas fa-hand-holding-usd"></i>Loan Appointment
+            </a>
+            <a href="{{ route('farmer.cbu') }}" class="farmer-more-link {{ request()->routeIs('farmer.cbu') ? 'active' : '' }}">
+                <i class="fas fa-piggy-bank"></i>CBU Records
+            </a>
+            <a href="{{ route('farmer.complaints') }}" class="farmer-more-link {{ request()->routeIs('farmer.complaints') ? 'active' : '' }}">
+                <i class="fas fa-exclamation-circle"></i>Complaints
+            </a>
+            <button type="button" class="farmer-more-link text-danger" data-bs-dismiss="offcanvas" onclick="confirmLogout()">
+                <i class="fas fa-sign-out-alt"></i>Logout
+            </button>
+        </div>
     </div>
 
     <!-- Bootstrap 5 JS -->

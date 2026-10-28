@@ -1,7 +1,7 @@
 @extends('manager.layout')
 
 @section('title', 'Machinery')
-@section('header', 'Machinery Management')
+@section('header', 'Machinery')
 
 @section('content')
 @if(session('success'))
@@ -25,56 +25,149 @@
 </div>
 @endif
 
-<!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <x-stat-card label="Total Machinery" value="{{ $stats['total'] }}" icon="fa-cogs" color="secondary" />
-    <x-stat-card label="Total Units" value="{{ $stats['total_units'] }}" icon="fa-layer-group" color="primary" />
-    <x-stat-card label="With Operator Assigned" value="{{ $stats['with_operator'] }}" icon="fa-user-check" color="success" />
-    <x-stat-card label="Archived" value="{{ $stats['archived'] }}" icon="fa-box-archive" color="secondary" />
+@php
+    // Links keep the current search/type/archived/view, minus pagination.
+    $machineryUrl = fn (array $changes = []) => route('manager.machinery', array_filter(
+        array_merge(request()->except('page'), $changes),
+        fn ($value) => $value !== null && $value !== ''
+    ));
+    $threshold = \App\Models\Machine::MAINTENANCE_HOURS_THRESHOLD;
+    $statusLabels = ['available' => 'Available', 'in_use' => 'In Use', 'maintenance' => 'Maintenance'];
+@endphp
+
+<!-- Page heading -->
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-5">
+    <p class="text-sm text-gray-500 mb-0">
+        {{ $stats['total'] }} {{ Str::plural('machine', $stats['total']) }} &middot;
+        {{ $stats['total_units'] }} {{ Str::plural('unit', $stats['total_units']) }} &middot;
+        {{ $stats['with_operator'] }} with an operator assigned
+    </p>
+    <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addMachineModal">
+        <i class="fas fa-plus"></i><span>Add Machinery</span>
+    </button>
 </div>
 
-<!-- Machinery Table -->
-<div class="section-card">
-    <x-table-toolbar>
-        <x-slot:filters>
-            <form method="GET" action="{{ route('manager.machinery') }}" class="d-flex flex-wrap align-items-center gap-3" id="machineryFilterForm">
-                @if($showArchived)
-                <input type="hidden" name="archived" value="1">
-                @endif
-                <div class="position-relative">
-                    <input type="text" name="search" id="machinerySearchInput" value="{{ request('search') }}" placeholder="Search machinery..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
-                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
-                </div>
-                <select name="type" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Types</option>
-                    @foreach($existingTypes as $type)
-                    <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>{{ $type }}</option>
-                    @endforeach
-                </select>
-                @if(request()->anyFilled(['search', 'type']))
-                <a href="{{ route('manager.machinery', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
-                @endif
-            </form>
-        </x-slot:filters>
-        <x-slot:actions>
-            @if($showArchived)
-            <a href="{{ route('manager.machinery', request()->except('archived')) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-                <i class="fas fa-arrow-left"></i><span>Back to Active</span>
-            </a>
-            @else
-            <a href="{{ route('manager.machinery', array_merge(request()->query(), ['archived' => 1])) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-                <i class="fas fa-box-archive"></i><span>View Archived</span>
-            </a>
-            @endif
-            <a href="{{ route('manager.machine-usage') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-                <i class="fas fa-chart-line"></i><span>Usage Monitor</span>
-            </a>
-            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addMachineModal">
-                <i class="fas fa-plus"></i><span>Add Machinery</span>
-            </button>
-        </x-slot:actions>
-    </x-table-toolbar>
+<!-- Filters -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{{ $machineryUrl(['type' => null]) }}" class="filter-chip {{ request('type') ? '' : 'active' }}">
+            All types <span class="filter-chip-count">{{ $typeCounts->sum() }}</span>
+        </a>
+        @foreach($typeCounts as $type => $count)
+        <a href="{{ $machineryUrl(['type' => $type]) }}" class="filter-chip {{ request('type') === $type ? 'active' : '' }}">
+            {{ $type }} <span class="filter-chip-count">{{ $count }}</span>
+        </a>
+        @endforeach
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-3">
+        <form method="GET" action="{{ route('manager.machinery') }}" id="machineryFilterForm" class="position-relative m-0">
+            @foreach(request()->only(['archived', 'type', 'view']) as $key => $value)
+            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+            @endforeach
+            <input type="text" name="search" id="machinerySearchInput" value="{{ request('search') }}" placeholder="Search machinery" class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
+            <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
+        </form>
+        <a href="{{ route('manager.machine-usage') }}" class="text-sm fw-semibold text-brand text-decoration-none">Usage Monitor</a>
+        <span class="text-gray-300" aria-hidden="true">|</span>
+        @if($showArchived)
+        <a href="{{ $machineryUrl(['archived' => null, 'type' => null]) }}" class="text-sm fw-semibold text-brand text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Back to Active</a>
+        @else
+        <a href="{{ $machineryUrl(['archived' => 1, 'type' => null]) }}" class="text-sm fw-semibold text-brand text-decoration-none">View Archived ({{ $stats['archived'] }})</a>
+        @endif
+        <div class="segmented" role="group" aria-label="Layout">
+            <a href="{{ $machineryUrl(['view' => null]) }}" class="{{ $viewMode === 'cards' ? 'active' : '' }}">Cards</a>
+            <a href="{{ $machineryUrl(['view' => 'list']) }}" class="{{ $viewMode === 'list' ? 'active' : '' }}">List</a>
+        </div>
+    </div>
+</div>
 
+@if(request()->filled('search'))
+<p class="text-sm text-gray-500 mb-3">
+    Results for "{{ request('search') }}" &middot; <a href="{{ $machineryUrl(['search' => null]) }}" class="text-brand">Clear</a>
+</p>
+@endif
+
+@if($viewMode === 'cards')
+<!-- Machinery cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+    @forelse($machines as $machine)
+    @php
+        $status = $machine->status;
+        $hours = $machine->usage_hours;
+        $usagePct = $threshold > 0 ? min(100, round($hours / $threshold * 100)) : 0;
+        $usageTone = $hours >= $threshold ? 'danger' : ($usagePct >= 70 ? 'warning' : 'success');
+        $typeName = strtolower($machine->type ?? '');
+        $isWheatArt = str_contains($typeName, 'seed') || str_contains($typeName, 'plant');
+    @endphp
+    <div class="machine-card">
+        <div class="machine-card-art {{ $isWheatArt ? 'is-wheat' : '' }}">
+            <span class="machine-card-type">{{ $machine->type ?? 'Machine' }}</span>
+            @if($showArchived)
+            <span class="machine-card-status"><span class="dot bg-secondary"></span>Archived</span>
+            @else
+            <span class="machine-card-status">
+                <span class="dot {{ $status === 'maintenance' ? 'bg-danger' : ($status === 'in_use' ? 'bg-info' : 'bg-success') }}"></span>{{ $statusLabels[$status] ?? ucfirst($status) }}
+            </span>
+            @endif
+            <x-machine-illustration :type="$machine->type" />
+        </div>
+        <div class="machine-card-body">
+            <h3 class="text-xl font-semibold text-gray-900 mb-0">{{ $machine->name }}</h3>
+            <p class="text-sm text-gray-500 mb-3">
+                {{ collect([$machine->brand, $machine->serial_number ? 'S/N '.$machine->serial_number : null])->filter()->implode(' · ') ?: '—' }}
+            </p>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
+                <div>
+                    <p class="text-xs text-gray-500 mb-0">Units</p>
+                    <p class="text-sm fw-semibold text-gray-900 mb-0">{{ $machine->quantity }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 mb-0">Daily limit</p>
+                    <p class="text-sm fw-semibold text-gray-900 mb-0">{{ number_format($machine->daily_hectare_limit, 2) }} ha/day</p>
+                </div>
+                <div class="col-span-2">
+                    <p class="text-xs text-gray-500 mb-0">Assigned operator</p>
+                    <p class="text-sm fw-semibold text-gray-900 mb-0">{{ $machine->assigned_operator ?: 'No operator yet' }}</p>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between text-xs mb-1">
+                <span class="text-gray-500">Usage before maintenance</span>
+                <span class="fw-semibold {{ $usageTone === 'danger' ? 'text-danger' : 'text-gray-900' }}">{{ rtrim(rtrim(number_format($hours, 1), '0'), '.') }} / {{ $threshold }} hrs</span>
+            </div>
+            <div class="progress mb-4" style="height: 6px;" role="progressbar" aria-label="Usage before maintenance" aria-valuenow="{{ $usagePct }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-{{ $usageTone }}" style="width: {{ $hours > 0 ? max($usagePct, 2) : 0 }}%"></div>
+            </div>
+            <div class="d-flex gap-2 mt-auto">
+                <button type="button" class="btn btn-outline-primary flex-grow-1" data-bs-toggle="modal" data-bs-target="#viewMachineModal{{ $machine->id }}">View</button>
+                <div class="dropdown">
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        @if($showArchived)
+                        <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#unarchiveMachineModal{{ $machine->id }}"><i class="fas fa-box-open me-2 text-success"></i>Restore</button></li>
+                        @else
+                        <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editMachineModal{{ $machine->id }}"><i class="fas fa-pen me-2 text-gray-500"></i>Edit</button></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#archiveMachineModal{{ $machine->id }}"><i class="fas fa-archive me-2"></i>Archive</button></li>
+                        @endif
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    @empty
+    <div class="col-span-full bg-white rounded-xl border border-gray-200 p-6 text-center text-muted">
+        {{ $showArchived ? 'No archived machinery.' : 'No machinery on record yet.' }}
+    </div>
+    @endforelse
+</div>
+@if($machines->hasPages())
+<div class="section-card mt-5">
+    <x-pagination-footer :paginator="$machines" />
+</div>
+@endif
+@else
+<!-- Machinery table -->
+<div class="section-card">
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-light">
@@ -103,12 +196,13 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->assigned_operator ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewMachineModal{{ $machine->id }}">View</x-dropdown-item>
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewMachineModal{{ $machine->id }}">View</button></x-slot:primary>
                             @if($showArchived)
-                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveMachineModal{{ $machine->id }}">Restore</x-dropdown-item>
+                            <x-dropdown-item icon="fa-box-open" data-bs-toggle="modal" data-bs-target="#unarchiveMachineModal{{ $machine->id }}">Restore</x-dropdown-item>
                             @else
-                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editMachineModal{{ $machine->id }}">Edit</x-dropdown-item>
-                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveMachineModal{{ $machine->id }}">Archive</x-dropdown-item>
+                            <x-dropdown-item icon="fa-pen" data-bs-toggle="modal" data-bs-target="#editMachineModal{{ $machine->id }}">Edit</x-dropdown-item>
+                            <li><hr class="dropdown-divider"></li>
+                            <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveMachineModal{{ $machine->id }}">Archive</x-dropdown-item>
                             @endif
                         </x-action-dropdown>
                     </td>
@@ -123,6 +217,7 @@
     </div>
     <x-pagination-footer :paginator="$machines" />
 </div>
+@endif
 
 {{-- Modals rendered outside <tbody>: a <div> is not valid directly inside a
      table body, and browsers "correct" that by ejecting everything after the

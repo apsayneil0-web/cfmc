@@ -96,12 +96,13 @@
                     </td>
                     <td class="px-4 px-md-6 py-4">
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}">View</x-dropdown-item>
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}">View</button></x-slot:primary>
                             @if($farmer->status == 'pending')
-                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}">Edit</x-dropdown-item>
-                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
+                            <x-dropdown-item icon="fa-pen" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}">Edit</x-dropdown-item>
+                            <li><hr class="dropdown-divider"></li>
+                            <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
                             @elseif($farmer->status == 'archived')
-                            <x-dropdown-item icon="fa-box-open" color="success" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $farmer->id }}">Unarchive</x-dropdown-item>
+                            <x-dropdown-item icon="fa-box-open" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $farmer->id }}">Unarchive</x-dropdown-item>
                             @endif
                         </x-action-dropdown>
                     </td>
@@ -569,6 +570,11 @@
     #confirmModal {
         z-index: 1060 !important;
     }
+    /* The confirm box opens on top of the New Membership window; lift its
+       backdrop between the two so the form behind is dimmed and blurred. */
+    .modal-backdrop.confirm-backdrop {
+        z-index: 1058;
+    }
     #confirmModal .modal-dialog {
         max-width: 500px;
     }
@@ -587,6 +593,17 @@
 </style>
 
 <script>
+    // Bootstrap gives a stacked modal's backdrop the same layer as the first
+    // backdrop, under the New Membership window. Tag it so CSS lifts it above.
+    document.getElementById('confirmModal')?.addEventListener('show.bs.modal', function () {
+        setTimeout(function () {
+            var backdrops = document.querySelectorAll('.modal-backdrop');
+            if (backdrops.length > 1) {
+                backdrops[backdrops.length - 1].classList.add('confirm-backdrop');
+            }
+        }, 0);
+    });
+
     // Mindanao Provinces and Municipalities Data
     const municipalitiesData = {
         'Bukidnon': [

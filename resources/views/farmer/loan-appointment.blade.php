@@ -63,8 +63,8 @@
                     <td class="px-4 px-md-6 py-4" data-label="Actions">
                         @if($appointment->status == 'pending')
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $appointment->id }}">Reschedule</x-dropdown-item>
-                            <x-dropdown-item icon="fa-times" color="danger" data-bs-toggle="modal" data-bs-target="#cancelModal{{ $appointment->id }}">Cancel</x-dropdown-item>
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ $appointment->id }}">Reschedule</button></x-slot:primary>
+                            <x-dropdown-item icon="fa-times" :danger="true" data-bs-toggle="modal" data-bs-target="#cancelModal{{ $appointment->id }}">Cancel appointment</x-dropdown-item>
                         </x-action-dropdown>
                         @else
                         <span class="text-muted small">—</span>
@@ -237,7 +237,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-calendar-plus me-2"></i>New Loan Appointment</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('farmer.loan-appointment.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('farmer.loan-appointment.store') }}" method="POST" enctype="multipart/form-data" id="createAppointmentForm">
                 @csrf
                 <input type="hidden" name="source_modal" value="createModal">
                 <div class="modal-body">
@@ -339,6 +339,35 @@
                     <button type="submit" class="btn btn-primary">Submit Request</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Appointment Request Modal: the New Appointment form's submit is
+     intercepted into here instead of posting right away, so the farmer gets
+     one more look at exactly what they're about to book/request before it's
+     final. -->
+<div class="modal fade" id="appointmentConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fas fa-check-circle me-2"></i>Confirm Your Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Submit this appointment and loan pre-request?</p>
+                <div class="bg-light rounded-3 p-3 small">
+                    <div class="d-flex justify-content-between mb-1"><span class="text-muted">Date &amp; Time</span><span id="appointmentConfirmDateTime" class="fw-medium text-end"></span></div>
+                    <div class="d-flex justify-content-between mb-1"><span class="text-muted">Loan Amount</span><span id="appointmentConfirmAmount" class="fw-medium"></span></div>
+                    <div class="d-flex justify-content-between mb-1"><span class="text-muted">Purpose</span><span id="appointmentConfirmPurpose" class="fw-medium"></span></div>
+                    <div class="d-flex justify-content-between"><span class="text-muted">Repayment Terms</span><span id="appointmentConfirmTerms" class="fw-medium"></span></div>
+                </div>
+                <p class="text-muted small mb-0 mt-2">You'll still meet with your Manager to finalize the actual loan terms &mdash; this just books your slot and shares what you're looking for.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="appointmentConfirmSubmitBtn">Confirm &amp; Submit Request</button>
+            </div>
         </div>
     </div>
 </div>
@@ -454,6 +483,52 @@
                 loanAppointmentRefreshSlots(dateInput.id, dateInput.id.replace('rescheduleDate', 'rescheduleTime'), dateInput.id.replace('rescheduleDate', 'rescheduleSlotsHint'));
             }
         }
+    });
+
+    // Hides one modal and, once it's fully closed, opens another — Bootstrap
+    // doesn't support two open modals cleanly.
+    function switchModal(fromModalId, toModalId) {
+        var fromEl = document.getElementById(fromModalId);
+        var fromModal = bootstrap.Modal.getInstance(fromEl);
+        var openTarget = function () {
+            new bootstrap.Modal(document.getElementById(toModalId)).show();
+        };
+
+        if (fromModal) {
+            fromEl.addEventListener('hidden.bs.modal', openTarget, { once: true });
+            fromModal.hide();
+        } else {
+            openTarget();
+        }
+    }
+
+    // Intercepts the New Appointment form's submit into a confirmation step
+    // instead of posting straight away — native required-field validation
+    // has already passed by the time 'submit' fires, so this only runs once
+    // everything's actually filled in.
+    document.getElementById('createAppointmentForm')?.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var form = this;
+        var dateInput = form.querySelector('input[name="appointment_date"]');
+        var timeSelect = form.querySelector('select[name="appointment_time"]');
+        var amountInput = form.querySelector('input[name="requested_amount"]');
+        var purposeSelect = form.querySelector('select[name="loan_purpose"]');
+        var termsSelect = form.querySelector('select[name="repayment_terms_months"]');
+
+        var timeLabel = timeSelect.options[timeSelect.selectedIndex] ? timeSelect.options[timeSelect.selectedIndex].textContent.trim() : '';
+        document.getElementById('appointmentConfirmDateTime').textContent = (dateInput.value || '') + (timeLabel ? ' — ' + timeLabel : '');
+        document.getElementById('appointmentConfirmAmount').textContent = amountInput.value
+            ? '₱' + parseFloat(amountInput.value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '';
+        document.getElementById('appointmentConfirmPurpose').textContent = purposeSelect.value;
+        document.getElementById('appointmentConfirmTerms').textContent = termsSelect.value ? termsSelect.value + ' months' : '';
+
+        switchModal('createModal', 'appointmentConfirmModal');
+    });
+
+    document.getElementById('appointmentConfirmSubmitBtn')?.addEventListener('click', function () {
+        document.getElementById('createAppointmentForm').submit();
     });
 </script>
 @endsection

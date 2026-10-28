@@ -90,10 +90,11 @@
                     </td>
                     <td class="px-4 px-md-6 py-4">
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}">View</x-dropdown-item>
-                            <x-dropdown-item icon="fa-edit" color="warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}">Edit</x-dropdown-item>
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ $farmer->id }}">View</button></x-slot:primary>
+                            <x-dropdown-item icon="fa-pen" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}">Edit</x-dropdown-item>
                             @if($farmer->account && $farmer->account->status === 'inactive')
-                            <x-dropdown-item icon="fa-archive" color="secondary" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
+                            <li><hr class="dropdown-divider"></li>
+                            <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
                             @endif
                         </x-action-dropdown>
                     </td>

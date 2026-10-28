@@ -20,7 +20,7 @@
                     <option value="cbu" @selected($reportType === 'cbu')>Capital Build-Up Report</option>
                     <option value="complaint" @selected($reportType === 'complaint')>Complaint Report</option>
                     <option value="expense" @selected($reportType === 'expense')>Expense Report</option>
-                    <option value="harvest_payment" @selected($reportType === 'harvest_payment')>Harvest Payment Report</option>
+                    <option value="harvest_payment" @selected($reportType === 'harvest_payment')>Machine Payment Report</option>
                 </select>
             </div>
             <div>
@@ -114,7 +114,7 @@
         'cbu' => 'Capital Build-Up Report',
         'complaint' => 'Complaint Report',
         'expense' => 'Expense Report',
-        'harvest_payment' => 'Harvest Payment Report',
+        'harvest_payment' => 'Machine Payment Report',
     };
 @endphp
 
@@ -422,7 +422,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No harvest payments match these filters.</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No machine payments match these filters.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -537,7 +537,7 @@
         /* Report Summary is hidden in print for most report types (kept on
            screen) — let the breakdown panel take the full row instead of
            leaving a blank gap where the summary column used to be. The
-           Harvest Payment report is the exception: its totals are meant to
+           Machine Payment report is the exception: its totals are meant to
            be part of the printed/PDF record, so it keeps both columns. */
         .summary-breakdown-grid {
             grid-template-columns: 1fr;

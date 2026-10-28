@@ -16,7 +16,7 @@
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
     <x-stat-card label="Total Complaints" :value="$counts['total']" icon="fa-exclamation-circle" color="secondary" />
     <x-stat-card label="Submitted" :value="$counts['submitted']" icon="fa-envelope" color="primary" />
-    <x-stat-card label="In Progress" :value="$counts['in_progress']" icon="fa-spinner" color="warning" />
+    <x-stat-card label="In Progress" :value="$counts['in_progress']" icon="fa-spinner" color="info" />
     <x-stat-card label="Resolved" :value="$counts['resolved']" icon="fa-check-circle" color="success" />
 </div>
 
@@ -66,7 +66,7 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" title="View / Respond" data-bs-toggle="modal" data-bs-target="#respondModal{{ $complaint->id }}"><i class="fas fa-eye"></i></button>
+                            <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#respondModal{{ $complaint->id }}">Respond</button>
                         </div>
                     </td>
                 </tr>

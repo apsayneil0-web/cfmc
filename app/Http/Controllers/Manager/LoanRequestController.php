@@ -153,7 +153,34 @@ class LoanRequestController extends Controller
             ])
             ->values();
 
+        // Regular / Batch view switch. Remembered in the session so batch
+        // actions (which redirect to the plain page) land back on Batch.
+        if (in_array($request->input('mode'), ['regular', 'batch'], true)) {
+            $request->session()->put('loan_request_mode', $request->input('mode'));
+        }
+        $mode = $request->session()->get('loan_request_mode', 'regular');
+
+        // Status tab counts for regular requests, independent of the active filter.
+        $regularCounts = LoanRequest::whereNull('archived_at')
+            ->where('type', '!=', 'batch')
+            ->visibleAccount()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        // View/Edit modals are rendered per request. Members of batches still
+        // collecting are always included, so Manage Batch's Edit button works
+        // even when a status/search filter has narrowed $requests.
+        $modalRequests = $requests
+            ->concat($batchesInProgress->flatMap(fn (LoanBatch $batch) => $batch->loanRequests))
+            ->unique('id')
+            ->values();
+        $modalRequests->loadMissing(['farmer', 'requestedBy', 'loan', 'batch', 'activityLogs']);
+
         return view('manager.loan-request', [
+            'mode' => $mode,
+            'modalRequests' => $modalRequests,
+            'regularCounts' => $regularCounts,
             'requests' => $requests,
             'regularRequests' => $regularRequests,
             'requestBatchGroups' => $requestBatchGroups,
@@ -508,7 +535,10 @@ class LoanRequestController extends Controller
         $loan_request->update(['archived_at' => now()]);
 
         return redirect()->route('manager.loan-request')
-            ->with('success', 'Loan request archived.');
+            ->with('undo', [
+                'message' => 'Loan request archived.',
+                'url' => route('manager.loan-request.unarchive', $loan_request),
+            ]);
     }
 
     /**
@@ -519,6 +549,10 @@ class LoanRequestController extends Controller
         abort_if($loan_request->status !== 'denied' || ! $loan_request->archived_at, 422, 'Only archived denied/rejected loan requests can be restored.');
 
         $loan_request->update(['archived_at' => null]);
+
+        if (request()->boolean('undo')) {
+            return back()->with('undo_done', 'Loan request restored.');
+        }
 
         return redirect()->route('manager.loan-request', ['status' => 'archived'])
             ->with('success', 'Loan request restored.');

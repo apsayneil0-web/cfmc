@@ -21,20 +21,46 @@ class DashboardController extends Controller
         $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
         $daysInMonth = $month->daysInMonth;
 
+        $machines = Machine::whereNull('archived_at')->get();
+
         $stats = [
             'total_farmers' => Farmer::where('status', 'approved')->count(),
             'pending_membership' => Farmer::where('status', 'pending')->count(),
             'pending_schedules' => ScheduleRequest::whereNull('archived_at')->where('status', 'pending')->visibleAccount()->count(),
             'approved_schedules' => ScheduleRequest::whereNull('archived_at')->where('status', 'approved')->visibleAccount()->count(),
             'active_loan_applications' => LoanRequest::where('status', 'pending')->visibleAccount()->count(),
-            'available_machinery' => Machine::whereNull('archived_at')->get()->filter(fn ($m) => $m->status === 'available')->count(),
+            'available_machinery' => $machines->filter(fn ($m) => $m->status === 'available')->count(),
+            'maintenance_machinery' => $machines->filter(fn ($m) => $m->status === 'maintenance')->count(),
             'total_cbu' => Cbu::visibleAccount()->sum('balance'),
             'total_expenses' => Expense::sum('amount'),
         ];
 
+        $attentionCount = $stats['pending_membership'] + $stats['pending_schedules']
+            + $stats['active_loan_applications'] + $stats['maintenance_machinery'];
+
+        $localNow = now();
+        $greeting = match (true) {
+            $localNow->hour < 12 => 'Good morning',
+            $localNow->hour < 18 => 'Good afternoon',
+            default => 'Good evening',
+        };
+
+        $nextBookings = ScheduleRequest::with('user.farmer')
+            ->whereNull('archived_at')
+            ->where('status', 'approved')
+            ->visibleAccount()
+            ->whereDate('scheduled_date', '>=', $localNow->toDateString())
+            ->orderBy('scheduled_date')
+            ->orderBy('start_time')
+            ->take(3)
+            ->get();
+
         $recentActivities = $this->recentActivities();
 
-        return view('manager.dashboard', compact('calendarDays', 'firstWeekday', 'daysInMonth', 'stats', 'recentActivities'));
+        return view('manager.dashboard', compact(
+            'calendarDays', 'firstWeekday', 'daysInMonth', 'stats', 'recentActivities',
+            'attentionCount', 'greeting', 'localNow', 'nextBookings'
+        ));
     }
 
     /**
@@ -49,8 +75,8 @@ class DashboardController extends Controller
             ->get()
             ->map(fn ($farmer) => (object) [
                 'icon' => 'fa-check',
-                'bg' => 'bg-green-100',
-                'color' => 'text-green-600',
+                'bg' => 'bg-success-subtle',
+                'color' => 'text-success',
                 'title' => 'Membership request approved',
                 'subtitle' => "{$farmer->full_name} - Brgy. {$farmer->barangay}",
                 'at' => $farmer->updated_at,
@@ -77,8 +103,8 @@ class DashboardController extends Controller
             ->take(3)
             ->map(fn ($machine) => (object) [
                 'icon' => 'fa-exclamation-triangle',
-                'bg' => 'bg-yellow-100',
-                'color' => 'text-yellow-600',
+                'bg' => 'bg-danger-subtle',
+                'color' => 'text-danger',
                 'title' => 'Machinery maintenance alert',
                 'subtitle' => "{$machine->name} - {$machine->usage_hours} hours reached",
                 'at' => $machine->updated_at,
@@ -92,8 +118,8 @@ class DashboardController extends Controller
             ->get()
             ->map(fn ($payment) => (object) [
                 'icon' => 'fa-money-bill-wave',
-                'bg' => 'bg-purple-100',
-                'color' => 'text-purple-600',
+                'bg' => 'bg-warning-subtle',
+                'color' => 'text-warning',
                 'title' => 'Loan payment received',
                 'subtitle' => "{$payment->loan->farmer->full_name} - ".peso($payment->amount),
                 'at' => $payment->created_at,

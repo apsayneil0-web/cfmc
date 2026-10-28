@@ -299,7 +299,7 @@ class ReportController extends Controller
     {
         return match ($reportType) {
             'harvesting' => ['sheet' => 'Harvesting', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 3, 'breakdownCount' => 5, 'noteCount' => 2],
-            'harvest_payment' => ['sheet' => 'Harvest Payment', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'generatedCell' => 'G5', 'summaryCount' => 5, 'breakdownCount' => 2, 'noteCount' => 2],
+            'harvest_payment' => ['sheet' => 'Machine Payment', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'generatedCell' => 'G5', 'summaryCount' => 5, 'breakdownCount' => 2, 'noteCount' => 2],
             'loan' => ['sheet' => 'Loan', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], 'generatedCell' => 'J5', 'summaryCount' => 6, 'breakdownCount' => 4, 'noteCount' => 2],
             'maintenance' => ['sheet' => 'Maintenance', 'columns' => ['A', 'B', 'C', 'D'], 'generatedCell' => 'D5', 'summaryCount' => 3, 'breakdownCount' => 5, 'noteCount' => 2],
             'schedule' => ['sheet' => 'Schedule', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 4, 'breakdownCount' => 2, 'noteCount' => 1],

@@ -198,6 +198,7 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::get('/farmer/loans', [FarmerLoanController::class, 'index'])->name('farmer.loans');
 
     Route::get('/farmer/schedule', [FarmerScheduleController::class, 'index'])->name('farmer.schedule');
+    Route::get('/farmer/schedule/availability', [FarmerScheduleController::class, 'availability'])->name('farmer.schedule.availability');
     Route::post('/farmer/schedule', [FarmerScheduleController::class, 'store'])->name('farmer.schedule.store');
     Route::post('/farmer/schedule/{schedule}/reschedule', [FarmerScheduleController::class, 'reschedule'])->name('farmer.schedule.reschedule');
 

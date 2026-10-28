@@ -14,3 +14,18 @@ if (! function_exists('peso')) {
         return '₱'.number_format((float) $amount, $decimals);
     }
 }
+
+if (! function_exists('phone')) {
+    /**
+     * Format a Philippine mobile number for display ("0976 356 6432").
+     * Anything that isn't an 11-digit 09XX number is returned unchanged.
+     */
+    function phone(?string $number): string
+    {
+        $digits = preg_replace('/\D/', '', (string) $number);
+
+        return preg_match('/^(09\d{2})(\d{3})(\d{4})$/', $digits, $m)
+            ? "{$m[1]} {$m[2]} {$m[3]}"
+            : (string) $number;
+    }
+}

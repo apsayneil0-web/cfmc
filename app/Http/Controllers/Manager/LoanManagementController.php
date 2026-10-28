@@ -85,7 +85,14 @@ class LoanManagementController extends Controller
             'archived_count' => Loan::whereNotNull('archived_at')->tap($regularOnly)->count(),
         ];
 
-        return view('manager.loan-management', compact('loans', 'stats', 'showArchived'));
+        // Counts for the status tabs (all non-archived regular loans).
+        $statusCounts = Loan::whereNull('archived_at')->tap($regularOnly)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $currentStatus = $showArchived ? null : ($request->get('status') ?? 'pending_disbursement');
+
+        return view('manager.loan-management', compact('loans', 'stats', 'showArchived', 'statusCounts', 'currentStatus'));
     }
 
     /**
@@ -152,7 +159,10 @@ class LoanManagementController extends Controller
         $loan->update(['archived_at' => now()]);
 
         return redirect()->route($this->redirectRouteFor($loan))
-            ->with('success', 'Loan archived.');
+            ->with('undo', [
+                'message' => 'Loan archived.',
+                'url' => route('manager.loan-management.unarchive', $loan),
+            ]);
     }
 
     /**
@@ -161,6 +171,10 @@ class LoanManagementController extends Controller
     public function unarchive(Loan $loan)
     {
         $loan->update(['archived_at' => null]);
+
+        if (request()->boolean('undo')) {
+            return back()->with('undo_done', 'Loan restored.');
+        }
 
         return redirect()->route($this->redirectRouteFor($loan), ['status' => 'archived'])
             ->with('success', 'Loan restored.');

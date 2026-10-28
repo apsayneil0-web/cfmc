@@ -67,7 +67,7 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $batch->loanRequests->min('created_at')?->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" title="Review Batch" data-bs-toggle="modal" data-bs-target="#batchReviewModal{{ $batch->id }}"><i class="fas fa-eye"></i></button>
+                            <button type="button" class="btn btn-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#batchReviewModal{{ $batch->id }}">Review batch</button>
                         </div>
                     </td>
                 </tr>
@@ -210,7 +210,7 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$req->farmer->status === 'approved' ? 'Member' : 'Non-member'" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" title="Review" data-bs-toggle="modal" data-bs-target="#reviewModal{{ $req->id }}"><i class="fas fa-eye"></i></button>
+                            <button type="button" class="btn btn-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#reviewModal{{ $req->id }}">Review</button>
                         </div>
                     </td>
                 </tr>

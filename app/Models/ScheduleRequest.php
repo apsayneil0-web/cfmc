@@ -71,6 +71,7 @@ class ScheduleRequest extends Model
 
     protected $fillable = [
         'user_id',
+        'batch_id',
         'farmer_name',
         'contact_number',
         'member_type',
@@ -129,6 +130,15 @@ class ScheduleRequest extends Model
     }
 
     /**
+     * Other requests submitted in the same multi-machine batch (e.g. a
+     * Tractor + Seeder requested together for one job), excluding this row.
+     */
+    public function batchSiblings(): HasMany
+    {
+        return $this->hasMany(self::class, 'batch_id', 'batch_id')->where('id', '!=', $this->id);
+    }
+
+    /**
      * Opt-in filter for list/report queries only — see
      * LoanRequest::scopeVisibleAccount(). Must never be called from
      * reservedHectares()/hasConflict()/calendarForMonth(): a deactivated
@@ -165,6 +175,17 @@ class ScheduleRequest extends Model
             return false;
         }
 
+        return $unitsRequested > self::unitsFree($machineId, $date, $startTime, $endTime, $excludeId);
+    }
+
+    /**
+     * Physical units of a machine not yet taken by a pending/approved booking
+     * overlapping the given time window (the whole day when no times are
+     * given). Can go negative if a machine was over-booked before its
+     * quantity was lowered; callers that display it should clamp at zero.
+     */
+    public static function unitsFree(int $machineId, string $date, ?string $startTime = null, ?string $endTime = null, ?int $excludeId = null): int
+    {
         $quantity = max(1, (int) (Machine::find($machineId)?->quantity ?? 1));
 
         $query = self::where('machine_id', $machineId)
@@ -183,9 +204,7 @@ class ScheduleRequest extends Model
             });
         }
 
-        $unitsAlreadyBooked = (int) $query->sum('units_requested');
-
-        return ($unitsAlreadyBooked + $unitsRequested) > $quantity;
+        return $quantity - (int) $query->sum('units_requested');
     }
 
     /**

@@ -104,13 +104,13 @@ class PaymentController extends Controller
             'transaction_code' => 'HRV-'.str_pad($harvest->id, 3, '0', STR_PAD_LEFT),
             'date' => $harvest->payment_date,
             'payer' => $harvest->payer_name,
-            'type_label' => $harvest->member_type === 'member' ? 'Harvest Payment (Member)' : 'Harvest Payment (Non-member)',
+            'type_label' => $harvest->member_type === 'member' ? 'Machine Payment (Member)' : 'Machine Payment (Non-member)',
             'reference' => $harvest->farmer_id ? 'FM-'.str_pad($harvest->farmer_id, 3, '0', STR_PAD_LEFT) : '-',
             'amount' => $harvest->payment_amount,
             'balance_after' => null,
             'notes' => $harvest->notes,
             'status_label' => 'Completed',
-            'filter_category' => 'Harvesting Payment',
+            'filter_category' => 'Machine Payment',
             'model' => $harvest,
         ]))->sortByDesc(fn ($payment) => $payment->model->created_at)->values();
 
@@ -367,7 +367,7 @@ class PaymentController extends Controller
         }
 
         return redirect()->route('manager.payment')
-            ->with('success', 'Harvesting payment recorded successfully.');
+            ->with('success', 'Machine payment recorded successfully.');
     }
 
     /**

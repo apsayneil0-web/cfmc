@@ -5,8 +5,7 @@
     @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - CFMC</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
+    @include('partials.fonts')
     @vite('resources/css/palette.css')
     @include('partials.auth-motion')
     <style>
@@ -25,7 +24,7 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+            font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
             background: linear-gradient(180deg, var(--palette-paper) 0%, var(--palette-surface-muted) 100%);
             position: relative;
             display: flex;
@@ -37,7 +36,7 @@
             -webkit-font-smoothing: antialiased;
             overflow: hidden;
         }
-        h1, h2 { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
+        h1, h2 { font-family: 'Bitter', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
 
         .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.55; pointer-events: none; z-index: 0; }
         .bg-blob.b1 { width: 28rem; height: 28rem; top: -9rem; left: -8rem; background: radial-gradient(circle, var(--palette-sprout), transparent 70%); }

@@ -2,21 +2,27 @@
 
 @php
     $normalized = strtolower(trim($status ?? ''));
+    // One meaning per color across every module:
+    // wheat (warning) = waiting, green (success) = good, clay (danger) = needs action,
+    // teal (info) = finished or informational, grey (secondary) = out of the way.
     $map = [
-        'approved' => 'success', 'active' => 'success', 'current' => 'success', 'completed' => 'success',
-        'published' => 'success', 'available' => 'success', 'resolved' => 'success', 'paid' => 'success', 'fully paid' => 'success',
-        'pending' => 'warning', 'in progress' => 'warning', 'draft' => 'warning', 'maintenance' => 'warning',
-        'pending disbursement' => 'warning',
-        'denied' => 'danger', 'rejected' => 'danger', 'overdue' => 'danger', 'locked' => 'danger', 'replaceable parts' => 'danger',
+        'approved' => 'success', 'active' => 'success', 'current' => 'success',
+        'published' => 'success', 'available' => 'success', 'resolved' => 'success', 'paid' => 'success',
+        'ready to finalize' => 'success',
+        'pending' => 'warning', 'pending disbursement' => 'warning', 'submitted' => 'warning', 'draft' => 'warning',
+        'collecting members' => 'warning',
+        'denied' => 'danger', 'rejected' => 'danger', 'overdue' => 'danger', 'locked' => 'danger',
+        'maintenance' => 'danger', 'replaceable parts' => 'danger',
+        'completed' => 'info', 'in progress' => 'info', 'in use' => 'info', 'fully paid' => 'info',
+        'with administrator' => 'info', 'partial' => 'info',
         'archived' => 'secondary', 'inactive' => 'secondary', 'non-member' => 'secondary', 'cancelled' => 'secondary',
-        'partial' => 'info',
-        'member' => 'primary', 'in use' => 'primary', 'new' => 'primary', 'assigned' => 'primary',
-        'collecting members' => 'warning', 'with administrator' => 'info', 'ready to finalize' => 'success', 'finalized' => 'secondary',
+        'finalized' => 'secondary', 'not yet used' => 'secondary',
+        'member' => 'primary', 'new' => 'primary', 'assigned' => 'primary',
         'cbu contribution' => 'info', 'cbu expense' => 'danger', 'billing' => 'info', 'loan payment' => 'primary', 'interest charge' => 'warning',
         'operational expense' => 'warning',
         'harvest payment (member)' => 'success', 'harvest payment (non-member)' => 'info',
         'routine inspection' => 'success', 'basic maintenance' => 'info', 'full maintenance' => 'warning',
-        'comprehensive servicing' => 'danger', 'not yet used' => 'secondary',
+        'comprehensive servicing' => 'danger',
     ];
     $variant = $map[$normalized] ?? 'secondary';
 @endphp

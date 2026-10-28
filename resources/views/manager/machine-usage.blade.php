@@ -80,7 +80,7 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$machine->maintenance_label" :title="$machine->maintenance_recommendation" /></td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->assigned_operator ?? '—' }}</td>
                     <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewUsageModal{{ $machine->id }}" />
+                        <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#viewUsageModal{{ $machine->id }}">View</button>
                     </td>
                 </tr>
                 @empty

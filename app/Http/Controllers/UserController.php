@@ -59,11 +59,24 @@ class UserController extends Controller
     public function archive(User $user)
     {
         try {
+            $previousStatus = $user->status;
             $user->update(['status' => 'archived']);
             ActivityLogger::log(Auth::user(), 'user.archived', "Archived {$user->name}'s account.", $user);
+
+            // Unarchive always restores to "active", so only offer Undo when
+            // that's where the account was; the page reloads to show it.
+            $canUndo = $previousStatus === 'active';
+            if ($canUndo) {
+                session()->flash('undo', [
+                    'message' => "{$user->name}'s account archived.",
+                    'url' => route('user.unarchive', $user),
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'User archived successfully!'
+                'message' => 'User archived successfully!',
+                'undo' => $canUndo,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -79,6 +92,10 @@ class UserController extends Controller
     public function unarchive(User $user)
     {
         if ($user->status !== 'archived') {
+            if (request()->boolean('undo')) {
+                return back();
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'This account is not archived.'
@@ -92,6 +109,10 @@ class UserController extends Controller
             ]);
 
             ActivityLogger::log(Auth::user(), 'user.unarchived', "Unarchived {$user->name}'s account.", $user);
+
+            if (request()->boolean('undo')) {
+                return back()->with('undo_done', "{$user->name}'s account restored.");
+            }
 
             return response()->json([
                 'success' => true,

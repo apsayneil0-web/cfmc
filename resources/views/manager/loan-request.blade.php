@@ -1,7 +1,7 @@
 @extends('manager.layout')
 
 @section('title', 'Loan Requests')
-@section('header', 'Loan Request Management')
+@section('header', 'Loan Requests')
 
 @section('content')
 @if(session('success'))
@@ -15,137 +15,196 @@
 
 @php
     $hasBatchActivity = $batchesInProgress->isNotEmpty() || $batchesWithAdministrator->isNotEmpty() || $batchesReadyToFinalize->isNotEmpty() || $batchesFinalized->isNotEmpty();
+    $batchView = ! $showArchived && $mode === 'batch';
+
+    // Every batch in the pipeline as one card, in the order they need attention.
+    $names = fn ($requests) => $requests->map(fn ($r) => strtolower($r->farmer->full_name ?? ''))->implode('|');
+    $pipeline = collect()
+        ->concat($batchesReadyToFinalize->map(fn ($batch) => (object) [
+            'batch' => $batch, 'stage' => 'ready', 'label' => 'Ready to finalize', 'tone' => 'success',
+            'members' => $batch->loanRequests->count(), 'amount' => $batch->loanRequests->sum('requested_amount'), 'amountLabel' => 'Total requested',
+            'note' => 'Approved by the Administrator. Waiting for you to finalize.', 'names' => $names($batch->loanRequests),
+        ]))
+        ->concat($batchesInProgress->map(fn ($batch) => (object) [
+            'batch' => $batch, 'stage' => 'collecting', 'label' => 'Collecting members', 'tone' => 'warning',
+            'members' => $batch->member_count, 'amount' => $batch->loanRequests->sum('requested_amount'), 'amountLabel' => 'Total requested',
+            'note' => ($batch->capacity - $batch->member_count).' more '.Str::plural('farmer', $batch->capacity - $batch->member_count).' needed. Sent to the Administrator automatically when full.',
+            'names' => $names($batch->loanRequests),
+        ]))
+        ->concat($batchesWithAdministrator->map(fn ($batch) => (object) [
+            'batch' => $batch, 'stage' => 'admin', 'label' => 'With Administrator', 'tone' => 'info',
+            'members' => $batch->loanRequests->count(), 'amount' => $batch->loanRequests->sum('requested_amount'), 'amountLabel' => 'Total requested',
+            'note' => 'Full and sent for approval. No action needed from you yet.', 'names' => $names($batch->loanRequests),
+        ]))
+        ->concat($batchesFinalized->map(fn ($group) => (object) [
+            'batch' => $group->batch, 'stage' => 'finalized', 'label' => 'Finalized', 'tone' => 'secondary',
+            'members' => $group->loan_count, 'amount' => $group->total_principal, 'amountLabel' => 'Total principal',
+            'note' => 'Loans created. Track repayments in Batch Loans.', 'names' => $names($group->batch->loanRequests),
+        ]));
+    $stageTabs = ['' => 'All', 'collecting' => 'Collecting members', 'admin' => 'With Administrator', 'ready' => 'Ready to finalize', 'finalized' => 'Finalized'];
+    $stageCounts = $pipeline->countBy('stage');
+    $activeBatchCount = $pipeline->whereIn('stage', ['collecting', 'admin', 'ready'])->count();
+    $regularTotal = $regularCounts->sum();
+
+    // Batches that exist but have nobody in them yet, e.g. "Batches 6 to 10".
+    $pipelineIds = $pipeline->map(fn ($item) => $item->batch->id)->all();
+    $emptyBatches = $batches->reject(fn ($b) => in_array($b->id, $pipelineIds, true))->filter(fn ($b) => $b->member_count === 0)->sortBy('batch_number')->values();
+    $emptyNumbers = $emptyBatches->pluck('batch_number')->values();
+    $emptyContiguous = $emptyNumbers->count() > 1 && $emptyNumbers->last() - $emptyNumbers->first() === $emptyNumbers->count() - 1;
 @endphp
-@if($hasBatchActivity)
-<div class="section-card mb-6">
-    <div class="px-4 px-md-6 pt-4 pb-2">
-        <h3 class="text-lg font-semibold text-gray-900 mb-1">Batch Loans</h3>
-        <span class="text-sm text-muted">Collecting members &rarr; sent to the Administrator automatically when full &rarr; approved &rarr; finalize into loans &rarr; tracked in Batch Loans.</span>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <p class="text-sm text-gray-500 mb-0">Review farmers' loan applications. Approved loans move to Loan Management.</p>
+    <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createRequestModal">
+        <i class="fas fa-plus"></i><span>New Request</span>
+    </button>
+</div>
+
+@unless($showArchived)
+<!-- Regular / Batch switch -->
+<div class="d-flex flex-wrap gap-3 mb-5">
+    <a href="{{ route('manager.loan-request', ['mode' => 'regular']) }}" class="view-switch {{ $batchView ? '' : 'active' }}">
+        <span class="view-switch-title">Regular requests</span>
+        <span class="view-switch-meta">One farmer, one loan &middot; {{ $regularTotal }} {{ Str::plural('request', $regularTotal) }}</span>
+    </a>
+    <a href="{{ route('manager.loan-request', ['mode' => 'batch']) }}" class="view-switch {{ $batchView ? 'active' : '' }}">
+        <span class="view-switch-title">
+            Batch requests
+            @if($batchesReadyToFinalize->isNotEmpty())
+            <span class="badge rounded-pill bg-success ms-1">{{ $batchesReadyToFinalize->count() }} ready</span>
+            @endif
+        </span>
+        <span class="view-switch-meta">Up to {{ $batches->max('capacity') ?: 10 }} farmers per batch &middot; {{ $activeBatchCount }} active {{ Str::plural('batch', $activeBatchCount) }}</span>
+    </a>
+</div>
+@endunless
+
+@if($batchView)
+@foreach($batchesReadyToFinalize as $batch)
+<!-- Approved batch waiting to be finalized -->
+<div class="action-banner mb-4">
+    <div>
+        <p class="fw-bold text-gray-900 mb-0">{{ $batch->label }} is approved by the Administrator</p>
+        <p class="text-sm text-gray-600 mb-0">Finalize all {{ $batch->loanRequests->count() }} members into loans at once with one interest rate and one disbursement date.</p>
     </div>
-    <div class="px-4 px-md-6 pb-4">
-        <div class="row g-3">
-            @foreach($batchesReadyToFinalize as $batch)
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100 border-success">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">{{ $batch->label }}</h5>
-                            <x-status-badge status="Ready to finalize" />
-                        </div>
-                        <p class="small text-muted mb-1">Members <span class="float-end fw-medium text-dark">{{ $batch->loanRequests->count() }}</span></p>
-                        <p class="small text-muted mb-3">Total requested <span class="float-end fw-medium text-dark">{{ peso($batch->loanRequests->sum('requested_amount')) }}</span></p>
-                        <p class="small mb-3">Approved by the Administrator. Waiting for you to finalize.</p>
-                        <button type="button" class="btn btn-success w-100 mt-auto" data-bs-toggle="modal" data-bs-target="#batchFinalizeModal{{ $batch->id }}">
-                            <i class="fas fa-file-invoice-dollar me-1"></i> Finalize Batch
-                        </button>
-                    </div>
-                </div>
-            </div>
-            @endforeach
+    <button type="button" class="btn btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#batchFinalizeModal{{ $batch->id }}">Finalize {{ $batch->label }}</button>
+</div>
+@endforeach
 
-            @foreach($batchesWithAdministrator as $batch)
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">{{ $batch->label }}</h5>
-                            <x-status-badge status="With Administrator" />
-                        </div>
-                        <p class="small text-muted mb-1">Members <span class="float-end fw-medium text-dark">{{ $batch->loanRequests->count() }}/{{ $batch->capacity }}</span></p>
-                        <p class="small text-muted mb-3">Total requested <span class="float-end fw-medium text-dark">{{ peso($batch->loanRequests->sum('requested_amount')) }}</span></p>
-                        <p class="small mb-3">Full and sent for approval. No action needed from you yet.</p>
-                        <button type="button" class="btn btn-outline-secondary w-100 mt-auto" data-bs-toggle="modal" data-bs-target="#batchAdminViewModal{{ $batch->id }}">
-                            <i class="fas fa-eye me-1"></i> View Members
-                        </button>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-
-            @foreach($batchesInProgress as $batch)
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">{{ $batch->label }}</h5>
-                            <x-status-badge status="Collecting members" />
-                        </div>
-                        <p class="small text-muted mb-2">Members <span class="float-end fw-medium text-dark">{{ $batch->member_count }}/{{ $batch->capacity }}</span></p>
-                        <div class="progress mb-3" style="height: 6px;">
-                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $batch->capacity > 0 ? round($batch->member_count / $batch->capacity * 100) : 0 }}%"></div>
-                        </div>
-                        <p class="small mb-3">{{ $batch->capacity - $batch->member_count }} more farmer(s) needed. Sent to the Administrator automatically when full.</p>
-                        <button type="button" class="btn btn-outline-primary w-100 mt-auto" data-bs-toggle="modal" data-bs-target="#manageBatchModal{{ $batch->id }}">
-                            <i class="fas fa-users-cog me-1"></i> Manage Batch
-                        </button>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-
-            @foreach($batchesFinalized as $group)
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100 bg-light">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">{{ $group->batch->label }}</h5>
-                            <x-status-badge status="Finalized" />
-                        </div>
-                        <p class="small text-muted mb-1">Loans <span class="float-end fw-medium text-dark">{{ $group->loan_count }}</span></p>
-                        <p class="small text-muted mb-3">Outstanding <span class="float-end fw-medium text-dark">{{ peso($group->total_outstanding) }}</span></p>
-                        <p class="small mb-3">Loans created. Track repayments in Batch Loans.</p>
-                        <a href="{{ route('manager.batch-loan-management') }}" class="btn btn-outline-secondary w-100 mt-auto">
-                            <i class="fas fa-arrow-right me-1"></i> Open in Batch Loans
-                        </a>
-                    </div>
-                </div>
-            </div>
+<div data-batch-board>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div class="segmented" role="group" aria-label="Filter batches by stage">
+            @foreach($stageTabs as $value => $label)
+            <a href="#" class="{{ $value === '' ? 'active' : '' }}" data-stage-filter="{{ $value }}">{{ $label }} <span class="segmented-count">{{ $value === '' ? $pipeline->count() : ($stageCounts[$value] ?? 0) }}</span></a>
             @endforeach
         </div>
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <div class="position-relative">
+                <input type="search" class="form-control ps-5" placeholder="Search farmer in batches" data-batch-search style="min-width: 240px;" aria-label="Search farmer in batches">
+                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
+            </div>
+            <a href="{{ route('manager.loan-request', ['archived' => 1]) }}" class="text-sm fw-semibold text-brand text-decoration-none">View Archived ({{ $archivedCount }})</a>
+        </div>
     </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        @forelse($pipeline as $item)
+        @php $capacity = $item->batch->capacity ?: 10; @endphp
+        <div class="batch-card" data-batch-card data-stage="{{ $item->stage }}" data-names="{{ $item->names }}">
+            <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+                <h3 class="batch-name mb-0">{{ $item->batch->label }}</h3>
+                <span class="badge bg-{{ $item->tone }}-subtle text-{{ $item->tone }} border border-{{ $item->tone }}-subtle">{{ $item->label }}</span>
+            </div>
+            <div class="d-flex justify-content-between text-sm mb-1">
+                <span class="text-gray-500">Members</span>
+                <span class="fw-semibold text-gray-900">{{ $item->members }} / {{ $capacity }}</span>
+            </div>
+            <div class="progress mb-3" style="height: 8px;" role="progressbar" aria-label="Members" aria-valuenow="{{ $item->members }}" aria-valuemin="0" aria-valuemax="{{ $capacity }}">
+                <div class="progress-bar bg-{{ $item->tone === 'secondary' ? 'secondary' : $item->tone }}" style="width: {{ min(100, round($item->members / $capacity * 100)) }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between text-sm mb-2">
+                <span class="text-gray-500">{{ $item->amountLabel }}</span>
+                <span class="fw-bold text-gray-900">{{ peso($item->amount) }}</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">{{ $item->note }}</p>
+            <div class="mt-auto">
+                @switch($item->stage)
+                    @case('ready')
+                    <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#batchFinalizeModal{{ $item->batch->id }}">Finalize Batch</button>
+                    @break
+                    @case('collecting')
+                    <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#manageBatchModal{{ $item->batch->id }}">Manage Batch</button>
+                    @break
+                    @case('admin')
+                    <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#batchAdminViewModal{{ $item->batch->id }}">View Members</button>
+                    @break
+                    @default
+                    <a href="{{ route('manager.batch-loan-management', ['search' => $item->batch->label]) }}" class="btn btn-outline-primary w-100">Open in Batch Loans</a>
+                @endswitch
+            </div>
+        </div>
+        @empty
+        <div class="col-span-full bg-white rounded-xl border border-gray-200 p-6 text-center text-muted">
+            No batch requests yet. Add a farmer to a batch with New Request.
+        </div>
+        @endforelse
+        <div class="col-span-full bg-white rounded-xl border border-gray-200 p-6 text-center text-muted d-none" data-batch-empty>No batches match.</div>
+    </div>
+
+    @if($emptyBatches->isNotEmpty())
+    <p class="text-sm text-gray-500 mt-4 mb-0">
+        @if($emptyContiguous)
+        Batches {{ $emptyNumbers->first() }} to {{ $emptyNumbers->last() }} have no members yet.
+        @elseif($emptyBatches->count() === 1)
+        {{ $emptyBatches->first()->label }} has no members yet.
+        @else
+        {{ $emptyBatches->pluck('label')->implode(', ') }} have no members yet.
+        @endif
+        They appear here once a farmer joins.
+    </p>
+    @endif
 </div>
-@endif
 
 {{-- Denied batch members needing a resubmit — not part of the lifecycle
-     grid above (that only tracks the pre-decision stages), and not shown
-     in the folded Batch Requests table either (that's archived-view only
-     now). Without this, a denied-but-not-yet-archived batch member would
-     have no visible entry point to resubmit from on the default page. --}}
-@unless($showArchived)
+     cards above (those only track the pre-decision stages). Without this, a
+     denied-but-not-yet-archived batch member would have no visible entry
+     point to resubmit from. --}}
 @php
     $deniedBatchMembers = $requestBatchGroups->flatMap(fn ($group) => $group->members)->where('status', 'denied')->values();
 @endphp
 @if($deniedBatchMembers->isNotEmpty())
-<div class="section-card mb-6">
-    <x-table-toolbar>
-        <x-slot:filters>
-            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Denied Batch Requests</h3>
-            <span class="text-sm text-muted">Correct and resubmit, or archive if no longer needed</span>
-        </x-slot:filters>
-    </x-table-toolbar>
+<div class="section-card mt-5">
+    <div class="px-4 px-md-5 py-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-0">Denied batch requests</h3>
+        <p class="text-sm text-gray-500 mb-0">Correct and resubmit, or archive if no longer needed.</p>
+    </div>
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Reason</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted">Farmer</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted">Batch</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted text-end">Amount</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted">Reason</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($deniedBatchMembers as $member)
                 <tr>
-                    <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $member->farmer->full_name }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $member->batch?->label ?? 'Batch' }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ peso($member->requested_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted small">{{ $member->denial_reason ?? '—' }}</td>
-                    <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $member->id }}" />
-                            <x-icon-button icon="fa-redo" color="info" title="Resubmit to Admin" data-bs-toggle="modal" data-bs-target="#resubmitModal{{ $member->id }}" />
-                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $member->id }}" />
+                    <td class="px-4 px-md-5 py-3 text-sm fw-semibold text-gray-900">{{ $member->farmer->full_name }}</td>
+                    <td class="px-3 py-3 text-sm text-gray-700">{{ $member->batch?->label ?? 'Batch' }}</td>
+                    <td class="px-3 py-3 text-sm text-end">{{ peso($member->requested_amount) }}</td>
+                    <td class="px-3 py-3 text-sm text-gray-500">{{ $member->denial_reason ?? '—' }}</td>
+                    <td class="px-4 px-md-5 py-3 text-end text-nowrap">
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ $member->id }}">View</button>
+                        <div class="dropdown d-inline-block">
+                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#resubmitModal{{ $member->id }}"><i class="fas fa-redo me-2 text-gray-500"></i>Resubmit to Admin</button></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $member->id }}"><i class="fas fa-archive me-2"></i>Archive</button></li>
+                            </ul>
                         </div>
                     </td>
                 </tr>
@@ -155,7 +214,9 @@
     </div>
 </div>
 @endif
-@endunless
+
+<x-flow-strip class="mt-5" title="How a batch moves" :steps="['Farmers join (up to '.($batches->max('capacity') ?: 10).')', 'Sent to Administrator when full', 'Approved or denied', 'Manager finalizes', 'Tracked in Batch Loans']" />
+@endif
 
 @foreach($batchesReadyToFinalize as $batch)
 <!-- Batch Finalize Modal -->
@@ -257,57 +318,65 @@
 
 @foreach($batchesInProgress as $batch)
 <!-- Manage Batch Modal -->
-<div class="modal fade" id="manageBatchModal{{ $batch->id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+@php
+    $capacity = $batch->capacity ?: 10;
+    $filled = $batch->loanRequests->count();
+    $openSlots = max(0, $capacity - $filled);
+@endphp
+<div class="modal fade" id="manageBatchModal{{ $batch->id }}" tabindex="-1" aria-labelledby="manageBatchModal{{ $batch->id }}Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold"><i class="fas fa-users-cog me-2"></i>Manage {{ $batch->label }}</h5>
+            <div class="modal-header border-0 pb-2">
+                <h5 class="modal-title text-2xl fw-bold d-flex align-items-center gap-2 mb-0" id="manageBatchModal{{ $batch->id }}Label">
+                    Manage {{ $batch->label }}
+                    <x-status-badge status="Collecting members" class="text-xs" />
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p class="text-muted small mb-3">{{ $batch->member_count }}/{{ $batch->capacity }} members. This batch will be sent to the Administrator automatically once it's full.</p>
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="small">Farmer</th>
-                                <th class="small">Amount</th>
-                                <th class="small">Purpose</th>
-                                <th class="small">Terms</th>
-                                <th class="small">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($batch->loanRequests as $member)
-                            <tr>
-                                <td class="small fw-medium text-dark">{{ $member->farmer->full_name }}</td>
-                                <td class="small">{{ peso($member->requested_amount) }}</td>
-                                <td class="small text-muted">{{ $member->purpose }}</td>
-                                <td class="small text-muted">{{ $member->repayment_terms_months }} months</td>
-                                <td class="small">
-                                    <x-action-dropdown>
-                                        <x-dropdown-item icon="fa-edit" color="warning" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'editModal{{ $member->id }}'); return false;">Edit</x-dropdown-item>
-                                        <x-dropdown-item icon="fa-user-minus" color="danger" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'removeMemberModal{{ $member->id }}'); return false;">Remove from batch</x-dropdown-item>
-                                    </x-action-dropdown>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="5" class="text-center text-muted small py-3">No members yet.</td></tr>
-                            @endforelse
-                            @for($slot = $batch->loanRequests->count() + 1; $slot <= $batch->capacity; $slot++)
-                            <tr class="text-muted">
-                                <td class="small" colspan="5">Open slot</td>
-                            </tr>
-                            @endfor
-                        </tbody>
-                    </table>
+            <div class="px-4 pb-3">
+                <div class="d-flex flex-wrap justify-content-between gap-2 text-sm mb-1">
+                    <span class="text-gray-700"><strong class="text-gray-900">{{ $filled }} of {{ $capacity }}</strong> members &middot; {{ peso($batch->loanRequests->sum('requested_amount')) }} requested</span>
+                    <span class="fw-semibold text-warning">{{ $openSlots }} {{ Str::plural('slot', $openSlots) }} open</span>
                 </div>
+                <div class="progress mb-2" style="height: 8px;" role="progressbar" aria-label="Members" aria-valuenow="{{ $filled }}" aria-valuemin="0" aria-valuemax="{{ $capacity }}">
+                    <div class="progress-bar bg-warning" style="width: {{ min(100, round($filled / $capacity * 100)) }}%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mb-0">When all {{ $capacity }} slots are filled, this batch is sent to the Administrator automatically.</p>
             </div>
-            <div class="modal-footer bg-light">
+            <div class="modal-body p-0 border-top">
+                <ol class="batch-slots">
+                    @foreach($batch->loanRequests as $member)
+                    <li class="batch-slot">
+                        <span class="batch-slot-num">{{ $loop->iteration }}</span>
+                        <div class="flex-grow-1" style="min-width: 0;">
+                            <p class="text-sm fw-semibold text-gray-900 mb-0 text-truncate">{{ $member->farmer->full_name }}</p>
+                            <p class="text-xs text-gray-500 mb-0">{{ $member->purpose }} &middot; {{ $member->repayment_terms_months }} months</p>
+                        </div>
+                        <span class="text-sm fw-bold text-gray-900 text-nowrap">{{ peso($member->requested_amount) }}</span>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="switchModal('manageBatchModal{{ $batch->id }}', 'editModal{{ $member->id }}')">Edit</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm px-2" title="Remove from batch" aria-label="Remove {{ $member->farmer->full_name }} from {{ $batch->label }}"
+                            onclick="switchModal('manageBatchModal{{ $batch->id }}', 'removeMemberModal{{ $member->id }}')">
+                            <i class="fas fa-user-minus"></i>
+                        </button>
+                    </li>
+                    @endforeach
+                    @for($slot = $filled + 1; $slot <= $capacity; $slot++)
+                    <li class="batch-slot">
+                        <span class="batch-slot-num">{{ $slot }}</span>
+                        <button type="button" class="batch-slot-open" onclick="openAddFarmerToBatch({{ $batch->id }}, 'manageBatchModal{{ $batch->id }}')">
+                            Open slot <span class="batch-slot-add"><i class="fas fa-plus me-1"></i>Add farmer</span>
+                        </button>
+                    </li>
+                    @endfor
+                </ol>
+            </div>
+            <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                @if($openSlots > 0)
                 <button type="button" class="btn btn-primary" onclick="openAddFarmerToBatch({{ $batch->id }}, 'manageBatchModal{{ $batch->id }}')">
-                    <i class="fas fa-user-plus me-1"></i> Add Farmer
+                    <i class="fas fa-plus me-1"></i> Add Farmer
                 </button>
+                @endif
             </div>
         </div>
     </div>
@@ -339,37 +408,40 @@
 @endforeach
 @endforeach
 
-<div class="section-card">
-    <x-table-toolbar>
-        <x-slot:filters>
-            <form method="GET" action="{{ route('manager.loan-request') }}" class="d-flex flex-wrap align-items-center gap-3" id="loanRequestFilterForm">
+<div class="{{ $batchView ? '' : 'section-card' }}">
+    @unless($batchView)
+    @php
+        $requestTabs = ['' => 'All', 'pending' => 'Pending', 'approved' => 'Approved', 'denied' => 'Denied'];
+        $currentRequestStatus = request('status', '');
+    @endphp
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-4 px-md-5 py-4">
+        @if($showArchived)
+        <h3 class="text-lg font-semibold text-gray-900 mb-0">Archived loan requests</h3>
+        @else
+        <div class="segmented" role="group" aria-label="Filter by request status">
+            @foreach($requestTabs as $value => $label)
+            <a href="{{ route('manager.loan-request', array_filter(['status' => $value, 'search' => request('search')])) }}"
+                class="{{ $currentRequestStatus === $value ? 'active' : '' }}">{{ $label }} <span class="segmented-count">{{ $value === '' ? $regularCounts->sum() : (int) ($regularCounts[$value] ?? 0) }}</span></a>
+            @endforeach
+        </div>
+        @endif
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <form method="GET" action="{{ route('manager.loan-request') }}" id="loanRequestFilterForm" class="position-relative m-0">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
+                @elseif(request()->filled('status'))
+                <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
-                <div class="position-relative">
-                    <input type="text" name="search" id="loanRequestSearchInput" value="{{ request('search') }}" placeholder="Search farmer..." class="form-control ps-5" style="min-width: 220px;" autocomplete="off">
-                    <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
-                </div>
-                @unless($showArchived)
-                <select name="status" class="form-select" style="width: auto;" onchange="this.form.submit()">
-                    <option value="">All Status</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
-                    <option value="denied" {{ request('status') == 'denied' ? 'selected' : '' }}>Denied</option>
-                </select>
-                @endunless
-                @if(request()->filled('search') || (! $showArchived && request()->filled('status')))
-                <a href="{{ route('manager.loan-request', $showArchived ? ['archived' => 1] : []) }}" class="btn btn-link btn-sm">Clear</a>
-                @endif
+                <input type="text" name="search" id="loanRequestSearchInput" value="{{ request('search') }}" placeholder="Search farmer" class="form-control ps-5" style="min-width: 240px;" autocomplete="off">
+                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
             </form>
-        </x-slot:filters>
-        <x-slot:actions>
-            <x-archive-toggle route="manager.loan-request" :showing="$showArchived" :count="$archivedCount" :except="['status', 'page', 'regular_page', 'batches_page']" />
-            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createRequestModal">
-                <i class="fas fa-plus"></i><span>New Request</span>
-            </button>
-        </x-slot:actions>
-    </x-table-toolbar>
+            @if($showArchived)
+            <a href="{{ route('manager.loan-request') }}" class="text-sm fw-semibold text-brand text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Back to Active</a>
+            @else
+            <a href="{{ route('manager.loan-request', ['archived' => 1]) }}" class="text-sm fw-semibold text-brand text-decoration-none">View Archived ({{ $archivedCount }})</a>
+            @endif
+        </div>
+    </div>
 
     {{-- Batch Requests (folded to one row per batch): only shown in the
          archived view now. The live lifecycle (collecting/with admin/ready
@@ -401,7 +473,7 @@
                     <td class="px-4 px-md-6 py-4">{{ peso($group->members->sum('requested_amount')) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$groupStatus" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-eye" color="primary" title="View Members" data-bs-toggle="modal" data-bs-target="#viewBatchGroupModal{{ $group->batch?->id }}" />
+                        <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#viewBatchGroupModal{{ $group->batch?->id }}">View members</button>
                     </td>
                 </tr>
                 @endforeach
@@ -434,14 +506,14 @@
                         <td class="small"><x-status-badge :status="ucfirst($member->status)" /></td>
                         <td class="small">
                             <x-action-dropdown>
-                                <x-dropdown-item icon="fa-eye" color="primary" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'viewModal{{ $member->id }}'); return false;">View</x-dropdown-item>
+                                <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'viewModal{{ $member->id }}')">View</button></x-slot:primary>
                                 @if($member->status === 'pending')
-                                <x-dropdown-item icon="fa-edit" color="warning" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'editModal{{ $member->id }}'); return false;">Edit</x-dropdown-item>
+                                <x-dropdown-item icon="fa-pen" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'editModal{{ $member->id }}'); return false;">Edit</x-dropdown-item>
                                 @endif
                                 @if($member->archived_at)
-                                <x-dropdown-item icon="fa-box-open" color="success" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'unarchiveModal{{ $member->id }}'); return false;">Restore</x-dropdown-item>
+                                <x-dropdown-item icon="fa-box-open" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'unarchiveModal{{ $member->id }}'); return false;">Restore</x-dropdown-item>
                                 @elseif($member->status === 'denied')
-                                <x-dropdown-item icon="fa-archive" color="secondary" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'archiveModal{{ $member->id }}'); return false;">Archive</x-dropdown-item>
+                                <x-dropdown-item icon="fa-archive" :danger="true" onclick="switchModal('viewBatchGroupModal{{ $group->batch?->id }}', 'archiveModal{{ $member->id }}'); return false;">Archive</x-dropdown-item>
                                 @endif
                             </x-action-dropdown>
                         </td>
@@ -454,74 +526,81 @@
     @endforeach
     @endif
 
-    <!-- Regular Requests -->
-    @if(($showArchived && $requestBatchGroups->isNotEmpty()) || (! $showArchived && $hasBatchActivity))
-    <div class="px-4 px-md-6 pb-3">
-        <h3 class="text-base fw-semibold text-gray-900 mb-0">Regular Requests</h3>
+    @if($showArchived && $requestBatchGroups->isNotEmpty())
+    <div class="px-4 px-md-5 pb-3">
+        <h3 class="text-base fw-semibold text-gray-900 mb-0">Regular requests</h3>
     </div>
     @endif
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th class="d-none px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Request ID</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Name</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Type</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Loan Amount</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Purpose</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Repayment Terms</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Collateral</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted">Farmer and Purpose</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted text-end">Amount</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted">Terms</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted">Collateral</th>
+                    <th class="px-3 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-5 py-3 text-xs font-medium text-uppercase text-muted text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($regularRequests as $req)
+                @php
+                    $canFinalize = $req->status === 'approved' && ! $req->loan;
+                    $moreItems = ($canFinalize ? 1 : 0) + ($req->status === 'pending' ? 1 : 0) + ($req->status === 'denied' ? 2 : 0);
+                @endphp
                 <tr>
-                    <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">LN-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
-                    <td class="px-4 px-md-6 py-4">{{ $req->farmer->full_name }}</td>
-                    <td class="px-4 px-md-6 py-4">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Regular</span>
+                    <td class="px-4 px-md-5 py-3">
+                        <p class="text-sm fw-semibold text-gray-900 mb-0">{{ $req->farmer->full_name }}</p>
+                        <p class="text-xs text-gray-500 mb-0">{{ $req->purpose }}</p>
                     </td>
-                    <td class="px-4 px-md-6 py-4">{{ peso($req->requested_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->purpose }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->repayment_terms_months }} months</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->collateral ?? '—' }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
-                    <td class="px-4 px-md-6 py-4">
-                        <div class="d-flex gap-1">
-                            <x-icon-button icon="fa-eye" color="primary" title="View" data-bs-toggle="modal" data-bs-target="#viewModal{{ $req->id }}" />
-                            @if($req->status === 'pending')
-                            <x-icon-button icon="fa-edit" color="warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}" />
-                            @endif
-                            @if($req->status === 'approved' && !$req->loan)
-                            <x-icon-button icon="fa-file-invoice-dollar" color="success" title="Finalize into Loan" data-bs-toggle="modal" data-bs-target="#finalizeModal{{ $req->id }}" />
-                            @endif
-                            @if($req->status === 'denied' && !$req->archived_at)
-                            <x-icon-button icon="fa-redo" color="info" title="Resubmit to Admin" data-bs-toggle="modal" data-bs-target="#resubmitModal{{ $req->id }}" />
-                            @endif
-                            @if($req->archived_at)
-                            <x-icon-button icon="fa-box-open" color="success" title="Restore" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $req->id }}" />
-                            @elseif($req->status === 'denied')
-                            <x-icon-button icon="fa-archive" color="secondary" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}" />
-                            @endif
+                    <td class="px-3 py-3 text-sm text-end fw-semibold text-gray-900">{{ peso($req->requested_amount) }}</td>
+                    <td class="px-3 py-3 text-sm text-gray-700">{{ $req->repayment_terms_months }} months</td>
+                    <td class="px-3 py-3 text-sm text-gray-700">{{ $req->collateral ?? '—' }}</td>
+                    <td class="px-3 py-3"><x-status-badge :status="$req->archived_at ? 'Archived' : ucfirst($req->status)" /></td>
+                    <td class="px-4 px-md-5 py-3 text-end text-nowrap">
+                        @if($canFinalize)
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#finalizeModal{{ $req->id }}">Finalize Loan</button>
+                        @else
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ $req->id }}">View</button>
+                        @endif
+                        @if($moreItems > 0 || $req->archived_at)
+                        <div class="dropdown d-inline-block">
+                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @if($canFinalize)
+                                <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#viewModal{{ $req->id }}"><i class="fas fa-eye me-2 text-gray-500"></i>View</button></li>
+                                @endif
+                                @if($req->status === 'pending')
+                                <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}"><i class="fas fa-pen me-2 text-gray-500"></i>Edit request</button></li>
+                                @endif
+                                @if($req->archived_at)
+                                <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $req->id }}"><i class="fas fa-box-open me-2 text-success"></i>Restore</button></li>
+                                @elseif($req->status === 'denied')
+                                <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#resubmitModal{{ $req->id }}"><i class="fas fa-redo me-2 text-gray-500"></i>Resubmit to Admin</button></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}"><i class="fas fa-archive me-2"></i>Archive</button></li>
+                                @endif
+                            </ul>
                         </div>
+                        @endif
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived loan requests.' : 'No regular loan requests found.' }}</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived loan requests.' : 'No regular loan requests found.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
     <x-pagination-footer :paginator="$regularRequests" />
+    @endunless
 
     {{-- View/Edit/Finalize/Archive modals for every request (regular rows above,
          and batch members reached via the Batch Requests group modal's own
          View/Edit/Archive buttons through switchModal()). --}}
-    @foreach($requests as $req)
+    @foreach($modalRequests as $req)
                 <!-- View Modal -->
                 <x-modal id="viewModal{{ $req->id }}" title="Loan Request Details">
                     <div class="row g-3">
@@ -847,6 +926,10 @@
     @endforeach
 </div>
 
+@unless($batchView || $showArchived)
+<x-flow-strip class="mt-5" title="How a loan moves" :steps="['Farmer requests', 'Manager reviews', 'Approved or denied', 'Released in Loan Management', 'Paid through Payments']" />
+@endunless
+
 <!-- Create Request Modal -->
 <div class="modal fade" id="createRequestModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -1047,6 +1130,37 @@
 @endif
 
 <script>
-    wireDebouncedSearch('loanRequestSearchInput', 'loanRequestFilterForm');
+    if (document.getElementById('loanRequestSearchInput')) {
+        wireDebouncedSearch('loanRequestSearchInput', 'loanRequestFilterForm');
+    }
+
+    // Batch requests view: stage tabs and "Search farmer in batches" filter the cards.
+    document.querySelectorAll('[data-batch-board]').forEach(function (board) {
+        var search = board.querySelector('[data-batch-search]');
+        var cards = board.querySelectorAll('[data-batch-card]');
+        var empty = board.querySelector('[data-batch-empty]');
+        var stage = '';
+
+        function apply() {
+            var term = search.value.trim().toLowerCase();
+            var shown = 0;
+            cards.forEach(function (card) {
+                var match = (!stage || card.dataset.stage === stage) && (!term || card.dataset.names.indexOf(term) !== -1);
+                card.classList.toggle('d-none', !match);
+                if (match) { shown++; }
+            });
+            empty.classList.toggle('d-none', shown > 0 || cards.length === 0);
+        }
+
+        board.querySelectorAll('[data-stage-filter]').forEach(function (tab) {
+            tab.addEventListener('click', function (e) {
+                e.preventDefault();
+                stage = tab.dataset.stageFilter;
+                board.querySelectorAll('[data-stage-filter]').forEach(function (t) { t.classList.toggle('active', t === tab); });
+                apply();
+            });
+        });
+        search.addEventListener('input', apply);
+    });
 </script>
 @endsection

@@ -5,8 +5,7 @@
     @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify Code - CFMC</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&family=fraunces:500,500i,600" rel="stylesheet" />
+    @include('partials.fonts')
     @vite('resources/css/palette.css')
     @include('partials.auth-motion')
     <style>
@@ -17,12 +16,12 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+            font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
             background: linear-gradient(180deg, var(--palette-paper) 0%, var(--palette-surface-muted) 100%);
             display: flex; align-items: center; justify-content: center;
             min-height: 100vh; color: var(--text-primary); padding: 1.5rem;
         }
-        h1, h2 { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
+        h1, h2 { font-family: 'Bitter', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
         .container { max-width: 440px; width: 100%; }
         .card {
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px) saturate(160%);

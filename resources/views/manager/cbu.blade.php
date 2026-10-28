@@ -76,7 +76,7 @@
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($transaction->balance_after) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$transaction->cbu->status" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-edit" color="warning" title="Edit Entry" data-bs-toggle="modal" data-bs-target="#editCbuEntryModal{{ $transaction->id }}" />
+                        <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#editCbuEntryModal{{ $transaction->id }}">Edit</button>
                     </td>
                 </tr>
                 @empty

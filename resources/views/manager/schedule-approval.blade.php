@@ -73,7 +73,10 @@
                 <tr>
                     <td class="d-none px-4 px-md-6 py-4 fw-medium text-dark">SCH-{{ str_pad($req->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $req->display_name }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $req->units_requested > 1 ? $req->units_requested.'× ' : '' }}{{ $req->machinery }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">
+                        {{ $req->units_requested > 1 ? $req->units_requested.'× ' : '' }}{{ $req->machinery }}
+                        @if($req->batch_id)<i class="fas fa-link text-muted ms-1" title="Submitted together with {{ $req->batchSiblings->count() }} other machine(s) for the same job"></i>@endif
+                    </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $req->scheduled_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">
                         {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}
@@ -88,10 +91,17 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View Details</x-dropdown-item>
+                            <x-slot:primary>
+                                @if($req->status === 'pending')
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal{{ $req->id }}">Approve</button>
+                                @else
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View</button>
+                                @endif
+                            </x-slot:primary>
                             @if($req->status === 'pending')
-                            <x-dropdown-item icon="fa-check" color="success" data-bs-toggle="modal" data-bs-target="#approveModal{{ $req->id }}">Approve</x-dropdown-item>
-                            <x-dropdown-item icon="fa-times" color="danger" data-bs-toggle="modal" data-bs-target="#denyModal{{ $req->id }}">Deny</x-dropdown-item>
+                            <x-dropdown-item icon="fa-eye" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View details</x-dropdown-item>
+                            <li><hr class="dropdown-divider"></li>
+                            <x-dropdown-item icon="fa-times" :danger="true" data-bs-toggle="modal" data-bs-target="#denyModal{{ $req->id }}">Deny request</x-dropdown-item>
                             @endif
                         </x-action-dropdown>
                     </td>

@@ -32,8 +32,57 @@ class MachineScheduleController extends Controller
     {
         $month = $request->filled('month') ? Carbon::parse($request->string('month').'-01') : now()->startOfMonth();
         $showArchived = $request->boolean('archived');
+        $machineryFilter = $request->string('machinery')->toString();
+        $statusFilter = in_array($request->string('status')->toString(), ['pending', 'approved', 'completed', 'denied'], true)
+            ? $request->string('status')->toString()
+            : '';
+        $viewMode = $request->string('view')->toString() === 'list' ? 'list' : 'month';
+        $monthStart = $month->copy()->startOfMonth();
+        $monthEnd = $month->copy()->endOfMonth();
 
-        $calendarDays = ScheduleRequest::calendarForMonth($month, $request->string('machinery')->toString() ?: null);
+        // Every non-archived booking this month (all statuses, unlike the
+        // approved-only calendar elsewhere), keyed by day for the grid.
+        $monthBookings = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'rescheduleRequests', 'crop', 'machine'])
+            ->whereNull('archived_at')
+            ->visibleAccount()
+            ->whereBetween('scheduled_date', [$monthStart, $monthEnd])
+            ->when($machineryFilter, fn ($query) => $query->where('machinery', $machineryFilter))
+            ->when($statusFilter, fn ($query) => $query->where('status', $statusFilter))
+            ->orderBy('scheduled_date')
+            ->orderBy('start_time')
+            ->get();
+        $bookingsByDay = $monthBookings->groupBy(fn ($booking) => $booking->scheduled_date->day);
+
+        // Move One Day shifts every pending/approved booking on a date,
+        // whatever machine or status is being viewed, so count those.
+        $movableByDay = ScheduleRequest::whereNull('archived_at')
+            ->whereIn('status', ['pending', 'approved'])
+            ->whereBetween('scheduled_date', [$monthStart, $monthEnd])
+            ->get(['scheduled_date'])
+            ->countBy(fn ($booking) => $booking->scheduled_date->day);
+
+        $dayParam = $request->string('day')->toString();
+        $selectedDay = $dayParam !== '' ? rescue(fn () => Carbon::createFromFormat('!Y-m-d', $dayParam), now(), false) : now();
+        if (! $selectedDay->between($monthStart, $monthEnd)) {
+            $selectedDay = $monthStart->copy();
+        }
+        $dayBookings = $bookingsByDay->get($selectedDay->day, collect());
+
+        // Machine strip: bookings this month per machine, denied ones excluded.
+        $monthCounts = ScheduleRequest::whereNull('archived_at')
+            ->visibleAccount()
+            ->where('status', '!=', 'denied')
+            ->whereBetween('scheduled_date', [$monthStart, $monthEnd])
+            ->selectRaw('machinery, count(*) as total')
+            ->groupBy('machinery')
+            ->pluck('total', 'machinery');
+        $machineCards = Machine::whereNull('archived_at')->orderBy('created_at', 'desc')->get()
+            ->map(fn (Machine $machine) => (object) [
+                'name' => $machine->name,
+                'type' => $machine->type,
+                'status' => $machine->status,
+                'bookings' => (int) ($monthCounts[$machine->name] ?? 0),
+            ]);
 
         $requests = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'rescheduleRequests', 'crop'])
             ->when($showArchived, fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
@@ -55,10 +104,14 @@ class MachineScheduleController extends Controller
         $selectedMonth = $month;
         $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
         $daysInMonth = $month->daysInMonth;
-        $monthOptions = collect(range(-2, 3))->map(fn ($offset) => now()->startOfMonth()->addMonths($offset));
+
+        // Each schedule's View/Edit/Complete/Archive modals, rendered once for
+        // the table rows and the selected day's panel together.
+        $modalSchedules = $requests->getCollection()->concat($dayBookings)->unique('id');
 
         return view('manager.machine-schedule', compact(
-            'requests', 'calendarDays', 'machineryList', 'machineQuantities', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'monthOptions', 'showArchived'
+            'requests', 'machineryList', 'machineQuantities', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'showArchived',
+            'machineryFilter', 'statusFilter', 'viewMode', 'bookingsByDay', 'movableByDay', 'selectedDay', 'dayBookings', 'machineCards', 'modalSchedules'
         ) + ['archivedCount' => ScheduleRequest::whereNotNull('archived_at')->visibleAccount()->count()]);
     }
 
@@ -157,7 +210,10 @@ class MachineScheduleController extends Controller
         $schedule->update(['archived_at' => now()]);
 
         return redirect()->route('manager.machine-schedule')
-            ->with('success', 'Schedule archived.');
+            ->with('undo', [
+                'message' => "{$schedule->display_name}'s {$schedule->machinery} schedule archived.",
+                'url' => route('manager.machine-schedule.unarchive', $schedule),
+            ]);
     }
 
     /**
@@ -166,6 +222,10 @@ class MachineScheduleController extends Controller
     public function unarchive(ScheduleRequest $schedule)
     {
         $schedule->update(['archived_at' => null]);
+
+        if (request()->boolean('undo')) {
+            return back()->with('undo_done', 'Schedule restored.');
+        }
 
         return redirect()->route('manager.machine-schedule', ['archived' => 1])
             ->with('success', 'Schedule restored.');

@@ -35,12 +35,12 @@
                 <tr>
                     <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">User ID</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Name</th>
-                    <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
+                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Phone</th>
                     <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Temp Password</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Created At</th>
-                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Actions</th>
+                    <th class="px-4 px-md-6 py-3 text-end text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y">
@@ -49,21 +49,15 @@
                     <td class="d-none px-4 px-md-6 py-4 fw-medium">USR-{{ str_pad($user->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">{{ strtoupper(substr($user->name, 0, 2)) }}</div>
-                            <div>
-                                <p class="mb-0 fw-medium text-dark">{{ $user->name }}</p>
-                                <small class="text-muted">@ {{ $user->username }}</small>
+                            <x-avatar-initials :name="$user->name" />
+                            <div style="min-width: 0;">
+                                <p class="mb-0 text-sm fw-semibold text-gray-900">{{ $user->name }}</p>
+                                <p class="mb-0 text-xs text-gray-500">{{ '@'.$user->username }}</p>
                             </div>
                         </div>
                     </td>
-                    <td class="d-none px-4 px-md-6 py-4">
-                        @if($user->roleID == 2)
-                        <span class="badge bg-purple text-white">Manager</span>
-                        @else
-                        <span class="badge bg-success">Farmer</span>
-                        @endif
-                    </td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $user->Phonenumber ?? 'N/A' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-gray-700">{{ $user->roleID == 2 ? 'Manager' : 'Farmer' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-gray-700 text-nowrap" style="font-variant-numeric: tabular-nums;">{{ $user->Phonenumber ? phone($user->Phonenumber) : '—' }}</td>
                     <td class="d-none px-4 px-md-6 py-4 text-muted">
                         @if($user->temp_password)
                         <span class="d-flex align-items-center gap-2">
@@ -77,31 +71,9 @@
                     <td class="px-4 px-md-6 py-4">
                         <x-status-badge :status="ucfirst($user->status)" />
                     </td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
-                    <td class="px-4 px-md-6 py-4">
-                        <x-action-dropdown>
-                            <x-dropdown-item icon="fa-eye" color="primary" onclick="viewUser({{ $user->id }}); return false;">View</x-dropdown-item>
-                            <x-dropdown-item icon="fa-edit" color="primary" onclick="editUser({{ $user->id }}); return false;">Edit</x-dropdown-item>
-                            @if($user->roleID == 3)
-                            <x-dropdown-item icon="fa-key" color="primary" onclick="openChangePassword({{ $user->id }}, {{ Js::from($user->name) }}); return false;">Change Password</x-dropdown-item>
-                            @endif
-                            @if($user->status === 'locked')
-                            <x-dropdown-item icon="fa-unlock" color="success" onclick="unlockUser({{ $user->id }}); return false;">Unlock</x-dropdown-item>
-                            @endif
-                            @if($user->roleID == 3 && in_array($user->status, ['active', 'inactive']))
-                                @if($user->status === 'active')
-                                <x-dropdown-item icon="fa-user-slash" color="secondary" onclick="toggleUserStatus({{ $user->id }}, 'active'); return false;">Deactivate</x-dropdown-item>
-                                @else
-                                <x-dropdown-item icon="fa-user-check" color="success" onclick="toggleUserStatus({{ $user->id }}, 'inactive'); return false;">Activate</x-dropdown-item>
-                                @endif
-                            @endif
-                            <li><hr class="dropdown-divider"></li>
-                            @if($user->status === 'archived')
-                            <x-dropdown-item icon="fa-box-open" color="success" onclick="unarchiveUser({{ $user->id }}); return false;">Unarchive</x-dropdown-item>
-                            @else
-                            <x-dropdown-item icon="fa-archive" :danger="true" onclick="archiveUser({{ $user->id }}); return false;">Archive</x-dropdown-item>
-                            @endif
-                        </x-action-dropdown>
+                    <td class="px-4 px-md-6 py-4 text-gray-700 text-nowrap">{{ $user->created_at ? $user->created_at->format('M j, Y') : '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-end">
+                        @include('partials.user-row-actions', ['canManage' => true, 'canChangePassword' => $user->roleID == 3, 'canToggleStatus' => $user->roleID == 3, 'canUnlock' => true])
                     </td>
                 </tr>
                 @empty
@@ -781,8 +753,9 @@
     }
 
     // Archive User Function
-    function archiveUser(userId) {
-        confirmAction('Are you sure you want to archive this user?', function() {
+    function archiveUser(userId, name) {
+        var who = name ? name + "'s" : 'this';
+        confirmAction('They can no longer log in. You can restore it anytime from View Archived.', function() {
             var formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('_method', 'PATCH');
@@ -798,7 +771,9 @@
                 return response.json();
             })
             .then(function(data) {
-                if (data.success) {
+                if (data.success && data.undo) {
+                    window.location.reload();
+                } else if (data.success) {
                     showAlert(data.message, 'success', function() {
                         window.location.reload();
                     });
@@ -810,7 +785,7 @@
                 console.error('Error:', error);
                 showAlert(error.message, 'danger');
             });
-        }, { title: 'Archive User', variant: 'danger', icon: 'fa-archive' });
+        }, { title: 'Archive ' + who + ' account?', confirmLabel: 'Archive account', variant: 'danger', icon: 'fa-archive' });
     }
 
     // View User Function

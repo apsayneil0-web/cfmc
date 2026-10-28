@@ -167,7 +167,10 @@ class LoanApprovalController extends Controller
         $loan_request->update(['archived_at' => now()]);
 
         return redirect()->route('admin.approved-loans')
-            ->with('success', "{$loan_request->farmer->full_name}'s loan request has been archived.");
+            ->with('undo', [
+                'message' => "{$loan_request->farmer->full_name}'s loan request archived.",
+                'url' => route('admin.approved-loans.unarchive', $loan_request),
+            ]);
     }
 
     /**
@@ -176,6 +179,10 @@ class LoanApprovalController extends Controller
     public function unarchive(LoanRequest $loan_request)
     {
         $loan_request->update(['archived_at' => null]);
+
+        if (request()->boolean('undo')) {
+            return back()->with('undo_done', "{$loan_request->farmer->full_name}'s loan request has been restored.");
+        }
 
         return redirect()->route('admin.approved-loans', ['status' => 'archived'])
             ->with('success', "{$loan_request->farmer->full_name}'s loan request has been restored.");

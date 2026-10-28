@@ -58,7 +58,7 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $schedule->location }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($schedule->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-eye" color="primary" title="View Details" data-bs-toggle="modal" data-bs-target="#viewScheduleModal{{ $schedule->id }}" />
+                        <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#viewScheduleModal{{ $schedule->id }}">View</button>
                     </td>
                 </tr>
                 @empty

@@ -49,11 +49,17 @@ class BatchLoanManagementController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->string('search');
-            $query->whereHas('loanRequest.farmer', function ($q) use ($search) {
-                $q->where('first_name', 'like', "{$search}%")
-                    ->orWhere('last_name', 'like', "{$search}%");
-            });
+            $search = trim($request->string('search'));
+
+            // "Batch 4" / "4" finds that batch; anything else searches farmer names.
+            if (preg_match('/^(?:batch\s*)?(\d+)$/i', $search, $match)) {
+                $query->whereHas('loanRequest.batch', fn ($q) => $q->where('batch_number', (int) $match[1]));
+            } else {
+                $query->whereHas('loanRequest.farmer', function ($q) use ($search) {
+                    $q->where('first_name', 'like', "{$search}%")
+                        ->orWhere('last_name', 'like', "{$search}%");
+                });
+            }
         }
 
         $loans = $query->orderBy('created_at', 'desc')->get();
@@ -95,6 +101,8 @@ class BatchLoanManagementController extends Controller
                 ->visibleAccount()
                 ->sum('amount'),
             'archived_count' => Loan::whereNotNull('archived_at')->tap($batchOnly)->count(),
+            'scheduled_disbursement_count' => Loan::whereNull('archived_at')->where('status', 'pending_disbursement')
+                ->whereNotNull('scheduled_disbursement_date')->tap($batchOnly)->count(),
         ];
 
         return view('manager.batch-loan-management', compact('batchGroups', 'stats', 'showArchived'));

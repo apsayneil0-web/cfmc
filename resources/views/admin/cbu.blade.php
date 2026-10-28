@@ -46,7 +46,7 @@
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($farmer->cbu->balance ?? 0) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$farmer->cbu->status ?? 'inactive'" /></td>
                     <td class="px-4 px-md-6 py-4">
-                        <x-icon-button icon="fa-eye" color="primary" title="View CBU Ledger" data-bs-toggle="modal" data-bs-target="#viewCbuModal{{ $farmer->id }}" />
+                        <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#viewCbuModal{{ $farmer->id }}">View ledger</button>
                     </td>
                 </tr>
                 @empty
