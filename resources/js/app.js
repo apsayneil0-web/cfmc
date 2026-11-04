@@ -1,5 +1,6 @@
 import './bootstrap';
 import './date-pickers';
+import './input-filters';
 
 // Popups are locked against outside clicks system-wide: clicking the dimmed
 // background does nothing, so a stray click never closes a form or loses what

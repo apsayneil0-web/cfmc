@@ -196,17 +196,17 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
                                             <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                                            <input type="text" name="first_name" class="form-control" value="{{ $farmer->first_name }}" required>
+                                            <input data-input="name" type="text" name="first_name" class="form-control" value="{{ $farmer->first_name }}" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                                            <input type="text" name="last_name" class="form-control" value="{{ $farmer->last_name }}" required>
+                                            <input data-input="name" type="text" name="last_name" class="form-control" value="{{ $farmer->last_name }}" required>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
                                             <label class="form-label fw-semibold">M.I.</label>
-                                            <input type="text" name="middle_initial" class="form-control" value="{{ $farmer->middle_initial }}" maxlength="2">
+                                            <input data-input="initial" type="text" name="middle_initial" class="form-control" value="{{ $farmer->middle_initial }}" maxlength="2">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Suffix</label>
@@ -220,7 +220,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
-                                        <input type="tel" name="contact_number" class="form-control ph-contact-input" value="{{ $farmer->contact_number }}" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
+                                        <input data-input="phone" type="tel" name="contact_number" class="form-control ph-contact-input" value="{{ $farmer->contact_number }}" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
                                         <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
                                     </div>
                                     <div class="row mb-3">
@@ -237,7 +237,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
-                                            <input type="text" name="municipality" class="form-control" value="{{ $farmer->municipality }}" required>
+                                            <input data-input="place" type="text" name="municipality" class="form-control" value="{{ $farmer->municipality }}" required>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
@@ -254,7 +254,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
-                                            <input type="number" name="land_area" class="form-control" value="{{ $farmer->land_area }}" step="0.1" min="0" required>
+                                            <input data-input="decimal" type="number" name="land_area" class="form-control" value="{{ $farmer->land_area }}" step="0.1" min="0" required>
                                         </div>
                                     </div>
                                     <!-- Document Upload -->
@@ -444,16 +444,16 @@
                     <div class="row mb-3">
                         <div class="col-md-3 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                            <input type="text" name="first_name" class="form-control form-control-lg" placeholder="First name" required>
+                            <input data-input="name" type="text" name="first_name" class="form-control form-control-lg" placeholder="First name" required>
                             <div class="invalid-feedback">Please enter first name.</div>
                         </div>
                         <div class="col-md-2 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">M.I.</label>
-                            <input type="text" name="middle_initial" class="form-control form-control-lg" placeholder="M.I." maxlength="2">
+                            <input data-input="initial" type="text" name="middle_initial" class="form-control form-control-lg" placeholder="M.I." maxlength="2">
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" name="last_name" class="form-control form-control-lg" placeholder="Last name" required>
+                            <input data-input="name" type="text" name="last_name" class="form-control form-control-lg" placeholder="Last name" required>
                             <div class="invalid-feedback">Please enter last name.</div>
                         </div>
                         <div class="col-md-3">
@@ -473,7 +473,7 @@
                     <div class="row mb-3">
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="contact_number" class="form-control form-control-lg ph-contact-input" placeholder="09123456789" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
+                            <input data-input="phone" type="tel" name="contact_number" class="form-control form-control-lg ph-contact-input" placeholder="09123456789" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
                             <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
@@ -517,7 +517,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
-                            <input type="number" name="land_area" step="0.1" min="0" class="form-control form-control-lg" placeholder="0.0" required>
+                            <input data-input="decimal" type="number" name="land_area" step="0.1" min="0" class="form-control form-control-lg" placeholder="0.0" required>
                             <div class="invalid-feedback">Please enter land area.</div>
                         </div>
                     </div>

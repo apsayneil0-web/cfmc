@@ -184,16 +184,16 @@
                         <div class="row mb-3">
                             <div class="col-md-3 mb-3 mb-md-0">
                                 <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                                <input type="text" name="first_name" class="form-control form-control-lg" placeholder="First name" id="farmerFirstNameInput" required>
+                                <input data-input="name" type="text" name="first_name" class="form-control form-control-lg" placeholder="First name" id="farmerFirstNameInput" required>
                                 <div class="invalid-feedback">Please enter first name.</div>
                             </div>
                             <div class="col-md-2 mb-3 mb-md-0">
                                 <label class="form-label fw-semibold">M.I.</label>
-                                <input type="text" name="middle_initial" class="form-control form-control-lg" placeholder="M.I." maxlength="2" id="farmerMiddleInitialInput">
+                                <input data-input="initial" type="text" name="middle_initial" class="form-control form-control-lg" placeholder="M.I." maxlength="2" id="farmerMiddleInitialInput">
                             </div>
                             <div class="col-md-4 mb-3 mb-md-0">
                                 <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                                <input type="text" name="last_name" class="form-control form-control-lg" placeholder="Last name" id="farmerLastNameInput" required>
+                                <input data-input="name" type="text" name="last_name" class="form-control form-control-lg" placeholder="Last name" id="farmerLastNameInput" required>
                                 <div class="invalid-feedback">Please enter last name.</div>
                             </div>
                             <div class="col-md-3">
@@ -212,7 +212,7 @@
                         <div class="row mb-3">
                             <div class="col-md-4 mb-3 mb-md-0">
                                 <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
-                                <input type="tel" name="contact_number" class="form-control form-control-lg ph-contact-input" placeholder="09123456789" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" id="farmerContactInput" required>
+                                <input data-input="phone" type="tel" name="contact_number" class="form-control form-control-lg ph-contact-input" placeholder="09123456789" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" id="farmerContactInput" required>
                                 <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
                             </div>
                             <div class="col-md-4 mb-3 mb-md-0">
@@ -235,7 +235,7 @@
                                 <select class="form-select form-select-lg d-none" id="barangayNameSelect" name="barangay" disabled>
                                     <option value="" selected>Select Barangay</option>
                                 </select>
-                                <input type="text" class="form-control form-control-lg" id="barangayNameInput" name="barangay" placeholder="Enter barangay">
+                                <input data-input="place" type="text" class="form-control form-control-lg" id="barangayNameInput" name="barangay" placeholder="Enter barangay">
                                 <div class="form-text">A barangay list is only available for Surallah and Banga; other municipalities can be typed in.</div>
                             </div>
                         </div>
@@ -255,7 +255,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
-                                <input type="number" name="land_area" step="0.1" min="0" class="form-control form-control-lg" placeholder="0.0" id="farmerLandAreaInput" required>
+                                <input data-input="decimal" type="number" name="land_area" step="0.1" min="0" class="form-control form-control-lg" placeholder="0.0" id="farmerLandAreaInput" required>
                                 <div class="invalid-feedback">Please enter land area.</div>
                             </div>
                         </div>
@@ -283,16 +283,16 @@
                     <div class="row mb-3 d-none" id="staffFieldsGroup">
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="firstNameInput" autocomplete="off" required>
+                            <input data-input="name" type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="firstNameInput" autocomplete="off" required>
                             <div class="invalid-feedback">Please enter first name.</div>
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Middle Name</label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Middle name" name="middle_name" id="middleNameInput" autocomplete="off">
+                            <input data-input="name" type="text" class="form-control form-control-lg" placeholder="Middle name" name="middle_name" id="middleNameInput" autocomplete="off">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="lastNameInput" autocomplete="off" required>
+                            <input data-input="name" type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="lastNameInput" autocomplete="off" required>
                             <div class="invalid-feedback">Please enter last name.</div>
                         </div>
                         <div class="col-md-4 mt-3">
@@ -334,7 +334,7 @@
                         <div class="row mb-3">
                             <div class="col-12">
                                 <label class="form-label fw-semibold">Phone Number</label>
-                                <input type="tel" class="form-control form-control-lg" placeholder="0912-345-6789" name="Phonenumber" id="phoneInput">
+                                <input data-input="phone" type="tel" class="form-control form-control-lg" placeholder="09123456789" inputmode="numeric" maxlength="13" name="Phonenumber" id="phoneInput">
                             </div>
                         </div>
 
@@ -609,7 +609,7 @@
                     <div class="row mb-3" id="editFarmerNameGroup">
                         <div class="col-12">
                             <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="editName">
+                            <input data-input="name" type="text" class="form-control form-control-lg" placeholder="Enter full name" name="name" id="editName">
                             <div class="invalid-feedback">Please enter full name.</div>
                         </div>
                     </div>
@@ -618,16 +618,16 @@
                     <div class="row mb-3 d-none" id="editStaffFieldsGroup">
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="editFirstName">
+                            <input data-input="name" type="text" class="form-control form-control-lg" placeholder="First name" name="first_name" id="editFirstName">
                             <div class="invalid-feedback">Please enter first name.</div>
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Middle Name</label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Middle name" name="middle_name" id="editMiddleName">
+                            <input data-input="name" type="text" class="form-control form-control-lg" placeholder="Middle name" name="middle_name" id="editMiddleName">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="editLastName">
+                            <input data-input="name" type="text" class="form-control form-control-lg" placeholder="Last name" name="last_name" id="editLastName">
                             <div class="invalid-feedback">Please enter last name.</div>
                         </div>
                         <div class="col-md-4 mt-3">
@@ -669,7 +669,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Phone Number</label>
-                            <input type="tel" class="form-control form-control-lg" placeholder="0912-345-6789" name="Phonenumber" id="editPhone">
+                            <input data-input="phone" type="tel" class="form-control form-control-lg" placeholder="09123456789" inputmode="numeric" maxlength="13" name="Phonenumber" id="editPhone">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>

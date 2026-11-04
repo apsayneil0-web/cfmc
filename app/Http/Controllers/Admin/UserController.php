@@ -8,6 +8,7 @@ use App\Models\Crop;
 use App\Models\Farmer;
 use App\Models\Staff;
 use App\Models\User;
+use App\Rules\PersonName;
 use App\Services\SmsService;
 use App\Support\ActivityLogger;
 use Carbon\Carbon;
@@ -53,19 +54,22 @@ class UserController extends Controller
         }
 
         $isStaffRole = in_array($roleID, self::STAFF_ROLES, true);
+        $this->normalizePhonenumber($request);
 
         $validator = Validator::make($request->all(), [
             'roleID' => 'required|in:1,2',
-            'first_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255'],
-            'middle_name' => 'nullable|string|max:255',
-            'last_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255'],
+            'first_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255', new PersonName],
+            'middle_name' => ['nullable', 'string', 'max:255', new PersonName],
+            'last_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255', new PersonName],
             'date_of_birth' => 'nullable|date|before:today',
             'gender' => 'nullable|in:Male,Female',
             'profile_picture' => 'nullable|image|max:2048',
             'username' => 'required|string|max:255|unique:users,username',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => ['required', 'string', User::passwordComplexityRule()],
-            'Phonenumber' => 'nullable|string|max:20',
+            'Phonenumber' => ['nullable', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
+        ], [
+            'Phonenumber.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
         ]);
 
         if ($validator->fails()) {
@@ -133,9 +137,9 @@ class UserController extends Controller
         ]);
 
         $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string|max:255',
-            'middle_initial' => 'nullable|string|max:5',
-            'last_name' => 'required|string|max:255',
+            'first_name' => ['required', 'string', 'max:255', new PersonName],
+            'middle_initial' => ['nullable', 'string', 'max:5', 'regex:/^[\pL.]+$/u'],
+            'last_name' => ['required', 'string', 'max:255', new PersonName],
             'suffix' => 'nullable|string|max:50',
             'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'crop_ids' => 'required|array|min:1',
@@ -151,9 +155,10 @@ class UserController extends Controller
             'rsbsa.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
             'province' => 'required|string|max:255',
             'municipality' => 'required|string|max:255',
-            'barangay' => 'nullable|string|max:255',
+            'barangay' => ['nullable', 'string', 'max:255', "regex:/^[\pL\d\s.,'\-]+$/u"],
         ], [
             'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
+            'middle_initial.regex' => 'The middle initial may only contain letters.',
         ]);
 
         if ($validator->fails()) {
@@ -507,13 +512,14 @@ class UserController extends Controller
     {
         $roleID = (int) $request->input('roleID');
         $isStaffRole = in_array($roleID, self::STAFF_ROLES, true);
+        $this->normalizePhonenumber($request);
 
         $validator = Validator::make($request->all(), [
             'roleID' => 'required|in:1,2,3',
             'name' => [Rule::requiredIf(! $isStaffRole), 'nullable', 'string', 'max:255'],
-            'first_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255'],
-            'middle_name' => 'nullable|string|max:255',
-            'last_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255'],
+            'first_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255', new PersonName],
+            'middle_name' => ['nullable', 'string', 'max:255', new PersonName],
+            'last_name' => [Rule::requiredIf($isStaffRole), 'nullable', 'string', 'max:255', new PersonName],
             'date_of_birth' => 'nullable|date|before:today',
             'gender' => 'nullable|in:Male,Female',
             'profile_picture' => 'nullable|image|max:2048',
@@ -525,8 +531,10 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
-            'Phonenumber' => 'nullable|string|max:20',
+            'Phonenumber' => ['nullable', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'status' => 'required|in:active,inactive,locked',
+        ], [
+            'Phonenumber.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
         ]);
 
         if ($validator->fails()) {
@@ -595,6 +603,19 @@ class UserController extends Controller
                 'success' => false,
                 'message' => 'Failed to update user: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Strip the spaces/dashes people type into a phone number ("0912-345-6789")
+     * before it's checked against the Philippine mobile format.
+     */
+    private function normalizePhonenumber(Request $request): void
+    {
+        if ($request->filled('Phonenumber')) {
+            $request->merge([
+                'Phonenumber' => preg_replace('/[\s\-]+/', '', (string) $request->input('Phonenumber')),
+            ]);
         }
     }
 }

@@ -216,10 +216,19 @@ class AuthenticatedSessionController extends Controller
      * Whether this user already has a live session on a different
      * browser/device — i.e. a row in the `sessions` table for them, other
      * than the current (still-unauthenticated) one, that hasn't gone idle
-     * past the configured session lifetime yet. Using the sessions table
-     * itself (rather than a DB flag on the user) means a session that was
-     * never explicitly logged out still self-expires normally instead of
+     * past the inactivity timeout yet. Using the sessions table itself
+     * (rather than a DB flag on the user) means a session that was never
+     * explicitly logged out still self-expires normally instead of
      * permanently locking the account out of logging in anywhere.
+     *
+     * Deliberately keyed to "inactivity_timeout" (the 15-minute window
+     * EnsureSessionIsActive actually enforces) rather than the full
+     * "lifetime" (120 minutes). That enforcement only runs when a request
+     * arrives on the stale session — closing a tab/browser without logging
+     * out never fires it, so the row just sits there. Using "lifetime" as
+     * the cutoff meant a session abandoned that way could block re-login
+     * for up to 2 hours even though it's considered timed-out after 15
+     * minutes everywhere else in the app.
      */
     private function hasActiveSessionElsewhere(User $user, Request $request): bool
     {
@@ -227,7 +236,7 @@ class AuthenticatedSessionController extends Controller
             return false;
         }
 
-        $cutoff = now()->subMinutes((int) config('session.lifetime'))->timestamp;
+        $cutoff = now()->subMinutes((int) config('session.inactivity_timeout'))->timestamp;
 
         return DB::table(config('session.table', 'sessions'))
             ->where('user_id', $user->id)

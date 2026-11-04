@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\StoresFarmerDocuments;
 use App\Models\Crop;
 use App\Models\Farmer;
 use App\Models\Notification;
+use App\Rules\PersonName;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -64,9 +65,9 @@ class MembershipController extends Controller
         ]);
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'middle_initial' => 'nullable|string|max:5',
-            'last_name' => 'required|string|max:255',
+            'first_name' => ['required', 'string', 'max:255', new PersonName],
+            'middle_initial' => ['nullable', 'string', 'max:5', 'regex:/^[\pL.]+$/u'],
+            'last_name' => ['required', 'string', 'max:255', new PersonName],
             'suffix' => 'nullable|string|max:50',
             'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'crop_ids' => 'required|array|min:1',
@@ -85,6 +86,7 @@ class MembershipController extends Controller
             'barangay' => ['nullable', Rule::in(Farmer::BARANGAYS)],
         ], [
             'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
+            'middle_initial.regex' => 'The middle initial may only contain letters.',
             'province.in' => 'Membership is only open to farmers in '.Farmer::MUNICIPALITY.', '.Farmer::PROVINCE.'.',
             'municipality.in' => 'Membership is only open to farmers in '.Farmer::MUNICIPALITY.', '.Farmer::PROVINCE.'.',
             'barangay.in' => 'Please select a barangay in '.Farmer::MUNICIPALITY.'.',
@@ -132,9 +134,9 @@ class MembershipController extends Controller
         ]);
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'middle_initial' => 'nullable|string|max:5',
-            'last_name' => 'required|string|max:255',
+            'first_name' => ['required', 'string', 'max:255', new PersonName],
+            'middle_initial' => ['nullable', 'string', 'max:5', 'regex:/^[\pL.]+$/u'],
+            'last_name' => ['required', 'string', 'max:255', new PersonName],
             'suffix' => 'nullable|string|max:50',
             'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
             'crop_ids' => 'required|array|min:1',
@@ -153,6 +155,7 @@ class MembershipController extends Controller
             'rsbsa.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
         ], [
             'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
+            'middle_initial.regex' => 'The middle initial may only contain letters.',
         ]);
 
         $updateData = [
