@@ -25,7 +25,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-            background: linear-gradient(180deg, var(--palette-paper) 0%, var(--palette-surface-muted) 100%);
+            background: var(--palette-field-deep);
             position: relative;
             display: flex;
             align-items: center;
@@ -38,18 +38,33 @@
         }
         h1, h2 { font-family: 'Bitter', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
 
-        .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.55; pointer-events: none; z-index: 0; }
-        .bg-blob.b1 { width: 28rem; height: 28rem; top: -9rem; left: -8rem; background: radial-gradient(circle, var(--palette-sprout), transparent 70%); }
-        .bg-blob.b2 { width: 24rem; height: 24rem; bottom: -10rem; right: -8rem; background: radial-gradient(circle, var(--palette-wheat-tint), transparent 70%); }
-        .bg-blob.b3 { width: 16rem; height: 16rem; top: 40%; right: 12%; background: radial-gradient(circle, var(--palette-sprout), transparent 70%); opacity: 0.35; }
+        /* Rice-field photo behind the card, softened with a slight blur and a
+           forest-green wash (darker toward the bottom) so the card stays readable.
+           The login page is light mode only. */
+        .bg-photo {
+            position: fixed;
+            inset: -12px;
+            background: url('{{ asset('images/login-rice-field.jpg') }}') center / cover no-repeat;
+            filter: blur(2px) saturate(110%);
+            transform: scale(1.03);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-wash {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(29, 59, 37, 0.35) 0%, rgba(29, 59, 37, 0.72) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
 
         .container { max-width: 440px; width: 100%; position: relative; z-index: 1; }
         .card {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.88);
             backdrop-filter: blur(20px) saturate(160%);
             -webkit-backdrop-filter: blur(20px) saturate(160%);
             border-radius: 1.5rem;
-            box-shadow: 0 24px 48px -16px color-mix(in srgb, var(--palette-ink) 18%, transparent), 0 8px 16px -8px color-mix(in srgb, var(--palette-ink) 8%, transparent);
+            box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
             border: 1px solid rgba(255, 255, 255, 0.6);
             padding: 2.75rem 2.5rem;
             animation: card-in 460ms var(--ease);
@@ -224,9 +239,8 @@
     </style>
 </head>
 <body>
-    <div class="bg-blob b1"></div>
-    <div class="bg-blob b2"></div>
-    <div class="bg-blob b3"></div>
+    <div class="bg-photo" aria-hidden="true"></div>
+    <div class="bg-wash" aria-hidden="true"></div>
 
     <div class="container">
         <div class="card">
