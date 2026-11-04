@@ -293,6 +293,7 @@
             : 'Reject ' + applicantName + '\'s membership application? The reason you entered is saved with it. This cannot be undone.';
 
         var confirmBtn = document.getElementById('actionConfirmBtn');
+        confirmBtn.disabled = false;
         confirmBtn.className = 'btn flex-fill py-2 ' + (isApprove ? 'btn-success' : 'btn-danger');
         confirmBtn.innerHTML = isApprove
             ? '<i class="fas fa-check me-2"></i>Yes, Approve'
@@ -306,6 +307,11 @@
             return;
         }
         var formId = (pendingMembershipAction.type === 'approve' ? 'approveForm' : 'rejectForm') + pendingMembershipAction.id;
+
+        // Disable immediately so a double-click (or a slow page navigation)
+        // can't submit this form twice and double-create the account / SMS.
+        this.disabled = true;
+        pendingMembershipAction = null;
         document.getElementById(formId).submit();
     });
 </script>

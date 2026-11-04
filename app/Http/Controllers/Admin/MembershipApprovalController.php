@@ -53,7 +53,13 @@ class MembershipApprovalController extends Controller
      */
     public function approve(Farmer $farmer)
     {
-        $credentials = DB::transaction(function () use ($farmer) {
+        $credentials = DB::transaction(function () use (&$farmer) {
+            // Re-fetch under a row lock so a duplicate submit (double-click, slow
+            // network retry) that arrives while this transaction is still open
+            // waits here and then sees account_user_id already set below, instead
+            // of racing this one and creating a second account/SMS.
+            $farmer = Farmer::lockForUpdate()->findOrFail($farmer->id);
+
             $farmer->update([
                 'status' => 'approved',
                 'rejection_reason' => null,
@@ -164,6 +170,14 @@ class MembershipApprovalController extends Controller
      */
     public function reject(Request $request, Farmer $farmer)
     {
+        // A duplicate submit (double-click, slow network retry) lands here a
+        // second time after the first already went through — treat it as a
+        // no-op instead of re-saving the reason and re-texting the farmer.
+        if ($farmer->status === 'rejected') {
+            return redirect()->route('admin.membership-approval')
+                ->with('success', "{$farmer->full_name}'s membership application was already rejected.");
+        }
+
         $validated = $request->validate([
             'rejection_reason' => 'required|string|max:1000',
         ], [
@@ -187,6 +201,15 @@ class MembershipApprovalController extends Controller
         ActivityLogger::log(Auth::user(), 'membership.rejected', "Rejected {$farmer->full_name}'s membership application.", $farmer, [
             'reason' => $validated['rejection_reason'],
         ]);
+
+        if ($farmer->contact_number) {
+            $reason = Str::limit($validated['rejection_reason'], 100);
+
+            app(SmsService::class)->send(
+                $farmer->contact_number,
+                "Hi {$farmer->first_name}, your CFMC membership application has been rejected. Reason: {$reason} For questions, please contact the cooperative."
+            );
+        }
 
         return redirect()->route('admin.membership-approval')
             ->with('success', "{$farmer->full_name}'s membership application has been rejected.");
