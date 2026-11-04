@@ -112,12 +112,15 @@ class ScheduleController extends Controller
         $blocks = [];
         $errors = [];
 
+        $cropIds = Crop::pluck('id')->all();
+
         foreach ($request->input('machines') as $index => $block) {
             $validator = Validator::make($block, [
                 'machinery' => ['required', 'string', Rule::in($machineryNames)],
                 'land_size' => 'required|numeric|min:0.1',
                 'units_requested' => 'nullable|integer|min:1',
-                'crop_id' => 'required|exists:crops,id',
+                'crop_id' => ['required', Rule::in(array_merge($cropIds, [Crop::OTHER_OPTION]))],
+                'new_crop_name' => 'nullable|required_if:crop_id,'.Crop::OTHER_OPTION.'|string|max:255',
                 'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
                 'start_time' => 'required|date_format:H:i',
                 'end_time' => 'required|date_format:H:i|after:start_time',
@@ -131,7 +134,13 @@ class ScheduleController extends Controller
                 continue;
             }
 
-            $blocks[$index] = $validator->validated();
+            $validated = $validator->validated();
+
+            if ($validated['crop_id'] === Crop::OTHER_OPTION) {
+                $validated['crop_id'] = Crop::findOrCreateByName($validated['new_crop_name'])->id;
+            }
+
+            $blocks[$index] = $validated;
         }
 
         if (! empty($errors)) {

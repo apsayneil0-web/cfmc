@@ -95,7 +95,12 @@
                     <button type="button" class="icon-btn text-secondary sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <h1 class="text-xl font-semibold text-gray-900 mb-0">@yield('header', 'Dashboard')</h1>
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900 mb-0">@yield('header', 'Dashboard')</h1>
+                        @hasSection('subheader')
+                        <p class="text-sm text-gray-500 mb-0">@yield('subheader')</p>
+                        @endif
+                    </div>
                 </div>
                 <div class="d-flex align-items-center gap-4">
                     <x-theme-toggle />

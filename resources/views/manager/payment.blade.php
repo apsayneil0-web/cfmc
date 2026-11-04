@@ -176,7 +176,7 @@
                         <select name="loan_id" id="recordPaymentLoanSelect" class="form-select searchable-select" data-placeholder="Search farmer by name..." required>
                             <option value="" disabled selected>Select a loan</option>
                             @forelse($payableLoans as $loan)
-                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->amount_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}" data-remaining-principal="{{ $loan->remaining_principal }}" data-current-interest="{{ round($loan->monthly_due - $loan->installment_amount, 2) }}" data-payoff-amount="{{ $loan->payoff_amount }}" data-interest-saved="{{ $loan->interest_saved }}">
+                            <option value="{{ $loan->id }}" data-balance="{{ $loan->remaining_balance }}" data-monthly-due="{{ $loan->amount_due }}" data-next-due-date="{{ $loan->next_due_date?->format('M d, Y') }}" data-remaining-principal="{{ $loan->remaining_principal }}">
                                 LN-{{ str_pad($loan->id, 3, '0', STR_PAD_LEFT) }} — {{ $loan->farmer->full_name }} (Balance: {{ peso($loan->remaining_balance) }})
                             </option>
                             @empty
@@ -184,7 +184,26 @@
                             @endforelse
                         </select>
                     </div>
-                    <p class="text-muted small" id="recordPaymentBalanceHint"></p>
+                    <div class="mb-3 d-none bg-success-subtle border border-success-subtle rounded-3 p-3" id="recordPaymentBalanceHint">
+                        <div class="row g-2 small">
+                            <div class="col-6">
+                                <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Current Balance</div>
+                                <div class="fw-bold" id="recordPaymentHintBalance"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Principal (no interest)</div>
+                                <div class="fw-bold" id="recordPaymentHintPrincipal"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Monthly Due</div>
+                                <div class="fw-bold" id="recordPaymentHintMonthlyDue"></div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Next Due Date</div>
+                                <div class="fw-bold" id="recordPaymentHintNextDue"></div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Payment Type <span class="text-danger">*</span></label>
                         <select name="type" id="recordPaymentTypeSelect" class="form-select" required>
@@ -192,19 +211,6 @@
                             <option value="prepayment">Prepayment (ahead of the due date)</option>
                             <option value="partial">Partial Payment</option>
                         </select>
-                    </div>
-                    <div class="mb-3 d-none bg-success-subtle border border-success-subtle rounded-3 p-3" id="recordPaymentPayoffPreview">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="fw-semibold small text-success"><i class="fas fa-flag-checkered me-1"></i>Pay off this loan today</span>
-                            <button type="button" class="btn btn-sm btn-success" id="recordPaymentPayFullBtn">Pay full amount</button>
-                        </div>
-                        <div class="row g-2 small">
-                            <div class="col-6"><span class="text-muted">Remaining principal:</span> <span id="recordPaymentPrincipalOut" class="fw-medium"></span></div>
-                            <div class="col-6"><span class="text-muted">Current month interest:</span> <span id="recordPaymentInterestOut" class="fw-medium"></span></div>
-                            <div class="col-6"><span class="text-muted">Payoff amount:</span> <span id="recordPaymentPayoffOut" class="fw-semibold text-success"></span></div>
-                            <div class="col-6"><span class="text-muted">Interest saved:</span> <span id="recordPaymentSavedOut" class="fw-semibold text-success"></span></div>
-                        </div>
-                        <p class="text-muted small mb-0 mt-2">Paying this exact amount as a Prepayment waives the remaining months' interest and closes the loan.</p>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Payment Amount <span class="text-danger">*</span></label>
@@ -345,10 +351,25 @@
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label class="form-label fw-semibold">Machine Type <span class="text-danger">*</span></label>
+                        <select name="machine_type" id="harvestMachineType" class="form-select" required>
+                            <option value="" disabled selected>Select machine type</option>
+                            @forelse($machineTypes as $type)
+                            <option value="{{ $type }}"
+                                data-percentage="{{ \App\Models\HarvestPayment::isPercentageBased($type) ? '1' : '0' }}"
+                                data-fixed-rate="{{ \App\Models\HarvestPayment::fixedRateFor($type) }}">
+                                {{ $type }}{{ \App\Models\HarvestPayment::isPercentageBased($type) ? ' (% of harvest)' : ' (flat ₱'.number_format(\App\Models\HarvestPayment::fixedRateFor($type), 0).')' }}
+                            </option>
+                            @empty
+                            <option value="" disabled>No machine types registered yet</option>
+                            @endforelse
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label fw-semibold">Farmer Type <span class="text-danger">*</span></label>
                         <select name="member_type" id="harvestMemberType" class="form-select" required>
-                            <option value="member" selected>Member ({{ rtrim(rtrim(number_format(\App\Models\HarvestPayment::MEMBER_RATE, 2), '0'), '.') }}%)</option>
-                            <option value="non-member">Non-member ({{ rtrim(rtrim(number_format(\App\Models\HarvestPayment::NON_MEMBER_RATE, 2), '0'), '.') }}%)</option>
+                            <option value="member" selected>Member ({{ rtrim(rtrim(number_format(\App\Models\HarvestPayment::MEMBER_RATE, 2), '0'), '.') }}% — Harvester only)</option>
+                            <option value="non-member">Non-member ({{ rtrim(rtrim(number_format(\App\Models\HarvestPayment::NON_MEMBER_RATE, 2), '0'), '.') }}% — Harvester only)</option>
                         </select>
                     </div>
                     <div class="mb-3" id="harvestFarmerSelectGroup">
@@ -372,16 +393,17 @@
                         </datalist>
                         <p class="text-muted small mb-0 mt-1">Start typing to see returning non-members, or enter a new name.</p>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3" id="harvestAmountGroup">
                         <label class="form-label fw-semibold">Total Harvest Amount <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" min="0.01" name="harvest_amount" id="harvestAmountInput" class="form-control" required>
+                        <input type="number" step="0.01" min="0.01" name="harvest_amount" id="harvestAmountInput" class="form-control">
+                        <small class="text-muted">Only applies to Harvester — its payment is a percentage of this.</small>
                     </div>
                     <div id="harvestPreview" class="bg-light rounded p-3 mb-3 d-none">
-                        <div class="d-flex justify-content-between small mb-1">
+                        <div class="d-flex justify-content-between small mb-1 harvest-preview-amount-row">
                             <span class="text-muted">Harvest Amount</span>
                             <span id="harvestPreviewAmount" class="fw-medium"></span>
                         </div>
-                        <div class="d-flex justify-content-between small mb-1">
+                        <div class="d-flex justify-content-between small mb-1 harvest-preview-rate-row">
                             <span class="text-muted">Applicable Rate</span>
                             <span id="harvestPreviewRate" class="fw-medium"></span>
                         </div>
@@ -472,72 +494,33 @@
 
     document.getElementById('recordPaymentTypeSelect')?.addEventListener('change', function () {
         recordPaymentAutoFillAmount();
-        recordPaymentUpdatePayoffPreview();
     });
 
     function pesoFormat(value) {
         return '₱' + parseFloat(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // The payoff preview (remaining principal / current month interest /
-    // payoff amount / interest saved) only makes sense for a Prepayment —
-    // a Regular or Partial payment doesn't waive anything, so it's hidden
-    // for those instead of showing numbers that don't apply.
-    function recordPaymentUpdatePayoffPreview() {
-        var loanSelect = document.getElementById('recordPaymentLoanSelect');
-        var typeSelect = document.getElementById('recordPaymentTypeSelect');
-        var preview = document.getElementById('recordPaymentPayoffPreview');
-        var option = loanSelect.options[loanSelect.selectedIndex];
-        var payoffAmount = option ? option.getAttribute('data-payoff-amount') : null;
-
-        if (typeSelect.value !== 'prepayment' || !payoffAmount) {
-            preview.classList.add('d-none');
-
-            return;
-        }
-
-        document.getElementById('recordPaymentPrincipalOut').textContent = pesoFormat(option.getAttribute('data-remaining-principal') || 0);
-        document.getElementById('recordPaymentInterestOut').textContent = pesoFormat(option.getAttribute('data-current-interest') || 0);
-        document.getElementById('recordPaymentPayoffOut').textContent = pesoFormat(payoffAmount);
-        document.getElementById('recordPaymentSavedOut').textContent = pesoFormat(option.getAttribute('data-interest-saved') || 0);
-        preview.classList.remove('d-none');
-    }
-
-    document.getElementById('recordPaymentPayFullBtn')?.addEventListener('click', function () {
-        var loanSelect = document.getElementById('recordPaymentLoanSelect');
-        var option = loanSelect.options[loanSelect.selectedIndex];
-        var payoffAmount = option ? option.getAttribute('data-payoff-amount') : null;
-
-        if (payoffAmount) {
-            document.getElementById('recordPaymentAmount').value = parseFloat(payoffAmount).toFixed(2);
-        }
-    });
-
     document.getElementById('recordPaymentLoanSelect')?.addEventListener('change', function () {
         var option = this.options[this.selectedIndex];
         var balance = option ? option.getAttribute('data-balance') : null;
         var monthlyDue = option ? option.getAttribute('data-monthly-due') : null;
         var nextDueDate = option ? option.getAttribute('data-next-due-date') : null;
+        var remainingPrincipal = option ? option.getAttribute('data-remaining-principal') : null;
         var amountInput = document.getElementById('recordPaymentAmount');
         var hint = document.getElementById('recordPaymentBalanceHint');
 
         if (balance) {
             amountInput.max = balance;
-            var text = 'Current balance: ₱' + parseFloat(balance).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            if (monthlyDue) {
-                text += ' &bull; Monthly due: ₱' + parseFloat(monthlyDue).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            }
-            if (nextDueDate) {
-                text += ' (due ' + nextDueDate + ')';
-            }
-            hint.innerHTML = text;
+            document.getElementById('recordPaymentHintBalance').textContent = pesoFormat(balance);
+            document.getElementById('recordPaymentHintPrincipal').textContent = remainingPrincipal ? pesoFormat(remainingPrincipal) : '—';
+            document.getElementById('recordPaymentHintMonthlyDue').textContent = monthlyDue ? pesoFormat(monthlyDue) : '—';
+            document.getElementById('recordPaymentHintNextDue').textContent = nextDueDate || '—';
+            hint.classList.remove('d-none');
             recordPaymentAutoFillAmount();
         } else {
             amountInput.removeAttribute('max');
-            hint.textContent = '';
+            hint.classList.add('d-none');
         }
-
-        recordPaymentUpdatePayoffPreview();
     });
 
     // Intercepts the Record Payment form's submit into a confirmation step
@@ -648,25 +631,73 @@
         }
     }
 
+    // Only a Harvester's payment is a percentage of harvest value — every
+    // other machine type is a flat rate, read from the selected option's
+    // data-fixed-rate (sourced from HarvestPayment::FIXED_RATES server-side).
+    function selectedHarvestMachineOption() {
+        var select = document.getElementById('harvestMachineType');
+        return select.options[select.selectedIndex];
+    }
+
+    function isHarvestMachinePercentageBased() {
+        var option = selectedHarvestMachineOption();
+        return !!option && option.getAttribute('data-percentage') === '1';
+    }
+
+    function toggleHarvestMachineFields() {
+        var amountGroup = document.getElementById('harvestAmountGroup');
+        var amountInput = document.getElementById('harvestAmountInput');
+        var percentageBased = isHarvestMachinePercentageBased();
+
+        amountGroup.classList.toggle('d-none', !percentageBased);
+        if (percentageBased) {
+            amountInput.setAttribute('required', 'required');
+        } else {
+            amountInput.removeAttribute('required');
+            amountInput.value = '';
+        }
+
+        updateHarvestPreview();
+    }
+
     function updateHarvestPreview() {
         var memberType = document.getElementById('harvestMemberType').value;
-        var amount = parseFloat(document.getElementById('harvestAmountInput').value);
         var preview = document.getElementById('harvestPreview');
+        var option = selectedHarvestMachineOption();
 
-        if (!amount || amount <= 0) {
+        if (!option || !option.value) {
             preview.classList.add('d-none');
             return;
         }
 
-        var rate = memberType === 'member' ? HARVEST_MEMBER_RATE : HARVEST_NON_MEMBER_RATE;
-        var payment = Math.round(amount * rate) / 100;
+        if (isHarvestMachinePercentageBased()) {
+            var amount = parseFloat(document.getElementById('harvestAmountInput').value);
 
-        document.getElementById('harvestPreviewAmount').textContent = formatPeso(amount);
-        document.getElementById('harvestPreviewRate').textContent = rate + '%';
-        document.getElementById('harvestPreviewPayment').textContent = formatPeso(payment);
+            if (!amount || amount <= 0) {
+                preview.classList.add('d-none');
+                return;
+            }
+
+            var rate = memberType === 'member' ? HARVEST_MEMBER_RATE : HARVEST_NON_MEMBER_RATE;
+            var payment = Math.round(amount * rate) / 100;
+
+            document.querySelector('.harvest-preview-amount-row').classList.remove('d-none');
+            document.querySelector('.harvest-preview-rate-row').classList.remove('d-none');
+            document.getElementById('harvestPreviewAmount').textContent = formatPeso(amount);
+            document.getElementById('harvestPreviewRate').textContent = rate + '%';
+            document.getElementById('harvestPreviewPayment').textContent = formatPeso(payment);
+        } else {
+            var flatRate = parseFloat(option.getAttribute('data-fixed-rate')) || 0;
+
+            document.querySelector('.harvest-preview-amount-row').classList.add('d-none');
+            document.querySelector('.harvest-preview-rate-row').classList.add('d-none');
+            document.getElementById('harvestPreviewPayment').textContent = formatPeso(flatRate);
+        }
+
         preview.classList.remove('d-none');
     }
 
+    document.getElementById('harvestMachineType')?.addEventListener('change', toggleHarvestMachineFields);
     document.getElementById('harvestMemberType')?.addEventListener('change', function () {
         toggleHarvestFarmerFields();
         updateHarvestPreview();

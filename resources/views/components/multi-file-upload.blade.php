@@ -296,17 +296,29 @@
 @endonce
 
 <div class="mb-3" data-multi-upload>
-    <div class="d-flex align-items-center justify-content-between mb-1">
-        <label class="form-label fw-semibold mb-0">{{ $label }} @if($required)<span class="text-danger">*</span>@endif</label>
-        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-multi-upload-add>
+    <div class="d-flex align-items-start justify-content-between gap-3 mb-1">
+        <label class="form-label fw-semibold mb-0" style="min-width: 0;">{{ $label }} @if($required)<span class="text-danger">*</span>@endif</label>
+        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-nowrap flex-shrink-0" data-multi-upload-add>
             <i class="fas fa-plus-circle me-1"></i>Add Another File
         </button>
     </div>
 
     @foreach($existingPaths as $path)
-    <div class="border rounded-3 p-2 mb-2 d-flex align-items-center justify-content-between bg-light">
-        <span class="small text-success"><i class="fas fa-check-circle me-1"></i>Current: {{ basename($path) }}</span>
-        <div class="form-check mb-0">
+    @php
+        // Stored names carry an upload-time prefix, sometimes plus a random
+        // token ("1791892866_fttmq0_logo.png"); show just the original name.
+        $fileName = basename($path);
+        $displayName = preg_replace('/^\d+_/', '', $fileName);
+        if (preg_match('/^([A-Za-z0-9]{6})_(.+)$/', $displayName, $token) && preg_match('/[0-9A-Z]/', $token[1])) {
+            $displayName = $token[2];
+        }
+    @endphp
+    <div class="mfu-current border rounded-3 p-2 mb-2 d-flex align-items-center gap-3 bg-light">
+        <i class="fas fa-check-circle text-success flex-shrink-0"></i>
+        <span class="small flex-grow-1 text-truncate" style="min-width: 0;" title="{{ $fileName }}">
+            <span class="text-success">Current:</span> {{ $displayName }}
+        </span>
+        <div class="form-check mb-0 flex-shrink-0">
             <input type="checkbox" class="form-check-input" name="remove_{{ $field }}[]" value="{{ $path }}" id="{{ $baseId }}_remove_{{ $loop->index }}">
             <label class="form-check-label text-danger small" for="{{ $baseId }}_remove_{{ $loop->index }}">Remove</label>
         </div>

@@ -60,12 +60,14 @@
         </div>
         <div class="col-md-6">
             <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
-            <select name="crop_id" class="form-select" required>
+            <select name="crop_id" class="form-select crop-select" required>
                 <option value="">Select crop...</option>
                 @foreach($crops as $crop)
                 <option value="{{ $crop->id }}" {{ old('crop_id', $schedule->crop_id ?? '') == $crop->id ? 'selected' : '' }}>{{ $crop->name }}</option>
                 @endforeach
+                <option value="{{ \App\Models\Crop::OTHER_OPTION }}" {{ old('crop_id') == \App\Models\Crop::OTHER_OPTION ? 'selected' : '' }}>+ Other (type your own)</option>
             </select>
+            <input type="text" name="new_crop_name" class="form-control crop-other-input mt-2 d-none" placeholder="e.g. Mango" value="{{ old('new_crop_name') }}" autocomplete="off">
         </div>
         <div class="col-md-4">
             <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>

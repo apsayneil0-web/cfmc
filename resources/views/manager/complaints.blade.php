@@ -66,12 +66,16 @@
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></td>
                     <td class="px-4 px-md-6 py-4">
                         <div class="d-flex gap-1">
+                            @if($complaint->status === 'resolved')
+                            <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#respondModal{{ $complaint->id }}">View Complaint</button>
+                            @else
                             <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#respondModal{{ $complaint->id }}">Respond</button>
+                            @endif
                         </div>
                     </td>
                 </tr>
 
-                <!-- Respond Modal -->
+                <!-- Respond / View Modal -->
                 <div class="modal fade" id="respondModal{{ $complaint->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
@@ -79,6 +83,23 @@
                                 <h5 class="modal-title fw-bold"><i class="fas fa-file-alt me-2"></i>Complaint Details</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
+                            @if($complaint->status === 'resolved')
+                            <div class="modal-body">
+                                <label class="text-muted small">Farmer</label>
+                                <p class="fw-semibold">{{ $complaint->user->name ?? 'Unknown' }}</p>
+                                <label class="text-muted small">Subject</label>
+                                <p class="fw-semibold">{{ $complaint->subject }}</p>
+                                <label class="text-muted small">Description</label>
+                                <p>{{ $complaint->description }}</p>
+                                <label class="text-muted small">Status</label>
+                                <p><x-status-badge :status="ucwords(str_replace('_', ' ', $complaint->status))" /></p>
+                                <label class="text-muted small">Response to Farmer</label>
+                                <p class="mb-0">{{ $complaint->manager_response }}</p>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                            @else
                             <form action="{{ route('manager.complaints.respond', $complaint->id) }}" method="POST" class="modal-form-flex">
                                 @csrf
                                 @method('PATCH')
@@ -122,6 +143,7 @@
                                 @method('PATCH')
                             </form>
                             @endunless
+                            @endif
                         </div>
                     </div>
                 </div>

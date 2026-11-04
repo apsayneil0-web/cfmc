@@ -149,12 +149,14 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
-                <select name="machines[__IDX__][crop_id]" class="form-select" required>
+                <select name="machines[__IDX__][crop_id]" class="form-select crop-select" required>
                     <option value="">Select crop...</option>
                     @foreach($crops as $crop)
                     <option value="{{ $crop->id }}">{{ $crop->name }}</option>
                     @endforeach
+                    <option value="{{ \App\Models\Crop::OTHER_OPTION }}">+ Other (type your own)</option>
                 </select>
+                <input type="text" name="machines[__IDX__][new_crop_name]" class="form-control crop-other-input mt-2 d-none" placeholder="e.g. Mango" autocomplete="off">
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Preferred Date <span class="text-danger">*</span></label>
@@ -380,6 +382,25 @@
         endTimeInput.addEventListener('change', refreshAvailability);
         landSizeInput.addEventListener('input', refreshAvailability);
 
+        // "+ Other" on the Crop dropdown reveals a free-text input; the
+        // server resolves it to an existing or newly-created Crop record.
+        var cropOtherInput = row.querySelector('.crop-other-input');
+
+        function toggleCropOther() {
+            var isOther = cropSelect.value === '{{ \App\Models\Crop::OTHER_OPTION }}';
+            cropOtherInput.classList.toggle('d-none', !isOther);
+            if (isOther) {
+                cropOtherInput.setAttribute('required', 'required');
+            } else {
+                cropOtherInput.removeAttribute('required');
+                cropOtherInput.value = '';
+            }
+        }
+
+        if (cropSelect && cropOtherInput) {
+            cropSelect.addEventListener('change', toggleCropOther);
+        }
+
         // Repopulate this row from old() input, e.g. after a validation error.
         if (oldValues.machinery) {
             var radio = row.querySelector('.machine-option-input[value="' + CSS.escape(oldValues.machinery) + '"]');
@@ -387,9 +408,14 @@
         }
         if (oldValues.land_size) { landSizeInput.value = oldValues.land_size; }
         if (oldValues.crop_id && cropSelect) { cropSelect.value = oldValues.crop_id; }
+        if (oldValues.new_crop_name && cropOtherInput) { cropOtherInput.value = oldValues.new_crop_name; }
         if (oldValues.scheduled_date) { dateInput.value = oldValues.scheduled_date; }
         if (oldValues.start_time) { startTimeInput.value = oldValues.start_time; }
         if (oldValues.end_time) { endTimeInput.value = oldValues.end_time; }
+
+        if (cropSelect && cropOtherInput) {
+            toggleCropOther();
+        }
 
         refreshUnits();
         refreshAvailability();
@@ -438,7 +464,24 @@
         });
 
         document.getElementById('addMachineRowBtn').addEventListener('click', function () {
-            addMachineRow({});
+            // New machines default to the same date/time as the last row —
+            // most multi-machine jobs happen together — but stay fully
+            // editable per row in case this one actually differs.
+            var rows = scheduleRowsContainer.querySelectorAll('.schedule-machine-row');
+            var lastRow = rows[rows.length - 1];
+            var seed = {};
+
+            if (lastRow) {
+                var lastDate = lastRow.querySelector('.machine-date');
+                var lastStart = lastRow.querySelector('.machine-start-time');
+                var lastEnd = lastRow.querySelector('.machine-end-time');
+
+                if (lastDate && lastDate.value) { seed.scheduled_date = lastDate.value; }
+                if (lastStart && lastStart.value) { seed.start_time = lastStart.value; }
+                if (lastEnd && lastEnd.value) { seed.end_time = lastEnd.value; }
+            }
+
+            addMachineRow(seed);
         });
 
         @if($hasOldRequestInput)

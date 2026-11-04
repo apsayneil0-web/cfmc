@@ -9,16 +9,31 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class HarvestPayment extends Model
 {
     /**
-     * Cooperative's cut of a farmer's reported harvest income.
+     * Cooperative's cut of a farmer's reported harvest income — applies only
+     * when machine_type is Harvester (see isPercentageBased()).
      */
     public const MEMBER_RATE = 9.00;
 
     public const NON_MEMBER_RATE = 12.00;
 
+    /**
+     * Flat payment rates (₱) for machine types that aren't harvest-value
+     * dependent — a Tractor/Seeder's job doesn't scale with yield the way a
+     * Harvester's does. Any type not listed here (including a custom one a
+     * manager adds later) falls back to FIXED_RATE_DEFAULT.
+     */
+    public const FIXED_RATES = [
+        'Tractor' => 2300.00,
+        'Rice Seeder' => 3000.00,
+    ];
+
+    public const FIXED_RATE_DEFAULT = 2000.00;
+
     protected $fillable = [
         'farmer_id',
         'farmer_name',
         'member_type',
+        'machine_type',
         'harvest_amount',
         'rate',
         'payment_amount',
@@ -70,5 +85,32 @@ class HarvestPayment extends Model
     public static function rateFor(string $memberType): float
     {
         return $memberType === 'member' ? self::MEMBER_RATE : self::NON_MEMBER_RATE;
+    }
+
+    /**
+     * Only a Harvester's payment scales with reported harvest value — every
+     * other machine type is a flat rate regardless of member/non-member.
+     * Matched case-insensitively: this fleet has had inconsistent casing on
+     * machine type/name before (e.g. "Tractor" vs "tractor").
+     */
+    public static function isPercentageBased(string $machineType): bool
+    {
+        return mb_strtolower(trim($machineType)) === 'harvester';
+    }
+
+    /**
+     * Flat payment amount (₱) for a non-Harvester machine type.
+     */
+    public static function fixedRateFor(string $machineType): float
+    {
+        $normalized = mb_strtolower(trim($machineType));
+
+        foreach (self::FIXED_RATES as $type => $rate) {
+            if (mb_strtolower($type) === $normalized) {
+                return $rate;
+            }
+        }
+
+        return self::FIXED_RATE_DEFAULT;
     }
 }

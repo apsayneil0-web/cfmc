@@ -1,8 +1,9 @@
 {{--
     GCash-style installment timeline, shared between a farmer's active loan
-    and their paid-off loan history so an early payoff (which closes every
-    remaining installment at once, waiving future interest) shows the exact
-    same "all paid" schedule either way.
+    and their paid-off loan history so a loan closed via a large lump-sum
+    payment (one transaction covering several installments at once) shows
+    the exact same "all paid" schedule as one paid off installment by
+    installment.
 
     <x-loan-repayment-schedule :loan="$activeLoan" />
 
@@ -16,14 +17,7 @@
 @if(!empty($loan->installment_schedule))
 <h4 class="text-sm fw-semibold text-dark {{ $pad }} mb-3">Repayment Schedule</h4>
 
-@if($loan->paid_off_early)
-<div class="{{ $pad }} mb-3">
-    <div class="alert alert-success d-flex align-items-center gap-2 mb-0" role="alert">
-        <i class="fas fa-flag-checkered"></i>
-        <span>Paid off early &mdash; the remaining months' interest was waived.</span>
-    </div>
-</div>
-@elseif($loan->status === 'fully_paid')
+@if($loan->status === 'fully_paid')
 <div class="{{ $pad }} mb-3">
     <div class="alert alert-success d-flex align-items-center gap-2 mb-0" role="alert">
         <i class="fas fa-check-circle"></i>
@@ -95,9 +89,7 @@
     </div>
     <p class="text-muted small mb-0 mt-2">
         <i class="fas fa-info-circle me-1"></i>
-        @if($loan->paid_off_early)
-        This loan was paid off ahead of schedule.
-        @elseif($loan->status === 'fully_paid')
+        @if($loan->status === 'fully_paid')
         This loan is fully paid. There is no remaining or projected schedule.
         @else
         This is a projected schedule based on your current due date. Payments are recorded by your CFMC Manager — visit or contact the cooperative office to make a payment.

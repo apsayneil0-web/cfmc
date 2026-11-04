@@ -95,9 +95,6 @@
             <button type="button" onclick="window.print()" class="btn btn-outline-secondary d-flex align-items-center gap-2">
                 <i class="fas fa-print"></i><span>Print / Save as PDF</span>
             </button>
-            <a href="{{ route('manager.reporting.export', request()->query()) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-                <i class="fas fa-file-csv"></i><span>Export CSV</span>
-            </a>
             <a href="{{ route('manager.reporting.export-excel', request()->query()) }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
                 <i class="fas fa-file-excel"></i><span>Export Excel</span>
             </a>
@@ -405,6 +402,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Farmer Type</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Machine Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Harvest Amount</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Rate</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Payment Amount</th>
@@ -416,13 +414,14 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->payment_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->payer_name }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$row->member_type === 'member' ? 'Member' : 'Non-Member'" /></td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ peso($row->harvest_amount) }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ rtrim(rtrim(number_format($row->rate, 2), '0'), '.') }}%</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->machine_type ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->harvest_amount !== null ? peso($row->harvest_amount) : '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->rate !== null ? rtrim(rtrim(number_format($row->rate, 2), '0'), '.').'%' : 'Flat' }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($row->payment_amount) }}</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No machine payments match these filters.</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">No machine payments match these filters.</td>
                 </tr>
                 @endforelse
             </tbody>

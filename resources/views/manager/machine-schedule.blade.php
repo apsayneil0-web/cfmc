@@ -188,7 +188,7 @@
         @else
         <!-- Schedule list -->
         <div class="table-toolbar d-flex align-items-center justify-content-between gap-3 border-top">
-            <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ $showArchived ? 'Archived Schedules' : 'All Schedules' }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-0">{{ $showArchived ? 'Archived Schedules' : 'Schedules' }} &mdash; {{ $selectedMonth->format('F Y') }}</h3>
             <x-archive-toggle route="manager.machine-schedule" :showing="$showArchived" :count="$archivedCount" :except="['page']" />
         </div>
     <div class="table-responsive">
@@ -239,7 +239,7 @@
 
                 @empty
                 <tr>
-                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived schedules.' : 'No schedules found for this month.' }}</td>
+                    <td colspan="7" class="px-4 px-md-6 py-6 text-center text-muted">{{ $showArchived ? 'No archived schedules for this month.' : 'No schedules found for this month.' }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -479,6 +479,25 @@
         unitsSelect.addEventListener('change', estimateEndTime);
         machinerySelect.addEventListener('change', refreshUnitsOptions);
         refreshUnitsOptions();
+
+        // "+ Other" on the Crop dropdown reveals a free-text input; the
+        // server resolves it to an existing or newly-created Crop record.
+        var cropSelect = form.querySelector('.crop-select');
+        var cropOtherInput = form.querySelector('.crop-other-input');
+
+        function toggleCropOther() {
+            var isOther = cropSelect.value === '{{ \App\Models\Crop::OTHER_OPTION }}';
+            cropOtherInput.classList.toggle('d-none', !isOther);
+            if (isOther) {
+                cropOtherInput.setAttribute('required', 'required');
+            } else {
+                cropOtherInput.removeAttribute('required');
+                cropOtherInput.value = '';
+            }
+        }
+
+        cropSelect.addEventListener('change', toggleCropOther);
+        toggleCropOther();
     });
 
     // Clicking a day focuses it in the side panel; while picking days for

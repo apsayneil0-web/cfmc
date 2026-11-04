@@ -1,7 +1,8 @@
 @extends('manager.layout')
 
 @section('title', 'Batch Loans')
-@section('header', 'Batch Loans')
+@section('header', 'Loan Management')
+@section('subheader', 'Batch Loans')
 
 @section('content')
 @if(session('success'))

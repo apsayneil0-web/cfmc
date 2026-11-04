@@ -299,7 +299,7 @@ class ReportController extends Controller
     {
         return match ($reportType) {
             'harvesting' => ['sheet' => 'Harvesting', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 3, 'breakdownCount' => 5, 'noteCount' => 2],
-            'harvest_payment' => ['sheet' => 'Machine Payment', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'generatedCell' => 'G5', 'summaryCount' => 5, 'breakdownCount' => 2, 'noteCount' => 2],
+            'harvest_payment' => ['sheet' => 'Machine Payment', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'generatedCell' => 'G5', 'summaryCount' => 6, 'breakdownCount' => 2, 'noteCount' => 2],
             'loan' => ['sheet' => 'Loan', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], 'generatedCell' => 'J5', 'summaryCount' => 6, 'breakdownCount' => 4, 'noteCount' => 2],
             'maintenance' => ['sheet' => 'Maintenance', 'columns' => ['A', 'B', 'C', 'D'], 'generatedCell' => 'D5', 'summaryCount' => 3, 'breakdownCount' => 5, 'noteCount' => 2],
             'schedule' => ['sheet' => 'Schedule', 'columns' => ['A', 'B', 'C', 'D', 'E', 'F'], 'generatedCell' => 'F5', 'summaryCount' => 4, 'breakdownCount' => 2, 'noteCount' => 1],
@@ -796,15 +796,24 @@ class ReportController extends Controller
 
     private function harvestPaymentSummary($rows)
     {
-        $memberPayments = (float) $rows->where('member_type', 'member')->sum('payment_amount');
-        $nonMemberPayments = (float) $rows->where('member_type', 'non-member')->sum('payment_amount');
+        // Only Harvester payments are a percentage of reported harvest value
+        // — everything else is a flat rate, so it's broken out separately
+        // rather than folded into the "(9%)"/"(12%)" member buckets, which
+        // would otherwise mislabel what was actually charged.
+        $percentageRows = $rows->filter(fn ($r) => HarvestPayment::isPercentageBased((string) $r->machine_type));
+        $fixedRows = $rows->reject(fn ($r) => HarvestPayment::isPercentageBased((string) $r->machine_type));
+
+        $memberPayments = (float) $percentageRows->where('member_type', 'member')->sum('payment_amount');
+        $nonMemberPayments = (float) $percentageRows->where('member_type', 'non-member')->sum('payment_amount');
+        $fixedTotal = (float) $fixedRows->sum('payment_amount');
 
         return (object) ['rows' => [
             ['label' => 'Total Records', 'value' => (string) $rows->count()],
-            ['label' => 'Total Harvest Income Reported', 'value' => peso($rows->sum('harvest_amount'))],
-            ['label' => 'Member Payments Collected (9%)', 'value' => peso($memberPayments)],
-            ['label' => 'Non-Member Payments Collected (12%)', 'value' => peso($nonMemberPayments)],
-            ['label' => 'Total Payment Collected', 'value' => peso($memberPayments + $nonMemberPayments), 'emphasis' => true],
+            ['label' => 'Total Harvest Income Reported (Harvester)', 'value' => peso($percentageRows->sum('harvest_amount'))],
+            ['label' => 'Member Payments Collected (9%, Harvester)', 'value' => peso($memberPayments)],
+            ['label' => 'Non-Member Payments Collected (12%, Harvester)', 'value' => peso($nonMemberPayments)],
+            ['label' => 'Fixed-Rate Payments Collected (Other Machines)', 'value' => peso($fixedTotal)],
+            ['label' => 'Total Payment Collected', 'value' => peso($memberPayments + $nonMemberPayments + $fixedTotal), 'emphasis' => true],
         ]];
     }
 
@@ -917,12 +926,13 @@ class ReportController extends Controller
 
     private function writeHarvestPaymentCsv($handle, $rows): void
     {
-        fputcsv($handle, ['Date', 'Farmer', 'Farmer Type', 'Harvest Amount', 'Rate (%)', 'Payment Amount', 'Notes']);
+        fputcsv($handle, ['Date', 'Farmer', 'Farmer Type', 'Machine Type', 'Harvest Amount', 'Rate (%)', 'Payment Amount', 'Notes']);
         foreach ($rows as $row) {
             fputcsv($handle, [
                 $row->payment_date->format('Y-m-d'),
                 $row->payer_name,
                 $row->member_type === 'member' ? 'Member' : 'Non-Member',
+                $row->machine_type,
                 $row->harvest_amount,
                 $row->rate,
                 $row->payment_amount,

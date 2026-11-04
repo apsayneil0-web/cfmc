@@ -140,10 +140,6 @@ class LoanRepaymentScheduleTest extends TestCase
 
     public function test_rejecting_a_payment_above_the_remaining_balance(): void
     {
-        // type=payment (not prepayment): a Prepayment above the loan's
-        // payoff amount is its own, more specific rejection — see
-        // LoanEarlyPayoffTest::test_rejecting_a_prepayment_higher_than_the_payoff_amount.
-        // Regular payments keep the plain remaining-balance ceiling tested here.
         $loan = $this->makeDisbursedLoan();
         $overpayment = (float) $loan->remaining_balance + 100;
 
@@ -165,10 +161,6 @@ class LoanRepaymentScheduleTest extends TestCase
 
     public function test_paying_off_the_entire_loan_marks_it_fully_paid(): void
     {
-        // A Prepayment is now capped at payoff_amount (which waives future
-        // interest), not the full remaining_balance — see LoanEarlyPayoffTest
-        // for that behavior in detail. Paying the full nominal balance here
-        // is done as a plain payment instead, closing every period in turn.
         $loan = $this->makeDisbursedLoan();
         $fullBalance = (float) $loan->remaining_balance;
 

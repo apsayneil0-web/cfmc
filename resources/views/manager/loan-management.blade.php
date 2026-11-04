@@ -2,6 +2,7 @@
 
 @section('title', 'Loan Management')
 @section('header', 'Loan Management')
+@section('subheader', 'Regular loans')
 
 @section('content')
 @if(session('success'))

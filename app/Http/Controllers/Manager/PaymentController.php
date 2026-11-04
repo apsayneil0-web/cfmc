@@ -10,12 +10,14 @@ use App\Models\Farmer;
 use App\Models\HarvestPayment;
 use App\Models\Loan;
 use App\Models\LoanPayment;
+use App\Models\Machine;
 use App\Models\Notification;
 use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PaymentController extends Controller
 {
@@ -104,7 +106,7 @@ class PaymentController extends Controller
             'transaction_code' => 'HRV-'.str_pad($harvest->id, 3, '0', STR_PAD_LEFT),
             'date' => $harvest->payment_date,
             'payer' => $harvest->payer_name,
-            'type_label' => $harvest->member_type === 'member' ? 'Machine Payment (Member)' : 'Machine Payment (Non-member)',
+            'type_label' => ($harvest->machine_type ?? 'Machine').' Payment ('.($harvest->member_type === 'member' ? 'Member' : 'Non-member').')',
             'reference' => $harvest->farmer_id ? 'FM-'.str_pad($harvest->farmer_id, 3, '0', STR_PAD_LEFT) : '-',
             'amount' => $harvest->payment_amount,
             'balance_after' => null,
@@ -170,7 +172,12 @@ class PaymentController extends Controller
             'harvest_payments' => HarvestPayment::visibleAccount()->sum('payment_amount'),
         ];
 
-        return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'payableExpenses', 'nonMemberNames', 'stats'));
+        // Drives the Machine Payment form's Machine Type dropdown from the
+        // real fleet, so it can't drift out of sync with what's registered
+        // in Machinery Management.
+        $machineTypes = Machine::whereNull('archived_at')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
+
+        return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'payableExpenses', 'nonMemberNames', 'stats', 'machineTypes'));
     }
 
     private function paginateCollection($items, Request $request, int $perPage = 10): LengthAwarePaginator
@@ -271,22 +278,7 @@ class PaymentController extends Controller
 
             abort_if(in_array($loan->status, ['fully_paid', 'archived']), 422, 'This loan is already closed.');
             abort_if($loan->status === 'pending_disbursement', 422, 'This loan has not been disbursed yet.');
-
-            // A Prepayment is capped at the payoff amount, not the full
-            // remaining balance — anything beyond what it actually costs to
-            // close the loan today is just overpaying for interest that
-            // hasn't accrued yet and would otherwise be waived, so there's
-            // no valid reason to let it through. Regular/partial payments
-            // keep the plain remaining-balance ceiling.
-            if ($validated['type'] === 'prepayment' && $loan->payoff_amount !== null) {
-                abort_if(
-                    (float) $validated['amount'] > $loan->payoff_amount + 0.01,
-                    422,
-                    'This prepayment is more than it costs to pay off the loan today ('.peso($loan->payoff_amount).'). Enter that exact amount to pay it off, or a smaller amount instead.'
-                );
-            } else {
-                abort_if((float) $validated['amount'] > (float) $loan->remaining_balance, 422, 'Payment exceeds remaining balance.');
-            }
+            abort_if((float) $validated['amount'] > (float) $loan->remaining_balance, 422, 'Payment exceeds remaining balance.');
 
             $loan->recordPayment($validated['amount'], $validated['notes'] ?? null, Auth::id(), $validated['type']);
 
@@ -334,22 +326,39 @@ class PaymentController extends Controller
      */
     public function recordHarvestPayment(Request $request)
     {
+        $machineTypes = Machine::whereNull('archived_at')->whereNotNull('type')->distinct()->pluck('type');
+
         $validated = $request->validate([
             'member_type' => 'required|in:member,non-member',
+            'machine_type' => ['required', 'string', Rule::in($machineTypes)],
             'farmer_id' => 'required_if:member_type,member|nullable|exists:farmers,id',
             'farmer_name' => 'required_if:member_type,non-member|nullable|string|max:255',
-            'harvest_amount' => 'required|numeric|min:0.01',
+            'harvest_amount' => 'nullable|numeric|min:0.01',
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $rate = HarvestPayment::rateFor($validated['member_type']);
-        $paymentAmount = round((float) $validated['harvest_amount'] * $rate / 100, 2);
+        $isPercentageBased = HarvestPayment::isPercentageBased($validated['machine_type']);
+
+        if ($isPercentageBased && empty($validated['harvest_amount'])) {
+            return back()->withErrors(['harvest_amount' => 'Total Harvest Amount is required for a Harvester payment.'])->withInput();
+        }
+
+        if ($isPercentageBased) {
+            $rate = HarvestPayment::rateFor($validated['member_type']);
+            $harvestAmount = (float) $validated['harvest_amount'];
+            $paymentAmount = round($harvestAmount * $rate / 100, 2);
+        } else {
+            $rate = null;
+            $harvestAmount = null;
+            $paymentAmount = HarvestPayment::fixedRateFor($validated['machine_type']);
+        }
 
         $harvestPayment = HarvestPayment::create([
             'farmer_id' => $validated['member_type'] === 'member' ? $validated['farmer_id'] : null,
             'farmer_name' => $validated['member_type'] === 'non-member' ? $validated['farmer_name'] : null,
             'member_type' => $validated['member_type'],
-            'harvest_amount' => $validated['harvest_amount'],
+            'machine_type' => $validated['machine_type'],
+            'harvest_amount' => $harvestAmount,
             'rate' => $rate,
             'payment_amount' => $paymentAmount,
             'payment_date' => now()->toDateString(),
@@ -358,10 +367,14 @@ class PaymentController extends Controller
         ]);
 
         if ($validated['member_type'] === 'member' && $harvestPayment->farmer?->account_user_id) {
+            $description = $isPercentageBased
+                ? $rate.'% of '.peso($harvestAmount).' reported harvest'
+                : 'flat rate for a '.$validated['machine_type'].' payment';
+
             Notification::notify(
                 $harvestPayment->farmer->account_user_id,
                 'Payment Recorded',
-                'A harvest payment of '.peso($paymentAmount).' ('.$rate.'% of '.peso($validated['harvest_amount']).' reported harvest) has been recorded for you.',
+                'A machine payment of '.peso($paymentAmount).' ('.$description.') has been recorded for you.',
                 'payment_recorded',
             );
         }

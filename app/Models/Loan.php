@@ -113,6 +113,23 @@ class Loan extends Model
     }
 
     /**
+     * How much of the current balance is principal, with interest excluded
+     * — principal minus whatever principal portion has already been paid
+     * off through fully completed periods. Purely informational (e.g. the
+     * Record Payment balance hint): remaining_balance itself always has
+     * interest folded in, so this is the only place to see the non-interest
+     * figure on its own.
+     */
+    public function getRemainingPrincipalAttribute(): ?float
+    {
+        if ($this->current_installment_number === null) {
+            return null;
+        }
+
+        return max(0, round((float) $this->principal_amount - (float) $this->installment_amount * ($this->current_installment_number - 1), 2));
+    }
+
+    /**
      * The term this loan is effectively running on: the originally agreed
      * repayment_terms_months, unless the farmer has run past it while still
      * owing a balance, in which case it grows to match — automatically
@@ -184,7 +201,7 @@ class Loan extends Model
 
     /**
      * Schedule for a loan that has reached ₱0 balance. Every closing
-     * payment type (payment/prepayment/partial, and payOffEarly()) leaves
+     * payment type (payment/prepayment/partial) leaves
      * current_installment_number frozen at the first period it never
      * individually advanced through — advanceDueDateForPayment() exits the
      * moment remaining_balance hits zero, before touching next_due_date.
@@ -194,8 +211,8 @@ class Loan extends Model
      *     'paid'/monthly_due treatment as an active loan's past periods);
      *   - the anchor period shows the real closing payment's own ledger
      *     amount instead of a nominal monthly_due, since that one payment
-     *     may have covered several periods' worth at once (a lump
-     *     Payment/Prepayment, or payOffEarly()'s waived-interest payoff);
+     *     may have covered several periods' worth at once (a large lump
+     *     Payment/Prepayment closing them all together);
      *   - periods after the anchor were never paid individually at all,
      *     so instead of repeating "nothing was paid here on its own" once
      *     per leftover period, they collapse into a single closing row.
@@ -502,36 +519,13 @@ class Loan extends Model
      */
     public function getInterestChargedAttribute(): float
     {
-        $contractual = round(($this->monthly_due * $this->effective_term_months) - (float) $this->principal_amount - $this->waived_interest, 2);
+        $contractual = round(($this->monthly_due * $this->effective_term_months) - (float) $this->principal_amount, 2);
 
         $extra = (float) $this->payments->where('type', 'interest')
             ->reject(fn (LoanPayment $payment) => str_contains($payment->notes ?? '', 'penalty applied'))
             ->sum('amount');
 
         return round($contractual + $extra, 2);
-    }
-
-    /**
-     * How much future interest an early payoff waived, for reporting
-     * (getInterestChargedAttribute()/getTotalAmountAttribute() would
-     * otherwise overstate a paid-off-early loan's interest, since they
-     * assume the full term's interest was always charged). Recomputed from
-     * current_installment_number/effective_term_months rather than parsed
-     * back out of the payment note's text — both stay stable after
-     * payOffEarly() (next_due_date is deliberately never touched), so this
-     * reproduces the exact figure interest_saved had at the moment of
-     * payoff, reliably, without depending on a specific note wording.
-     */
-    public function getWaivedInterestAttribute(): float
-    {
-        if (! $this->paid_off_early || $this->current_installment_number === null) {
-            return 0.0;
-        }
-
-        $futurePeriods = max(0, $this->effective_term_months - $this->current_installment_number);
-        $interestPortion = round($this->monthly_due - (float) $this->installment_amount, 2);
-
-        return round($interestPortion * $futurePeriods, 2);
     }
 
     public function getTotalAmountAttribute(): float
@@ -555,90 +549,16 @@ class Loan extends Model
     }
 
     /**
-     * How much principal is still owed, for the Prepayment form's payoff
-     * preview — anchored to principal_amount directly (not derived from
-     * remaining_balance, which has interest folded in), matching how the
-     * payoff amount itself is built up from this same figure.
-     */
-    public function getRemainingPrincipalAttribute(): ?float
-    {
-        if ($this->current_installment_number === null) {
-            return null;
-        }
-
-        return max(0, round((float) $this->principal_amount - (float) $this->installment_amount * ($this->current_installment_number - 1), 2));
-    }
-
-    /**
-     * How much it costs to pay this loan off completely today: the real
-     * current balance, minus interest for every period that hasn't started
-     * yet. Today's own interest (and any overdue interest/penalty already
-     * charged — real, already-incurred debt, not a future period) stays;
-     * only interest for periods strictly after the current one is waived.
-     *
-     * Deliberately anchored to remaining_balance rather than rebuilt from
-     * principal_amount alone — remaining_balance already correctly folds in
-     * any overdue interest/grace penalty, which must still be collected in
-     * full. Rebuilding from principal would silently waive that too. This
-     * does mean the figure can differ from a hand calculation by a few
-     * centavos on some loans, for the same reason every other balance
-     * figure in this app can: installment_amount is principal_amount
-     * divided and rounded, so monthly_due × term doesn't land on exactly
-     * principal_amount + nominal interest — remaining_balance already
-     * carries that same small remainder from disbursement onward.
-     */
-    public function getPayoffAmountAttribute(): ?float
-    {
-        if (! in_array($this->status, ['active', 'overdue'], true) || $this->current_installment_number === null) {
-            return null;
-        }
-
-        $futurePeriods = max(0, $this->effective_term_months - $this->current_installment_number);
-        $interestPortion = round($this->monthly_due - (float) $this->installment_amount, 2);
-        $futureInterest = round($interestPortion * $futurePeriods, 2);
-
-        return max(0, round((float) $this->remaining_balance - $futureInterest, 2));
-    }
-
-    /**
-     * How much future interest paying off today, instead of on schedule,
-     * waives — for display ("pay now and save ₱X").
-     */
-    public function getInterestSavedAttribute(): float
-    {
-        if ($this->payoff_amount === null) {
-            return 0.0;
-        }
-
-        return round((float) $this->remaining_balance - $this->payoff_amount, 2);
-    }
-
-    /**
-     * Whether this loan was closed out via an early payoff (waiving future
-     * interest) rather than by running its full course — read back from the
-     * marker payOffEarly() leaves in its payment's notes, the same way
-     * getPenaltyChargedAttribute() distinguishes penalty-interest entries
-     * without a dedicated column.
-     */
-    public function getPaidOffEarlyAttribute(): bool
-    {
-        return $this->status === 'fully_paid'
-            && $this->payments->contains(fn (LoanPayment $payment) => str_contains($payment->notes ?? '', 'Paid off early'));
-    }
-
-    /**
      * Record a farmer payment against this loan, reducing the balance and
-     * closing the loan out once it reaches zero. A Prepayment for exactly
-     * the current payoff_amount is treated as an early payoff instead (see
-     * payOffEarly()) — everything else follows the normal period-by-period
-     * advancement below.
+     * closing the loan out once it reaches zero. Applies identically to
+     * every payment type — a Prepayment can still close several periods at
+     * once via advanceDueDateForPayment()'s loop below, but never costs
+     * less than those periods' full nominal total: this app's flat-interest
+     * model folds the whole term's interest into remaining_balance at
+     * disbursement, and paying early doesn't waive any of it.
      */
     public function recordPayment(float $amount, ?string $notes, ?int $recordedBy, string $type = 'payment'): LoanPayment
     {
-        if ($type === 'prepayment' && $this->payoff_amount !== null && abs($amount - $this->payoff_amount) < 0.01) {
-            return $this->payOffEarly($amount, $notes, $recordedBy);
-        }
-
         $this->remaining_balance = max(0, round((float) $this->remaining_balance - $amount, 2));
         $this->status = $this->remaining_balance <= 0 ? 'fully_paid' : 'active';
 
@@ -652,41 +572,6 @@ class Loan extends Model
             'transaction_date' => now()->toDateString(),
             'balance_after' => $this->remaining_balance,
             'notes' => $notes,
-            'recorded_by' => $recordedBy,
-        ]);
-    }
-
-    /**
-     * Closes the loan out completely, waiving every remaining period's
-     * interest. Jumps straight to "fully paid" rather than routing through
-     * advanceDueDateForPayment()'s period-by-period loop, which can only
-     * close a period by paying its full nominal cost — the whole point of
-     * an early payoff is that future periods are NOT being paid in full.
-     * next_due_date is deliberately left as-is, matching how a loan paid
-     * off exactly on schedule already behaves (see advanceDueDateForPayment
-     * ()'s own early-exit once remaining_balance hits zero) — nothing reads
-     * it once the loan is closed; getInstallmentScheduleAttribute() uses
-     * status, not next_due_date, to tell "paid off early" from "in
-     * progress".
-     */
-    private function payOffEarly(float $amount, ?string $notes, ?int $recordedBy): LoanPayment
-    {
-        $waived = $this->interest_saved;
-
-        $this->remaining_balance = 0;
-        $this->current_period_paid = 0;
-        $this->carried_over_amount = 0;
-        $this->status = 'fully_paid';
-        $this->save();
-
-        $marker = $waived > 0 ? 'Paid off early — '.peso($waived).' in future interest waived.' : 'Paid off early.';
-
-        return $this->payments()->create([
-            'type' => 'prepayment',
-            'amount' => $amount,
-            'transaction_date' => now()->toDateString(),
-            'balance_after' => 0,
-            'notes' => trim($marker.($notes ? ' '.$notes : '')),
             'recorded_by' => $recordedBy,
         ]);
     }

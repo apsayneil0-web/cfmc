@@ -87,6 +87,7 @@ class MachineScheduleController extends Controller
         $requests = ScheduleRequest::with(['user.farmer', 'originalSchedule', 'rescheduleRequests', 'crop'])
             ->when($showArchived, fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+            ->whereBetween('scheduled_date', [$monthStart, $monthEnd])
             ->visibleAccount()
             ->orderBy('created_at', 'desc')
             ->paginate(10)
@@ -112,7 +113,7 @@ class MachineScheduleController extends Controller
         return view('manager.machine-schedule', compact(
             'requests', 'machineryList', 'machineQuantities', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'showArchived',
             'machineryFilter', 'statusFilter', 'viewMode', 'bookingsByDay', 'movableByDay', 'selectedDay', 'dayBookings', 'machineCards', 'modalSchedules'
-        ) + ['archivedCount' => ScheduleRequest::whereNotNull('archived_at')->visibleAccount()->count()]);
+        ) + ['archivedCount' => ScheduleRequest::whereNotNull('archived_at')->whereBetween('scheduled_date', [$monthStart, $monthEnd])->visibleAccount()->count()]);
     }
 
     /**
@@ -484,7 +485,8 @@ class MachineScheduleController extends Controller
             'machinery' => ['required', Rule::in($this->machineryNames())],
             'land_size' => 'required|numeric|min:0.1',
             'units_requested' => 'nullable|integer|min:1',
-            'crop_id' => 'required|exists:crops,id',
+            'crop_id' => ['required', Rule::in(array_merge(Crop::pluck('id')->all(), [Crop::OTHER_OPTION]))],
+            'new_crop_name' => 'nullable|required_if:crop_id,'.Crop::OTHER_OPTION.'|string|max:255',
             'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
@@ -496,6 +498,10 @@ class MachineScheduleController extends Controller
         if ($validated['member_type'] === 'member' && empty($validated['farmer_name'])) {
             $farmer = Farmer::where('account_user_id', $validated['user_id'])->first();
             $validated['farmer_name'] = $farmer?->full_name;
+        }
+
+        if ($validated['crop_id'] === Crop::OTHER_OPTION) {
+            $validated['crop_id'] = Crop::findOrCreateByName($validated['new_crop_name'])->id;
         }
 
         return $validated;
