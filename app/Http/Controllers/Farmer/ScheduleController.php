@@ -38,6 +38,7 @@ class ScheduleController extends Controller
         $machineryFilter = $request->string('calendar_machinery')->toString();
 
         $calendarDays = ScheduleRequest::calendarForMonth($month, $machineryFilter ?: null);
+        $availableDays = ScheduleRequest::availabilityByDay($month);
 
         $selectedMonth = $month;
         $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
@@ -46,7 +47,7 @@ class ScheduleController extends Controller
 
         return view('farmer.schedule', compact(
             'machinery', 'requests', 'machineryList', 'crops', 'calendarDays', 'selectedMonth',
-            'firstWeekday', 'daysInMonth', 'monthOptions', 'machineryFilter'
+            'firstWeekday', 'daysInMonth', 'monthOptions', 'machineryFilter', 'availableDays'
         ));
     }
 

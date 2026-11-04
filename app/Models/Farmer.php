@@ -14,6 +14,19 @@ class Farmer extends Model
 {
     use HasFactory;
 
+    /**
+     * The cooperative only serves farmers in Surallah, South Cotabato, so new
+     * membership requests are locked to this location.
+     */
+    public const PROVINCE = 'South Cotabato';
+
+    public const MUNICIPALITY = 'Surallah';
+
+    public const BARANGAYS = [
+        'Buenavista', 'Canahay', 'Centrala', 'Colongulo', 'Dajay', 'Duengas', 'Lambontong', 'Lamian', 'Lamsugod',
+        'Libertad (Poblacion)', 'Little Baguio', 'Moloy', 'Naci', 'Talahik', 'Tubiala', 'Upper Sepaka', 'Veterans',
+    ];
+
     protected $fillable = [
         'first_name',
         'middle_initial',

@@ -12,6 +12,7 @@
     'bookedClass' => null,
     'selectionMode' => false,
     'highlightOwn' => false,
+    'availableDays' => null,
 ])
 
 @php
@@ -34,12 +35,19 @@
             @for($day = 1; $day <= $daysInMonth; $day++)
             @php
                 $isOpen = $calendarDays[$day]->isEmpty();
+                // $availableDays (farmer's schedule calendar only) says whether
+                // some machine still has hectare/unit room left that day, even
+                // with existing bookings — that's what decides clickability now.
+                // Callers that don't pass it keep the old "zero bookings" rule.
+                $hasCapacity = $availableDays[$day] ?? $isOpen;
                 $cellDate = $month ? $month->copy()->startOfMonth()->addDays($day - 1) : null;
-                $isTooSoon = $isOpen && $earliestDate && $cellDate && $cellDate->lt($earliestDate);
-                $isSelectable = $clickable && $isOpen && !$isTooSoon;
+                $dateTooSoon = $earliestDate && $cellDate && $cellDate->lt($earliestDate);
+                $isTooSoon = $isOpen && $dateTooSoon;
+                $isSelectable = $clickable && $hasCapacity && !$dateTooSoon;
+                $isPartial = $hasCapacity && $calendarDays[$day]->isNotEmpty();
             @endphp
             <div
-                class="calendar-cell {{ $calendarDays[$day]->isNotEmpty() ? 'has-bookings' : '' }} {{ $isSelectable ? 'calendar-cell-clickable' : '' }} {{ $clickable && $isTooSoon ? 'calendar-cell-disabled' : '' }}"
+                class="calendar-cell {{ $calendarDays[$day]->isNotEmpty() ? 'has-bookings' : '' }} {{ $isSelectable ? 'calendar-cell-clickable' : '' }} {{ $clickable && $dateTooSoon ? 'calendar-cell-disabled' : '' }}"
                 style="min-height: {{ $minHeight }};"
                 @if($isSelectable) data-date="{{ $cellDate->format('Y-m-d') }}" role="button" tabindex="0" @endif
             >
@@ -54,9 +62,10 @@
                     $machineryLabel = ($booking->units_requested > 1 ? $booking->units_requested.'× ' : '').$booking->machinery;
                     $label = $showNames ? $booking->display_name.' - '.$machineryLabel : $machineryLabel;
                     $timeRange = \Carbon\Carbon::parse($booking->start_time)->format('g:iA').'-'.\Carbon\Carbon::parse($booking->end_time)->format('g:iA');
+                    $isOwnBooking = $booking->user_id === auth()->id();
                     $bookingClass = $highlightOwn
-                        ? ($booking->user_id === auth()->id() ? 'calendar-booking-approved' : 'calendar-booking-booked')
-                        : $statusClass;
+                        ? ($isOwnBooking ? 'calendar-booking-approved' : ($isPartial ? 'calendar-booking-partial' : 'calendar-booking-booked'))
+                        : ($isPartial ? 'calendar-booking-partial' : $statusClass);
                 @endphp
                 <div class="calendar-booking {{ $bookingClass }}" title="{{ $label }} ({{ $timeRange }})">
                     <span class="calendar-booking-dot"></span>
@@ -72,6 +81,9 @@
                     <span class="badge bg-success-subtle text-success border border-success-subtle calendar-open-badge">Open</span>
                     @endif
                 @endforelse
+                @if($showOpenBadge && $isPartial && !$dateTooSoon)
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle calendar-open-badge">Still open</span>
+                @endif
             </div>
             @endfor
         </div>

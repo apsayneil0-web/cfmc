@@ -60,11 +60,13 @@
     <div class="p-4 p-md-6">
         <x-schedule-calendar :calendar-days="$calendarDays" :first-weekday="$firstWeekday" :days-in-month="$daysInMonth"
             :show-names="false" :show-open-badge="true" min-height="100px"
-            :month="$selectedMonth" :min-date="$earliestAllowedDate" :clickable="true" :highlight-own="true" />
+            :month="$selectedMonth" :min-date="$earliestAllowedDate" :clickable="true" :highlight-own="true"
+            :available-days="$availableDays" />
         <div class="d-flex align-items-center gap-4 mt-3 small text-muted flex-wrap">
             <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-success" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Open &mdash; click to request</span>
             <span class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width:0.6rem;height:0.6rem;display:inline-block;background-color: var(--brand-success-hover);"></span> Your schedule</span>
-            <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-danger" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Booked by another farmer</span>
+            <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-warning" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Partially booked &mdash; still has room, click to request</span>
+            <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-danger" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Fully booked</span>
             <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-secondary" style="width:0.6rem;height:0.6rem;display:inline-block;"></span> Too soon (min {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days lead time)</span>
         </div>
     </div>

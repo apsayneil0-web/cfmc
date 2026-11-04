@@ -208,6 +208,72 @@ class ScheduleRequest extends Model
     }
 
     /**
+     * Day-number => bool map for the given month: whether at least one
+     * non-maintenance machine still has both hectare and unit capacity left
+     * on that date. A day can have bookings and still be "available" here —
+     * e.g. one machine fully booked but another (or the same one, if it has
+     * spare quantity/hectares) still has room — which is what lets the
+     * calendar stay clickable past the old "zero bookings" rule.
+     *
+     * @return array<int, bool>
+     */
+    public static function availabilityByDay(Carbon $month): array
+    {
+        $monthStart = $month->copy()->startOfMonth();
+        $monthEnd = $month->copy()->endOfMonth();
+
+        $machines = Machine::whereNull('archived_at')->get();
+        $maintenanceIds = $machines->filter(fn (Machine $m) => $m->status === 'maintenance')->pluck('id')->all();
+
+        $bookings = self::whereIn('status', ['pending', 'approved', 'completed'])
+            ->whereNull('archived_at')
+            ->whereBetween('scheduled_date', [$monthStart, $monthEnd])
+            ->get(['machine_id', 'scheduled_date', 'land_size', 'units_requested', 'status']);
+
+        $reserved = [];
+        foreach ($bookings as $booking) {
+            $key = $booking->machine_id.'|'.$booking->scheduled_date->toDateString();
+            $reserved[$key] ??= ['hectares' => 0.0, 'units' => 0];
+            $reserved[$key]['hectares'] += (float) $booking->land_size;
+
+            // unitsFree() only counts pending/approved — a completed booking
+            // no longer ties up a physical unit.
+            if (in_array($booking->status, ['pending', 'approved'], true)) {
+                $reserved[$key]['units'] += (int) $booking->units_requested;
+            }
+        }
+
+        $available = [];
+        $cursor = $monthStart->copy();
+
+        while ($cursor->lte($monthEnd)) {
+            $dateStr = $cursor->toDateString();
+            $hasCapacity = false;
+
+            foreach ($machines as $machine) {
+                if (in_array($machine->id, $maintenanceIds, true)) {
+                    continue;
+                }
+
+                $key = $machine->id.'|'.$dateStr;
+                $reservedHectares = $reserved[$key]['hectares'] ?? 0.0;
+                $reservedUnits = $reserved[$key]['units'] ?? 0;
+                $quantity = max(1, (int) $machine->quantity);
+
+                if ($reservedHectares < $machine->effective_daily_limit && $reservedUnits < $quantity) {
+                    $hasCapacity = true;
+                    break;
+                }
+            }
+
+            $available[$cursor->day] = $hasCapacity;
+            $cursor->addDay();
+        }
+
+        return $available;
+    }
+
+    /**
      * Build a day-number => bookings map for the given month, showing only
      * approved schedules (pending/denied requests don't occupy the calendar).
      *

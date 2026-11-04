@@ -478,15 +478,13 @@
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" value="South Cotabato" readonly>
-                            <input type="hidden" name="province" value="South Cotabato">
+                            <input type="text" class="form-control form-control-lg" value="{{ \App\Models\Farmer::PROVINCE }}" readonly>
+                            <input type="hidden" name="province" value="{{ \App\Models\Farmer::PROVINCE }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-lg" id="municipalitySelect" name="municipality" required>
-                                <option value="" selected disabled>Select Municipality</option>
-                            </select>
-                            <div class="invalid-feedback">Please select municipality.</div>
+                            <input type="text" class="form-control form-control-lg" value="{{ \App\Models\Farmer::MUNICIPALITY }}" readonly>
+                            <input type="hidden" name="municipality" value="{{ \App\Models\Farmer::MUNICIPALITY }}">
                         </div>
                     </div>
 
@@ -494,11 +492,12 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Barangay</label>
-                            <select class="form-select form-select-lg d-none" id="barangayNameSelect" name="barangay" disabled>
-                                <option value="" selected>Select Barangay</option>
+                            <select class="form-select form-select-lg" name="barangay">
+                                <option value="">Select Barangay</option>
+                                @foreach(\App\Models\Farmer::BARANGAYS as $barangay)
+                                <option value="{{ $barangay }}" {{ old('barangay') === $barangay ? 'selected' : '' }}>{{ $barangay }}</option>
+                                @endforeach
                             </select>
-                            <input type="text" class="form-control form-control-lg" id="barangayNameInput" name="barangay" placeholder="Enter barangay">
-                            <div class="form-text">A barangay list is only available for Surallah and Banga; other municipalities can be typed in.</div>
                         </div>
                     </div>
 
@@ -604,90 +603,6 @@
         }, 0);
     });
 
-    // Mindanao Provinces and Municipalities Data
-    const municipalitiesData = {
-        'Bukidnon': [
-            'Baungon', 'Cabanglasan', 'Damulog', 'Dangcagan', 'Don Carlos', 'Impasugong', 'Kadingilan', 'Kalilangan', 'Kibawe', 'Kitaotao', 'Lantapan', 'Libona', 'Malitbog', 'Manolo Fortich', 'Maramag', 'Pangantucan', 'Quezon', 'San Fernando', 'Sumilao', 'Talakag'
-        ],
-        'Camiguin': [
-            'Catarman', 'Guinsiliban', 'Mambajao', 'Mahinog', 'Sagbayan'
-        ],
-        'Lanao del Norte': [
-            'Bacolod', 'Baloi', 'Baroy', 'Dadaguayan', 'Dapitan City', 'Dipolog City', 'Gloria', 'Josefina', 'Kapatagan', 'Kauswagan', 'Kolambugan', 'Lala', 'Linamon', 'Maigo', 'Matungao', 'Munai', 'Nunukan', 'Ozamis City', 'Pantar', 'Plaridel', 'Salvador', 'Sapitan', 'Sultan Naga Dimaporo', 'Tagoloan', 'Tangcal', 'Tubod'
-        ],
-        'Misamis Occidental': [
-            'Aloran', 'Baliangao', 'Bonifacio', 'Calamba', 'Clarin', 'Concepcion', 'Cotowato', 'Danjugan', 'Guingona', 'Lopez Jaena', 'Misamis Occidental', 'Nabunuran', 'Oroquieta City', 'Ozamis City', 'Panaon', 'Plaridel', 'Sagun', 'San Francisco', 'Santa Maria', 'Tangaro', 'Tudela'
-        ],
-        'Misamis Oriental': [
-            'Alubijid', 'Balingasag', 'Balingoan', 'Binuangan', 'Cagayan de Oro City', 'Claveria', 'Gingoog City', 'Gitagum', 'Initao', 'Jasaan', 'Kinoguitan', 'Lagonglong', 'Laguindingan', 'Libona', 'Lugait', 'Magsaysay', 'Manticao', 'Medina', 'Naawan', 'Opol', 'Salay', 'Sugbongcogon', 'Tagoloan', 'Talisayan', 'Villanueva'
-        ],
-        'Davao de Oro': [
-            'Compostela', 'Laak', 'Mabini', 'Maco', 'Maragusan', 'Mawab', 'Monkayo', 'Nabunturan', 'New Bataan', 'Pantukan'
-        ],
-        'Davao del Norte': [
-            'Asuncion', 'Braulio E. Dujali', 'Carmen', 'Davao City', 'Igacos', 'Kapalong', 'New Corella', 'Panabo City', 'Samal City', 'Santo Tomas', 'Tagum City', 'Talaingod'
-        ],
-        'Davao del Sur': [
-            'Bansalan', 'Davao City', 'Digos City', 'Hagonoy', 'Kiblawan', 'Magsaysay', 'Malalag', 'Matanao', 'Padada', 'Santa Cruz', 'Sulop'
-        ],
-        'Davao Oriental': [
-            'Bagana', 'Banaybanay', 'Boston', 'Caraga', 'Cateel', 'Davao Oriental', 'Governor Generoso', 'Lupon', 'Manay', 'Mati City', 'San Isidro', 'Tagum City', 'Tarragona'
-        ],
-        'Cotabato': [
-            'Aleosan', 'Antipas', 'Arakan', 'Banisilan', 'Carmen', 'Kabacan', 'Kidapawan City', 'Libungan', 'Magsaysay', 'Makbar', 'Malanday', 'Matalam', 'Midsayap', 'Mount Butil', 'Pikit', 'Pigcawayan', 'President Roxas', 'Tulunan'
-        ],
-        'Cotabato del Sur': [
-            'Bagumbayan', 'Bangsamoro', 'Columbio', 'Esperanza', 'Isulan', 'Kalamarang', 'Lebak', 'Llambayan', 'Lutayan', 'Palimbang', 'President Quirino', 'Province of Sultan Kudarat', 'Rama', 'Senator Ninoy Aquino', 'Tacurong City', 'Tantangan', 'Tupol'
-        ],
-        'South Cotabato': [
-            'Banga', 'Bangian', 'Bagumpasig', 'Banon', 'Buayan', 'Buli', 'Caloocan', 'Datu Saliao', 'General Santos City', 'Koronadal City', 'Lake Sebu', 'Lambayong', 'Mabini', 'Magsaysay', 'Maiha', 'Malapatan', 'Malungon', 'Norala', 'Polomolok', 'Santo Nino', 'Surallah', 'T\'Boli', 'Tampakan', 'Tantangan', 'Tupi'
-        ],
-        'Sarangani': [
-            'Alabel', 'Camarigan', 'Don Marcelino', 'Glan', 'Guba', 'Jose Abad Santos', 'Kiamba', 'Maitum', 'Malapatan', 'Malungon', 'San Isidro', 'Santo Domingo', 'Sarangani'
-        ],
-        'Agusan del Norte': [
-            'Buenavista', 'Butuan City', 'Cabadbaran City', 'Carmen', 'Jabonga', 'Kitcharao', 'Las Nieves', 'Magallanes', 'Nasipit', 'Remedios T. Romualdez', 'R TRomualdez', 'Santiago', 'Tubay'
-        ],
-        'Agusan del Sur': [
-            'Bayugan City', 'Bunawan', 'Esperanza', 'La Paz', 'Loreto', 'Prosperidad', 'San Francisco', 'San Luis', 'Santa Josefa', 'Santo Tomas', 'Talacogon', 'Trento', 'Veruela'
-        ],
-        'Surigao del Norte': [
-            'Alegria', 'Bacuag', 'Burgos', 'Cagdianao', 'Claver', 'Dapa', 'Del Carmen', 'General Luna', 'Gigaquit', 'Mainit', 'Malimono', 'Pilar', 'Placer', 'San Benito', 'San Francisco', 'San Isidro', 'Santa Monica', 'Sison', 'Socorro', 'Surigao City', 'Tagana-an'
-        ],
-        'Surigao del Sur': [
-            'Barobo', 'Bayabas', 'Bislig City', 'Cagwait', 'Cantilan', 'Carrascal', 'Cortez', 'Datu Abdulla Sangki', 'Datu Blah T. Sinsuat', 'Datu Piang', 'Datu Salib', 'Dinagat', 'Español', 'Gandara', 'Hinatuan', 'Jabonga', 'Kitchen', 'Lanuza', 'Lianga', 'Lingig', 'Madrid', 'Magsaysay', 'Marihat', 'San Agustin', 'San Miguel', 'Tagbina', 'Tago', 'Tandag City'
-        ],
-        'Dinagat Islands': [
-            'Basilisa', 'Cagdianao', 'Dinagat', 'Garcia Hernandez', 'Jabonga', 'Libjo', 'Loreto', 'Pilar', 'Placer', 'San Jose', 'Tubajon'
-        ],
-        'Basilan': [
-            'Akbar', 'Al-Barka', 'Hadji Mohammad Ajul', 'Hadji Muhtamad', 'Isabela City', 'Lamitan', 'Lantaka', 'Maluso', 'Sumisip', 'Tabuan-Laki', 'Tipo-Tipo', 'Tuburan', 'Ungkaya Pukan'
-        ],
-        'Lanao del Sur': [
-            'Amai Manabilang', 'Bacolod-Kalas', 'Balabagan', 'Balindong', 'Bayang', 'Binidayan', 'Buadiposo-Buntong', 'Bumbaran', 'Butig', 'Calanogas', 'Campestral', 'Datu Abdullah Sangki', 'Datu Andal Amas', 'Datu Blah T. Sinsuat', 'Datu Hoffer Ampatuan', 'Datu Ibnona', 'Datu Montamal', 'Datu Piang', 'Datu Salib', 'Datu UN', 'Ganassi', 'G受影响', 'Kapatagan', 'Kauswagan', 'Lumba-Bayabao', 'Lumbaca-Unayan', 'Lumbatan', 'Lunday', 'Madalum', 'Madamba', 'Maguing', 'Malabang', 'Marawi City', 'Marantao', 'Masiu', 'Mulondo', 'Pagayawan', 'Piagapo', 'Piarapon', 'Picong', 'Poona Lake', 'Pualas', 'Ramitan', 'Sagd', 'Sultan Gumander', 'Sultan Mastura', 'Tagoloan II', 'Tambo', 'Tamparan', 'Taraka', 'Tubaran', 'Tugaya', 'Wao'
-        ],
-        'Maguindanao': [
-            'Ampatuan', 'Barira', 'Buldon', 'Buluan', 'Datu Abdullah Sangki', 'Datu Abdul Sinsuat', 'Datu Ampunan', 'Datu Angalan', 'Datu Blah T. Sinsuat', 'Datu Hoffer Ampatuan', 'Datu Ibnona', 'Datu Montamal', 'Datu Odin Sinsuat', 'Datu Paglas', 'Datu Piang', 'Datu Salib', 'Datu Saudi-Ampatuan', 'Datu Sinsuat', 'Datu Unsay', 'General Salip K.', 'Gulang-Gulang', 'Mamasapano', 'Mangudadatu', 'Matalao', 'Mayo', 'Motril', 'Mulondo', 'Pagagawan', 'Paglat', 'Pandag', 'Pata', 'Patin-ay', 'Raja Buayan', 'Rangdean', 'Sampual', 'Shariff Aguak', 'Shariff Saidona Mustapha', 'Sultan Kudarat', 'Sultan Mastura', 'Talayan', 'Talitay'
-        ],
-        'Sulu': [
-            'Banguingui', 'Hadji Bud Sinsuat', 'Indanan', 'Jolo', 'Kalingalan Caluang', 'Lugus', 'Luuk', 'Maimbung', 'New Capitol', 'Old Panamao', 'Omar', 'Pandami', 'Pangutaran', 'Parang', 'Pata', 'Patikul', 'Siasi', 'Talibon', 'Tapul'
-        ],
-        'Tawi-Tawi': [
-            'Bongao', 'Languyan', 'Mapun', 'Sapa-Sapa', 'Sibutu', 'Simunul', 'Sitangkai', 'South Ubian', 'Tandubas', 'Turtle Islands'
-        ]
-    };
-
-    // Barangay lists — only populated for Surallah and Banga (South Cotabato) for now.
-    // Every other municipality falls back to a free-text barangay field.
-    const barangaysData = {
-        'Surallah': [
-            'Buenavista', 'Canahay', 'Centrala', 'Colongulo', 'Dajay', 'Duengas', 'Lambontong', 'Lamian', 'Lamsugod', 'Libertad (Poblacion)', 'Little Baguio', 'Moloy', 'Naci', 'Talahik', 'Tubiala', 'Upper Sepaka', 'Veterans'
-        ],
-        'Banga': [
-            'Benitez (Poblacion)', 'Cabudian', 'Cabuling', 'Cinco', 'Derilon', 'El Nonok', 'Improgo Village (Poblacion)', 'Kusan', 'Lam-apos', 'Lamba', 'Lambingi', 'Lampari', 'Liwanay', 'Malaya', 'Punong Grande', 'Rang-ay', 'Reyes (Poblacion)', 'Rizal', 'Rizal Poblacion', 'San Jose', 'San Vicente', 'Yangco Poblacion'
-        ]
-    };
-
     // Search and Filter Functionality
     const searchInput = document.getElementById('searchFarmers');
     const filterStatus = document.getElementById('filterStatus');
@@ -733,48 +648,6 @@
         applyFilters();
     });
 
-    // Province is fixed to South Cotabato — populate its municipalities on load
-    (function() {
-        const municipalitySelect = document.getElementById('municipalitySelect');
-        municipalitiesData['South Cotabato'].forEach(function(municipality) {
-            const option = document.createElement('option');
-            option.value = municipality;
-            option.textContent = municipality;
-            municipalitySelect.appendChild(option);
-        });
-    })();
-
-    // Municipality Select Change Handler — swaps in a barangay dropdown for
-    // municipalities we have a barangay list for, otherwise falls back to
-    // a free-text barangay field.
-    document.getElementById('municipalitySelect').addEventListener('change', function() {
-        const selectedMunicipality = this.value;
-        const barangaySelect = document.getElementById('barangayNameSelect');
-        const barangayInput = document.getElementById('barangayNameInput');
-
-        barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
-        barangayInput.value = '';
-
-        if (selectedMunicipality && barangaysData[selectedMunicipality]) {
-            barangaysData[selectedMunicipality].forEach(function(barangay) {
-                const option = document.createElement('option');
-                option.value = barangay;
-                option.textContent = barangay;
-                barangaySelect.appendChild(option);
-            });
-
-            barangaySelect.classList.remove('d-none');
-            barangaySelect.disabled = false;
-            barangayInput.classList.add('d-none');
-            barangayInput.disabled = true;
-        } else {
-            barangaySelect.classList.add('d-none');
-            barangaySelect.disabled = true;
-            barangayInput.classList.remove('d-none');
-            barangayInput.disabled = false;
-        }
-    });
-
     // Enable Bootstrap validation and confirmation modal
     (function() {
         'use strict';
@@ -813,7 +686,8 @@
                     return checkbox.nextElementSibling.textContent;
                 }).join(', ');
                 const landArea = form.querySelector('input[name="land_area"]').value;
-                const municipality = form.querySelector('select[name="municipality"]').value;
+                const barangay = form.querySelector('select[name="barangay"]').value;
+                const municipality = form.querySelector('input[name="municipality"]').value;
                 const province = form.querySelector('input[name="province"]').value;
 
                 // Build full name
@@ -827,7 +701,7 @@
                 document.getElementById('confirmCropType').textContent = cropName;
                 document.getElementById('confirmLandArea').textContent = landArea + ' hectares';
                 document.getElementById('confirmContact').textContent = contactNumber;
-                document.getElementById('confirmLocation').textContent = municipality + ', ' + province;
+                document.getElementById('confirmLocation').textContent = (barangay ? barangay + ', ' : '') + municipality + ', ' + province;
 
                 // Show confirmation modal
                 let confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
@@ -870,22 +744,6 @@
                 slotsContainer.innerHTML = '';
                 container.querySelector('[data-multi-upload-add]').click();
             });
-            const municipalitySelect = document.getElementById('municipalitySelect');
-            municipalitySelect.innerHTML = '<option value="" selected disabled>Select Municipality</option>';
-            municipalitiesData['South Cotabato'].forEach(function(municipality) {
-                const option = document.createElement('option');
-                option.value = municipality;
-                option.textContent = municipality;
-                municipalitySelect.appendChild(option);
-            });
-
-            const barangaySelect = document.getElementById('barangayNameSelect');
-            const barangayInput = document.getElementById('barangayNameInput');
-            barangaySelect.innerHTML = '<option value="" selected>Select Barangay</option>';
-            barangaySelect.classList.add('d-none');
-            barangaySelect.disabled = true;
-            barangayInput.classList.remove('d-none');
-            barangayInput.disabled = false;
         });
 
         // Auto-open modal if there are old input values (validation error)

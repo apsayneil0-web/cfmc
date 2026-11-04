@@ -8,6 +8,7 @@ use App\Models\Farmer;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class MembershipController extends Controller
 {
@@ -79,11 +80,14 @@ class MembershipController extends Controller
             'barangay_certification.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
             'rsbsa' => 'required|array|min:1',
             'rsbsa.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'province' => 'required|string|max:255',
-            'municipality' => 'required|string|max:255',
-            'barangay' => 'nullable|string|max:255',
+            'province' => ['required', Rule::in([Farmer::PROVINCE])],
+            'municipality' => ['required', Rule::in([Farmer::MUNICIPALITY])],
+            'barangay' => ['nullable', Rule::in(Farmer::BARANGAYS)],
         ], [
             'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
+            'province.in' => 'Membership is only open to farmers in '.Farmer::MUNICIPALITY.', '.Farmer::PROVINCE.'.',
+            'municipality.in' => 'Membership is only open to farmers in '.Farmer::MUNICIPALITY.', '.Farmer::PROVINCE.'.',
+            'barangay.in' => 'Please select a barangay in '.Farmer::MUNICIPALITY.'.',
         ]);
 
         // Create the farmer record

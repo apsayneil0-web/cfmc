@@ -1436,6 +1436,13 @@ span.flatpickr-weekday { font-size: 0.75rem; font-weight: 600; color: var(--text
 .calendar-booking-booked .calendar-booking-dot {
     background-color: var(--brand-danger);
 }
+.calendar-booking-partial {
+    background-color: var(--brand-warning-light);
+    color: var(--brand-warning-text);
+}
+.calendar-booking-partial .calendar-booking-dot {
+    background-color: var(--brand-warning);
+}
 .calendar-open-badge {
     font-size: 0.65rem;
 }
