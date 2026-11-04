@@ -32,16 +32,18 @@ class ScheduleRequest extends Model
     }
 
     /**
-     * Hectares already reserved for a machine on a given date, counting any
-     * booking that still occupies capacity (pending, approved, or completed)
-     * and excluding archived records. Pending requests reserve capacity the
-     * same as approved ones, since they may still be approved later.
+     * Hectares already reserved for a machine on a given date, counting only
+     * approved/completed bookings and excluding archived records. A pending
+     * request has not been approved yet, so it doesn't hold capacity against
+     * other farmers — the Manager resolves any conflict between competing
+     * pending requests at approval time (see wouldExceedDailyCapacity() and
+     * hasConflict() calls in ScheduleApprovalController::approve()).
      */
     public static function reservedHectares(int $machineId, string $date, ?int $excludeId = null): float
     {
         $query = self::where('machine_id', $machineId)
             ->where('scheduled_date', $date)
-            ->whereIn('status', ['pending', 'approved', 'completed'])
+            ->whereIn('status', ['approved', 'completed'])
             ->whereNull('archived_at');
 
         if ($excludeId) {
@@ -179,10 +181,12 @@ class ScheduleRequest extends Model
     }
 
     /**
-     * Physical units of a machine not yet taken by a pending/approved booking
+     * Physical units of a machine not yet taken by an approved booking
      * overlapping the given time window (the whole day when no times are
-     * given). Can go negative if a machine was over-booked before its
-     * quantity was lowered; callers that display it should clamp at zero.
+     * given). A pending request hasn't been approved yet, so it doesn't hold
+     * a unit against other farmers — see reservedHectares() for why. Can go
+     * negative if a machine was over-booked before its quantity was lowered;
+     * callers that display it should clamp at zero.
      */
     public static function unitsFree(int $machineId, string $date, ?string $startTime = null, ?string $endTime = null, ?int $excludeId = null): int
     {
@@ -190,7 +194,7 @@ class ScheduleRequest extends Model
 
         $query = self::where('machine_id', $machineId)
             ->where('scheduled_date', $date)
-            ->whereIn('status', ['pending', 'approved'])
+            ->where('status', 'approved')
             ->whereNull('archived_at');
 
         if ($excludeId) {
@@ -213,7 +217,9 @@ class ScheduleRequest extends Model
      * on that date. A day can have bookings and still be "available" here —
      * e.g. one machine fully booked but another (or the same one, if it has
      * spare quantity/hectares) still has room — which is what lets the
-     * calendar stay clickable past the old "zero bookings" rule.
+     * calendar stay clickable past the old "zero bookings" rule. Only
+     * approved/completed bookings hold capacity — see reservedHectares()
+     * and unitsFree() for why a pending request doesn't.
      *
      * @return array<int, bool>
      */
@@ -225,7 +231,7 @@ class ScheduleRequest extends Model
         $machines = Machine::whereNull('archived_at')->get();
         $maintenanceIds = $machines->filter(fn (Machine $m) => $m->status === 'maintenance')->pluck('id')->all();
 
-        $bookings = self::whereIn('status', ['pending', 'approved', 'completed'])
+        $bookings = self::whereIn('status', ['approved', 'completed'])
             ->whereNull('archived_at')
             ->whereBetween('scheduled_date', [$monthStart, $monthEnd])
             ->get(['machine_id', 'scheduled_date', 'land_size', 'units_requested', 'status']);
@@ -236,9 +242,9 @@ class ScheduleRequest extends Model
             $reserved[$key] ??= ['hectares' => 0.0, 'units' => 0];
             $reserved[$key]['hectares'] += (float) $booking->land_size;
 
-            // unitsFree() only counts pending/approved — a completed booking
-            // no longer ties up a physical unit.
-            if (in_array($booking->status, ['pending', 'approved'], true)) {
+            // unitsFree() only counts approved — a completed booking no
+            // longer ties up a physical unit.
+            if ($booking->status === 'approved') {
                 $reserved[$key]['units'] += (int) $booking->units_requested;
             }
         }

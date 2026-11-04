@@ -97,12 +97,14 @@ class Machine extends Model
     }
 
     /**
-     * Daily hectare capacity, scaled by how many physical units this record
-     * represents — daily_hectare_limit is what a single unit can service.
+     * Daily hectare capacity for this machine. Flat per machine regardless of
+     * type or how many physical units it has (quantity only affects how many
+     * overlapping time-slot bookings it can take — see unitsFree()/hasConflict()
+     * on ScheduleRequest), per the cooperative's documented policy.
      */
     public function getEffectiveDailyLimitAttribute(): float
     {
-        return (float) $this->daily_hectare_limit * max(1, (int) $this->quantity);
+        return (float) $this->daily_hectare_limit;
     }
 
     /**

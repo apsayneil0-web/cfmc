@@ -80,9 +80,21 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-tractor me-2"></i>Request a Schedule</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('farmer.schedule.store') }}" method="POST" class="modal-form-flex">
+            <form id="scheduleRequestForm" action="{{ route('farmer.schedule.store') }}" method="POST" class="modal-form-flex">
                 @csrf
                 <div class="modal-body">
+                    @if($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Please fix the following errors:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    @endif
                     <p class="text-muted small mb-3 d-none" id="scheduleRequestSelectedDateHint"></p>
                     <div id="scheduleMachineRows"></div>
                     <button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="addMachineRowBtn">
@@ -98,7 +110,10 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary"
+                        data-confirm="Submit this schedule request for Manager approval?"
+                        data-confirm-title="Confirm Schedule Request"
+                        data-confirm-label="Yes, Submit">
                         <i class="fas fa-paper-plane me-1"></i> Submit Request
                     </button>
                 </div>
@@ -172,6 +187,7 @@
             <div class="col-md-4">
                 <label class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
                 <input type="time" name="machines[__IDX__][end_time]" class="form-control machine-end-time" required>
+                <small class="text-danger d-none machine-time-error">End Time must be after Start Time.</small>
             </div>
             <div class="col-12">
                 <div class="schedule-finish-note">
@@ -233,7 +249,22 @@
         var unitsSelect = row.querySelector('.machine-units-select');
         var finishNote = row.querySelector('.machine-finish-note');
         var capacityHint = row.querySelector('.machine-capacity-hint');
+        var timeError = row.querySelector('.machine-time-error');
         var cropSelect = row.querySelector('select[name$="[crop_id]"]');
+
+        // Catches "End Time before/equal to Start Time" in the browser,
+        // right on the row, instead of letting it round-trip to the server.
+        function validateTimeOrder() {
+            var invalid = startTimeInput.value && endTimeInput.value && endTimeInput.value <= startTimeInput.value;
+            endTimeInput.classList.toggle('is-invalid', !!invalid);
+            timeError.classList.toggle('d-none', !invalid);
+            // Plugs into the native Constraint Validation API so the
+            // Submit button's confirm dialog (checkValidity()) won't open
+            // while this is still wrong.
+            endTimeInput.setCustomValidity(invalid ? 'End Time must be after Start Time.' : '');
+            return !invalid;
+        }
+        row.validateTimeOrder = validateTimeOrder;
 
         var availability = {};
         var availabilityTimer = null;
@@ -376,6 +407,8 @@
         landSizeInput.addEventListener('input', estimateEndTime);
         startTimeInput.addEventListener('input', estimateEndTime);
         unitsSelect.addEventListener('change', estimateEndTime);
+        startTimeInput.addEventListener('input', validateTimeOrder);
+        endTimeInput.addEventListener('input', validateTimeOrder);
         row.querySelectorAll('.machine-option-input').forEach(function (radio) {
             radio.addEventListener('change', refreshUnits);
             radio.addEventListener('change', refreshAvailability);
@@ -421,6 +454,7 @@
 
         refreshUnits();
         refreshAvailability();
+        validateTimeOrder();
     }
 
     function openScheduleRequestModal(date) {
@@ -484,6 +518,21 @@
             }
 
             addMachineRow(seed);
+        });
+
+        document.getElementById('scheduleRequestForm').addEventListener('submit', function (e) {
+            var rows = scheduleRowsContainer.querySelectorAll('.schedule-machine-row');
+            var firstInvalid = null;
+
+            rows.forEach(function (row) {
+                var ok = row.validateTimeOrder ? row.validateTimeOrder() : true;
+                if (!ok && !firstInvalid) { firstInvalid = row; }
+            });
+
+            if (firstInvalid) {
+                e.preventDefault();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         });
 
         @if($hasOldRequestInput)

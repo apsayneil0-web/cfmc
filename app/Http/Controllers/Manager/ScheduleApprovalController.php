@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Machine;
 use App\Models\Notification;
 use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
@@ -55,6 +56,19 @@ class ScheduleApprovalController extends Controller
         if (ScheduleRequest::hasConflict($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), $schedule->start_time, $schedule->end_time, $schedule->id, $schedule->units_requested)) {
             return redirect()->route('manager.schedule-approval')
                 ->with('error', 'Cannot approve: this machinery is already booked for an overlapping date/time.');
+        }
+
+        // A pending request doesn't hold hectare capacity against competing
+        // requests (see ScheduleRequest::reservedHectares()), so two farmers
+        // can both have a pending request for the same machine/date that
+        // together exceed its daily limit — this is the point that catches it.
+        $dailyLimit = $schedule->machine?->effective_daily_limit ?? Machine::DEFAULT_DAILY_HECTARE_LIMIT;
+
+        if (ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), (float) $schedule->land_size, $dailyLimit, $schedule->id)) {
+            $remaining = ScheduleRequest::remainingCapacity($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), $dailyLimit, $schedule->id);
+
+            return redirect()->route('manager.schedule-approval')
+                ->with('error', "Cannot approve: {$schedule->machinery} has reached its {$dailyLimit} hectare daily limit for this date. Only {$remaining} hectare(s) remaining.");
         }
 
         $validated = $request->validate([
