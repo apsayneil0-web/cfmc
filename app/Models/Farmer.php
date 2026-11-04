@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Str;
 
 class Farmer extends Model
@@ -151,6 +152,17 @@ class Farmer extends Model
     public function harvestPayments(): HasMany
     {
         return $this->hasMany(HarvestPayment::class);
+    }
+
+    /**
+     * Permanent audit trail for this farmer's membership application
+     * (approvals, rejections, resubmissions) — see ActivityLogger. Kept
+     * even after rejection_reason itself is cleared on resubmission, so a
+     * Manager can still see what was wrong the first time around.
+     */
+    public function activityLogs(): MorphMany
+    {
+        return $this->morphMany(ActivityLog::class, 'subject')->latest();
     }
 
     /**

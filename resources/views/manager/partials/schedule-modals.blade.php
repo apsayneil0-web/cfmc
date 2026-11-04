@@ -64,15 +64,20 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-clipboard-check me-2"></i>Complete Schedule</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            @php $isHarvester = \App\Models\HarvestPayment::isPercentageBased($req->machine?->type ?? $req->machinery); @endphp
             <form action="{{ route('manager.machine-schedule.complete', $req) }}" method="POST">
                 @csrf
                 @method('PATCH')
                 <div class="modal-body">
+                    @if($isHarvester)
                     <p>Confirm that this schedule for <strong>{{ $req->display_name }}</strong> is finished and record the total harvest yield. Once marked complete, it can't be reopened.</p>
                     <div class="mb-0">
                         <label class="form-label fw-semibold">Harvest Yield (sacks/tons) <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" min="0" name="harvest_yield" class="form-control" required>
                     </div>
+                    @else
+                    <p class="mb-0">Confirm that this schedule for <strong>{{ $req->display_name }}</strong> is finished. Once marked complete, it can't be reopened.</p>
+                    @endif
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

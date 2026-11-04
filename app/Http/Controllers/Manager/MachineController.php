@@ -126,6 +126,37 @@ class MachineController extends Controller
             ->with('success', "{$machine->name} restored to the active fleet.");
     }
 
+    /**
+     * Manually pull a machine out of service — e.g. a breakdown or repair
+     * unrelated to the usage-hours maintenance threshold. Existing bookings
+     * are left as-is; only new requests are blocked (Machine::isOutOfService()).
+     */
+    public function markUnavailable(Request $request, Machine $machine)
+    {
+        $validated = $request->validate([
+            'unavailable_reason' => 'nullable|string|max:500',
+        ]);
+
+        $machine->update([
+            'unavailable_at' => now(),
+            'unavailable_reason' => $validated['unavailable_reason'] ?: null,
+        ]);
+
+        return redirect()->route('manager.machinery')
+            ->with('success', "{$machine->name} marked unavailable.");
+    }
+
+    public function markAvailable(Machine $machine)
+    {
+        $machine->update([
+            'unavailable_at' => null,
+            'unavailable_reason' => null,
+        ]);
+
+        return redirect()->route('manager.machinery')
+            ->with('success', "{$machine->name} marked available again.");
+    }
+
     private function validateRequest(Request $request, ?int $excludeId = null): array
     {
         return $request->validate([

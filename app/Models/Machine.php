@@ -81,6 +81,8 @@ class Machine extends Model
         'assigned_operator',
         'notes',
         'archived_at',
+        'unavailable_at',
+        'unavailable_reason',
     ];
 
     protected function casts(): array
@@ -88,6 +90,7 @@ class Machine extends Model
         return [
             'daily_hectare_limit' => 'decimal:2',
             'archived_at' => 'datetime',
+            'unavailable_at' => 'datetime',
         ];
     }
 
@@ -179,11 +182,16 @@ class Machine extends Model
     }
 
     /**
-     * Available, in use, or due for maintenance — derived from real bookings
-     * and usage hours rather than a manually toggled flag.
+     * Available, in use, due for maintenance, or manually marked unavailable
+     * by a Manager. The manual flag (unavailable_at) takes priority over
+     * everything else — it's an explicit override, not a derived state.
      */
     public function getStatusAttribute(): string
     {
+        if ($this->unavailable_at) {
+            return 'unavailable';
+        }
+
         $now = now();
 
         $currentlyBooked = $this->scheduleRequests()
@@ -203,5 +211,16 @@ class Machine extends Model
         }
 
         return 'available';
+    }
+
+    /**
+     * Whether this machine should be excluded from new bookings — due for
+     * maintenance, or manually marked unavailable by a Manager. "In use"
+     * (booked right now) does NOT count: that's about this instant, not
+     * whether it can be booked for a future date.
+     */
+    public function isOutOfService(): bool
+    {
+        return in_array($this->status, ['maintenance', 'unavailable'], true);
     }
 }

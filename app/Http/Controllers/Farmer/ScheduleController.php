@@ -21,7 +21,7 @@ class ScheduleController extends Controller
         $machines = Machine::whereNull('archived_at')->orderBy('created_at', 'desc')->get();
         $machinery = $machines->map(fn (Machine $m) => [
             'name' => $m->name,
-            'status' => $m->status === 'maintenance' ? 'Unavailable' : 'Available',
+            'status' => $m->isOutOfService() ? 'Unavailable' : 'Available',
             'quantity' => max(1, (int) $m->quantity),
         ])->all();
         $machineryList = $machines->pluck('name')->all();
@@ -70,7 +70,7 @@ class ScheduleController extends Controller
         $hasWindow = $startTime && $endTime;
 
         $machines = Machine::whereNull('archived_at')->get()->map(function (Machine $machine) use ($date, $startTime, $endTime, $hasWindow) {
-            if ($machine->status === 'maintenance') {
+            if ($machine->isOutOfService()) {
                 return ['name' => $machine->name, 'status' => 'unavailable', 'hectares_left' => 0, 'units_free' => 0];
             }
 

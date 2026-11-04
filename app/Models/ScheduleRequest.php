@@ -229,7 +229,7 @@ class ScheduleRequest extends Model
         $monthEnd = $month->copy()->endOfMonth();
 
         $machines = Machine::whereNull('archived_at')->get();
-        $maintenanceIds = $machines->filter(fn (Machine $m) => $m->status === 'maintenance')->pluck('id')->all();
+        $outOfServiceIds = $machines->filter(fn (Machine $m) => $m->isOutOfService())->pluck('id')->all();
 
         $bookings = self::whereIn('status', ['approved', 'completed'])
             ->whereNull('archived_at')
@@ -257,7 +257,7 @@ class ScheduleRequest extends Model
             $hasCapacity = false;
 
             foreach ($machines as $machine) {
-                if (in_array($machine->id, $maintenanceIds, true)) {
+                if (in_array($machine->id, $outOfServiceIds, true)) {
                     continue;
                 }
 

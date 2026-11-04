@@ -32,7 +32,8 @@
         fn ($value) => $value !== null && $value !== ''
     ));
     $threshold = \App\Models\Machine::MAINTENANCE_HOURS_THRESHOLD;
-    $statusLabels = ['available' => 'Available', 'in_use' => 'In Use', 'maintenance' => 'Maintenance'];
+    $statusLabels = ['available' => 'Available', 'in_use' => 'In Use', 'maintenance' => 'Maintenance', 'unavailable' => 'Unavailable'];
+    $statusDots = ['maintenance' => 'bg-danger', 'in_use' => 'bg-info', 'unavailable' => 'bg-secondary'];
 @endphp
 
 <!-- Page heading -->
@@ -106,7 +107,7 @@
             <span class="machine-card-status"><span class="dot bg-secondary"></span>Archived</span>
             @else
             <span class="machine-card-status">
-                <span class="dot {{ $status === 'maintenance' ? 'bg-danger' : ($status === 'in_use' ? 'bg-info' : 'bg-success') }}"></span>{{ $statusLabels[$status] ?? ucfirst($status) }}
+                <span class="dot {{ $statusDots[$status] ?? 'bg-success' }}"></span>{{ $statusLabels[$status] ?? ucfirst($status) }}
             </span>
             @endif
             <x-machine-illustration :type="$machine->type" />
@@ -116,6 +117,14 @@
             <p class="text-sm text-gray-500 mb-3">
                 {{ collect([$machine->brand, $machine->serial_number ? 'S/N '.$machine->serial_number : null])->filter()->implode(' · ') ?: '—' }}
             </p>
+            @if($machine->unavailable_at)
+            <div class="rounded-3 bg-light border p-2 mb-3">
+                <p class="text-xs fw-semibold text-gray-700 mb-0">Unavailable since {{ $machine->unavailable_at->format('M d, Y') }}</p>
+                @if($machine->unavailable_reason)
+                <p class="text-xs text-gray-500 mb-0">Reason: {{ $machine->unavailable_reason }}</p>
+                @endif
+            </div>
+            @endif
             <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
                 <div>
                     <p class="text-xs text-gray-500 mb-0">Units</p>
@@ -152,6 +161,17 @@
                     </ul>
                 </div>
             </div>
+            @unless($showArchived)
+            @if($machine->unavailable_at)
+            <button type="button" class="btn btn-success w-100 mt-2" data-bs-toggle="modal" data-bs-target="#availableMachineModal{{ $machine->id }}">
+                <i class="fas fa-rotate-left me-1"></i>Mark Available
+            </button>
+            @else
+            <button type="button" class="btn btn-outline-danger w-100 mt-2" data-bs-toggle="modal" data-bs-target="#unavailableMachineModal{{ $machine->id }}">
+                <i class="fas fa-ban me-1"></i>Mark Unavailable
+            </button>
+            @endif
+            @endunless
         </div>
     </div>
     @empty
@@ -201,6 +221,12 @@
                             <x-dropdown-item icon="fa-box-open" data-bs-toggle="modal" data-bs-target="#unarchiveMachineModal{{ $machine->id }}">Restore</x-dropdown-item>
                             @else
                             <x-dropdown-item icon="fa-pen" data-bs-toggle="modal" data-bs-target="#editMachineModal{{ $machine->id }}">Edit</x-dropdown-item>
+                            <li><hr class="dropdown-divider"></li>
+                            @if($machine->unavailable_at)
+                            <x-dropdown-item icon="fa-rotate-left" data-bs-toggle="modal" data-bs-target="#availableMachineModal{{ $machine->id }}">Mark Available</x-dropdown-item>
+                            @else
+                            <x-dropdown-item icon="fa-ban" :danger="true" data-bs-toggle="modal" data-bs-target="#unavailableMachineModal{{ $machine->id }}">Mark Unavailable</x-dropdown-item>
+                            @endif
                             <li><hr class="dropdown-divider"></li>
                             <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveMachineModal{{ $machine->id }}">Archive</x-dropdown-item>
                             @endif
@@ -311,6 +337,56 @@
                     <button type="submit" class="btn btn-warning">Save Changes</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mark Unavailable Modal -->
+<div class="modal fade" id="unavailableMachineModal{{ $machine->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-ban me-2"></i>Mark Unavailable</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.machinery.mark-unavailable', $machine) }}" method="POST">
+                @csrf
+                @method('PATCH')
+                <div class="modal-body">
+                    <p>Mark {{ $machine->name }} unavailable? Farmers won't be able to request it until you mark it available again.</p>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Reason (optional)</label>
+                        <textarea name="unavailable_reason" rows="2" class="form-control" maxlength="500" placeholder="e.g. Engine repair"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Mark Unavailable</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mark Available Modal -->
+<div class="modal fade" id="availableMachineModal{{ $machine->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-rotate-left me-2"></i>Mark Available</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Mark {{ $machine->name }} available again? Farmers will be able to request it once more.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ route('manager.machinery.mark-available', $machine) }}" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-success">Mark Available</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>

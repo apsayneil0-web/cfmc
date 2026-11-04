@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Crop;
 use App\Models\Farmer;
+use App\Models\HarvestPayment;
 use App\Models\Machine;
 use App\Models\Notification;
 use App\Models\ScheduleRequest;
@@ -233,28 +234,36 @@ class MachineScheduleController extends Controller
     }
 
     /**
-     * Close out a completed schedule by recording the total harvest yield,
-     * which then feeds into the Harvesting Report.
+     * Close out a completed schedule. A Harvester schedule also records the
+     * total harvest yield, which feeds into the Harvesting Report — other
+     * machine types (tractor, seeder, ...) don't produce a yield at this
+     * point, the actual harvest happens later as its own booking.
      */
     public function complete(Request $request, ScheduleRequest $schedule)
     {
         abort_if($schedule->status !== 'approved', 422, 'Only approved schedules can be marked complete.');
 
+        $isHarvester = HarvestPayment::isPercentageBased($schedule->machine?->type ?? $schedule->machinery);
+
         $validated = $request->validate([
-            'harvest_yield' => 'required|numeric|min:0',
+            'harvest_yield' => [$isHarvester ? 'required' : 'nullable', 'numeric', 'min:0'],
         ]);
 
         $schedule->update([
             'status' => 'completed',
-            'harvest_yield' => $validated['harvest_yield'],
+            'harvest_yield' => $isHarvester ? $validated['harvest_yield'] : null,
         ]);
 
         if ($schedule->user_id) {
+            $message = $isHarvester
+                ? "Your {$schedule->machinery} schedule has been marked complete. Recorded harvest yield: {$validated['harvest_yield']}."
+                : "Your {$schedule->machinery} schedule has been marked complete.";
+
             Notification::create([
                 'user_id' => $schedule->user_id,
                 'schedule_id' => $schedule->id,
                 'title' => 'Schedule Completed',
-                'message' => "Your {$schedule->machinery} schedule has been marked complete. Recorded harvest yield: {$validated['harvest_yield']}.",
+                'message' => $message,
                 'type' => 'schedule_completed',
                 'is_read' => false,
                 'created_at' => now(),
@@ -262,7 +271,7 @@ class MachineScheduleController extends Controller
         }
 
         return redirect()->route('manager.machine-schedule')
-            ->with('success', 'Schedule marked complete and harvest yield recorded.');
+            ->with('success', $isHarvester ? 'Schedule marked complete and harvest yield recorded.' : 'Schedule marked complete.');
     }
 
     /**

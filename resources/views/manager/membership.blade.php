@@ -101,6 +101,10 @@
                             <x-dropdown-item icon="fa-pen" data-bs-toggle="modal" data-bs-target="#editModal{{ $farmer->id }}">Edit</x-dropdown-item>
                             <li><hr class="dropdown-divider"></li>
                             <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
+                            @elseif($farmer->status == 'rejected')
+                            <x-dropdown-item icon="fa-redo" data-bs-toggle="modal" data-bs-target="#resubmitModal{{ $farmer->id }}">Resubmit</x-dropdown-item>
+                            <li><hr class="dropdown-divider"></li>
+                            <x-dropdown-item icon="fa-archive" :danger="true" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $farmer->id }}">Archive</x-dropdown-item>
                             @elseif($farmer->status == 'archived')
                             <x-dropdown-item icon="fa-box-open" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $farmer->id }}">Unarchive</x-dropdown-item>
                             @endif
@@ -154,6 +158,12 @@
                                         <label class="text-muted small">Date Registered</label>
                                         <p class="fw-semibold mb-0">{{ $farmer->created_at->format('M d, Y') }}</p>
                                     </div>
+                                    @if($farmer->status === 'rejected' && $farmer->rejection_reason)
+                                    <div class="col-12 mb-3">
+                                        <label class="text-muted small">Rejection Reason</label>
+                                        <p class="fw-semibold mb-0 text-danger">{{ $farmer->rejection_reason }}</p>
+                                    </div>
+                                    @endif
                                     @php
                                         $viewDocumentFields = [
                                             ['path' => 'documents_path', 'label' => 'Valid ID'],
@@ -171,6 +181,18 @@
                                     </div>
                                     @endforeach
                                 </div>
+
+                                @if($farmer->activityLogs->isNotEmpty())
+                                <h4 class="text-sm fw-semibold text-dark mb-2 mt-1">History</h4>
+                                <ul class="list-unstyled mb-0 small">
+                                    @foreach($farmer->activityLogs as $log)
+                                    <li class="mb-2 pb-2 {{ !$loop->last ? 'border-bottom' : '' }}">
+                                        <p class="mb-0">{{ $log->description }}</p>
+                                        <p class="text-muted mb-0" style="font-size: 0.75rem;">{{ $log->created_at->format('M d, Y g:i A') }}</p>
+                                    </li>
+                                    @endforeach
+                                </ul>
+                                @endif
                             </div>
                             <div class="modal-footer bg-light">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -278,6 +300,114 @@
                         </div>
                     </div>
                 </div>
+
+                @if($farmer->status === 'rejected')
+                <!-- Resubmit Modal -->
+                <div class="modal fade" id="resubmitModal{{ $farmer->id }}" tabindex="-1" aria-labelledby="resubmitModalLabel{{ $farmer->id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header bg-info text-white">
+                                <h5 class="modal-title fw-bold" id="resubmitModalLabel{{ $farmer->id }}">
+                                    <i class="fas fa-redo me-2"></i>Resubmit Application
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="{{ route('manager.membership.resubmit', $farmer->id) }}" method="POST" enctype="multipart/form-data" class="modal-form-flex">
+                                @csrf
+                                @method('PUT')
+                                <div class="modal-body">
+                                    @if($farmer->rejection_reason)
+                                    <div class="alert alert-danger py-2 small mb-3"><strong>Rejected:</strong> {{ $farmer->rejection_reason }}</div>
+                                    @endif
+                                    <p class="text-muted small mb-3">Correct whatever caused the rejection below, then resubmit — this sends it straight back to the Administrator as a new pending application. No need to start over.</p>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3 mb-md-0">
+                                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                                            <input data-input="name" type="text" name="first_name" class="form-control" value="{{ $farmer->first_name }}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                                            <input data-input="name" type="text" name="last_name" class="form-control" value="{{ $farmer->last_name }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3 mb-md-0">
+                                            <label class="form-label fw-semibold">M.I.</label>
+                                            <input data-input="initial" type="text" name="middle_initial" class="form-control" value="{{ $farmer->middle_initial }}" maxlength="2">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Suffix</label>
+                                            <select name="suffix" class="form-select">
+                                                <option value="" {{ !$farmer->suffix ? 'selected' : '' }}>None</option>
+                                                <option value="Jr." {{ $farmer->suffix == 'Jr.' ? 'selected' : '' }}>Jr.</option>
+                                                <option value="Sr." {{ $farmer->suffix == 'Sr.' ? 'selected' : '' }}>Sr.</option>
+                                                <option value="III" {{ $farmer->suffix == 'III' ? 'selected' : '' }}>III</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
+                                        <input data-input="phone" type="tel" name="contact_number" class="form-control ph-contact-input" value="{{ $farmer->contact_number }}" pattern="(09\d{9}|\+639\d{9})" inputmode="numeric" maxlength="13" required>
+                                        <div class="invalid-feedback">Please enter a valid Philippine mobile number (e.g. 09123456789).</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3 mb-md-0">
+                                            <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
+                                            <select name="province" class="form-select" id="resubmitProvince{{ $farmer->id }}" required>
+                                                <option value="" disabled>Select Province</option>
+                                                <option value="Bukidnon" {{ $farmer->province == 'Bukidnon' ? 'selected' : '' }}>Bukidnon</option>
+                                                <option value="Camiguin" {{ $farmer->province == 'Camiguin' ? 'selected' : '' }}>Camiguin</option>
+                                                <option value="Lanao del Norte" {{ $farmer->province == 'Lanao del Norte' ? 'selected' : '' }}>Lanao del Norte</option>
+                                                <option value="Misamis Occidental" {{ $farmer->province == 'Misamis Occidental' ? 'selected' : '' }}>Misamis Occidental</option>
+                                                <option value="Misamis Oriental" {{ $farmer->province == 'Misamis Oriental' ? 'selected' : '' }}>Misamis Oriental</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
+                                            <input data-input="place" type="text" name="municipality" class="form-control" value="{{ $farmer->municipality }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3 mb-md-0">
+                                            <label class="form-label fw-semibold">Crop Type <span class="text-danger">*</span></label>
+                                            <div class="border rounded-3 p-2">
+                                                @foreach($crops as $crop)
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input" name="crop_ids[]" value="{{ $crop->id }}" id="resubmitCrop{{ $farmer->id }}_{{ $crop->id }}" {{ $farmer->crops->contains($crop->id) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="resubmitCrop{{ $farmer->id }}_{{ $crop->id }}">{{ $crop->name }}</label>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Land Area (hectares) <span class="text-danger">*</span></label>
+                                            <input data-input="decimal" type="number" name="land_area" class="form-control" value="{{ $farmer->land_area }}" step="0.1" min="0" required>
+                                        </div>
+                                    </div>
+                                    <!-- Document Upload -->
+                                    @php
+                                        $resubmitDocumentFields = [
+                                            ['field' => 'documents', 'path' => 'documents_path', 'label' => 'Upload Valid ID', 'prefix' => 'resubmitDocument'],
+                                            ['field' => 'certificate_of_title', 'path' => 'certificate_of_title_path', 'label' => 'Upload Certificate of Title', 'prefix' => 'resubmitCertificate'],
+                                            ['field' => 'barangay_certification', 'path' => 'barangay_certification_path', 'label' => 'Upload Barangay Certification of Land Possession', 'prefix' => 'resubmitBarangay'],
+                                            ['field' => 'rsbsa', 'path' => 'rsbsa_path', 'label' => 'Upload RSBSA Number/ID', 'prefix' => 'resubmitRsbsa'],
+                                        ];
+                                    @endphp
+                                    @foreach($resubmitDocumentFields as $doc)
+                                    <x-multi-file-upload :field="$doc['field']" :label="$doc['label']" :base-id="$doc['prefix'].$farmer->id" :existing-paths="$farmer->documentPaths($doc['path'])" />
+                                    @endforeach
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-info text-white">
+                                        <i class="fas fa-redo me-1"></i> Resubmit to Admin
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 <!-- Archive Modal -->
                 <div class="modal fade" id="archiveModal{{ $farmer->id }}" tabindex="-1" aria-labelledby="archiveModalLabel{{ $farmer->id }}" aria-hidden="true">

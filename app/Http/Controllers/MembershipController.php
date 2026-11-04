@@ -7,6 +7,7 @@ use App\Models\Crop;
 use App\Models\Farmer;
 use App\Models\Notification;
 use App\Rules\PersonName;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -22,7 +23,7 @@ class MembershipController extends Controller
     {
         $crops = Crop::all();
 
-        $query = Farmer::with('crops');
+        $query = Farmer::with(['crops', 'activityLogs']);
 
         // Default to Pending when no status filter is chosen yet — that's the
         // actionable list a manager lands on this page to work through.
@@ -180,6 +181,84 @@ class MembershipController extends Controller
 
         return redirect()->back()
             ->with('success', 'Farmer updated successfully!');
+    }
+
+    /**
+     * Correct a rejected membership application and send it back to the
+     * Administrator, instead of making the Manager re-encode it (and
+     * re-upload all 4 document sets) from scratch. Validation mirrors
+     * update() — not store() — since documents stay optional here: unless a
+     * replacement is uploaded, the farmer's existing files carry over. The
+     * original rejection_reason is cleared from the live record, but
+     * survives permanently in this farmer's ActivityLog entry (see
+     * Admin\MembershipApprovalController::reject()).
+     */
+    public function resubmit(Request $request, Farmer $farmer)
+    {
+        abort_if($farmer->status !== 'rejected', 422, 'Only rejected applications can be resubmitted.');
+
+        $request->merge([
+            'contact_number' => preg_replace('/[\s\-]+/', '', (string) $request->input('contact_number')),
+        ]);
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255', new PersonName],
+            'middle_initial' => ['nullable', 'string', 'max:5', 'regex:/^[\pL.]+$/u'],
+            'last_name' => ['required', 'string', 'max:255', new PersonName],
+            'suffix' => 'nullable|string|max:50',
+            'contact_number' => ['required', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
+            'crop_ids' => 'required|array|min:1',
+            'crop_ids.*' => 'exists:crops,id',
+            'land_area' => 'required|numeric|min:0',
+            'province' => 'required|string|max:255',
+            'municipality' => 'required|string|max:255',
+            'barangay' => 'nullable|string|max:255',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'certificate_of_title' => 'nullable|array',
+            'certificate_of_title.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'barangay_certification' => 'nullable|array',
+            'barangay_certification.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'rsbsa' => 'nullable|array',
+            'rsbsa.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ], [
+            'contact_number.regex' => 'Please enter a valid Philippine mobile number (e.g. 09123456789).',
+            'middle_initial.regex' => 'The middle initial may only contain letters.',
+        ]);
+
+        $updateData = [
+            'first_name' => $validated['first_name'],
+            'middle_initial' => $validated['middle_initial'],
+            'last_name' => $validated['last_name'],
+            'suffix' => $validated['suffix'],
+            'contact_number' => $validated['contact_number'],
+            'land_area' => $validated['land_area'],
+            'province' => $validated['province'],
+            'municipality' => $validated['municipality'],
+            'barangay' => $validated['barangay'] ?? null,
+            'status' => 'pending',
+            'rejection_reason' => null,
+        ];
+
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'documents', 'documents_path');
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'certificate_of_title', 'certificate_of_title_path');
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'barangay_certification', 'barangay_certification_path');
+        $this->applyFarmerDocumentUpdate($request, $farmer, $updateData, 'rsbsa', 'rsbsa_path');
+
+        $farmer->update($updateData);
+        $farmer->crops()->sync($validated['crop_ids']);
+
+        ActivityLogger::log(Auth::user(), 'membership.resubmitted', "Resubmitted {$farmer->full_name}'s membership application after correcting it.", $farmer);
+
+        Notification::notifyRoles(
+            [1],
+            'Membership Application Resubmitted',
+            "{$farmer->full_name}'s membership application has been corrected and resubmitted for review.",
+            'membership_application',
+        );
+
+        return redirect()->back()
+            ->with('success', "{$farmer->full_name}'s membership application has been corrected and resubmitted.");
     }
 
     /**

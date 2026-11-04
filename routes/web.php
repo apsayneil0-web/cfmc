@@ -103,6 +103,7 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::get('/manager/membership', [MembershipController::class, 'index'])->name('manager.membership');
     Route::post('/manager/membership', [MembershipController::class, 'store'])->name('manager.membership.store');
     Route::put('/manager/membership/{farmer}', [MembershipController::class, 'update'])->name('manager.membership.update');
+    Route::put('/manager/membership/{farmer}/resubmit', [MembershipController::class, 'resubmit'])->name('manager.membership.resubmit');
     Route::patch('/manager/membership/{farmer}/archive', [MembershipController::class, 'archive'])->name('manager.membership.archive');
     Route::patch('/manager/membership/{farmer}/unarchive', [MembershipController::class, 'unarchive'])->name('manager.membership.unarchive');
 
@@ -163,6 +164,8 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::put('/manager/machinery/{machine}', [MachineController::class, 'update'])->name('manager.machinery.update');
     Route::patch('/manager/machinery/{machine}/archive', [MachineController::class, 'archive'])->name('manager.machinery.archive');
     Route::patch('/manager/machinery/{machine}/unarchive', [MachineController::class, 'unarchive'])->name('manager.machinery.unarchive');
+    Route::patch('/manager/machinery/{machine}/mark-unavailable', [MachineController::class, 'markUnavailable'])->name('manager.machinery.mark-unavailable');
+    Route::patch('/manager/machinery/{machine}/mark-available', [MachineController::class, 'markAvailable'])->name('manager.machinery.mark-available');
 
     Route::get('/manager/machine-usage', [MachineUsageController::class, 'index'])->name('manager.machine-usage');
 
