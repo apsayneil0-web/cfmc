@@ -204,15 +204,60 @@
                     </div>
 
                     @unless($tab === 'denied')
-                    <form id="approveForm{{ $req->id }}" action="{{ route('admin.loan-approval.approve', $req) }}" method="POST" class="d-none">
-                        @csrf
-                        @method('PATCH')
-                    </form>
-                    <form id="denyForm{{ $req->id }}" action="{{ route('admin.loan-approval.deny', $req) }}" method="POST" class="la-decide" data-decide
-                          data-subject="{{ $farmer->full_name }}'s loan of {{ peso($req->requested_amount) }}" data-approve-form="approveForm{{ $req->id }}" data-approve-label="Approve loan">
-                        @csrf
-                        @method('PATCH')
-                    </form>
+                    <div class="la-decide">
+                        <div class="la-decide-row">
+                            <p>Your decision is final and logged.</p>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#denyModalR{{ $req->id }}"><i class="fas fa-times me-1"></i> Deny</button>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModalR{{ $req->id }}"><i class="fas fa-check me-1"></i> Approve loan</button>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="approveModalR{{ $req->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title fw-bold"><i class="fas fa-check-circle me-2"></i>Approve Loan Request</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="mb-0">Approve {{ $farmer->full_name }}'s loan of {{ peso($req->requested_amount) }}? This decision is final and will be logged.</p>
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{{ route('admin.loan-approval.approve', $req) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i> Yes, approve</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="denyModalR{{ $req->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title fw-bold"><i class="fas fa-times-circle me-2"></i>Deny Loan Request</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{{ route('admin.loan-approval.deny', $req) }}" method="POST" class="needs-validation" novalidate>
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="modal-body">
+                                        <p>Deny {{ $farmer->full_name }}'s loan of {{ peso($req->requested_amount) }}?</p>
+                                        <label class="form-label fw-semibold small" for="denyReasonR{{ $req->id }}">Reason for denial</label>
+                                        <textarea class="form-control" name="denial_reason" id="denyReasonR{{ $req->id }}" rows="3" maxlength="1000" required placeholder="Explain why this request does not meet the cooperative's lending criteria..."></textarea>
+                                        <div class="invalid-feedback">Please provide a reason for the denial.</div>
+                                    </div>
+                                    <div class="modal-footer bg-light">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-danger"><i class="fas fa-times me-1"></i> Deny request</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     @endunless
                 </section>
             @endforeach
@@ -268,15 +313,60 @@
                         </div>
                     </div>
 
-                    <form id="approveFormBatch{{ $batch->id }}" action="{{ route('admin.loan-approval.batch-approve', $batch) }}" method="POST" class="d-none">
-                        @csrf
-                        @method('PATCH')
-                    </form>
-                    <form id="denyFormBatch{{ $batch->id }}" action="{{ route('admin.loan-approval.batch-deny', $batch) }}" method="POST" class="la-decide" data-decide
-                          data-subject="{{ $batch->label }} ({{ $members->count() }} members, {{ peso($total) }})" data-approve-form="approveFormBatch{{ $batch->id }}" data-approve-label="Approve batch" data-batch="1">
-                        @csrf
-                        @method('PATCH')
-                    </form>
+                    <div class="la-decide">
+                        <div class="la-decide-row">
+                            <p>Your decision is final and logged.</p>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#denyModalB{{ $batch->id }}"><i class="fas fa-times me-1"></i> Deny</button>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModalB{{ $batch->id }}"><i class="fas fa-check me-1"></i> Approve batch</button>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="approveModalB{{ $batch->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title fw-bold"><i class="fas fa-check-circle me-2"></i>Approve Batch</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="mb-0">Approve {{ $batch->label }} ({{ $members->count() }} members, {{ peso($total) }})? This decision is final and will be logged, applied to all members.</p>
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{{ route('admin.loan-approval.batch-approve', $batch) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i> Yes, approve</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="denyModalB{{ $batch->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title fw-bold"><i class="fas fa-times-circle me-2"></i>Deny Batch</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{{ route('admin.loan-approval.batch-deny', $batch) }}" method="POST" class="needs-validation" novalidate>
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="modal-body">
+                                        <p>Deny {{ $batch->label }} ({{ $members->count() }} members, {{ peso($total) }})?</p>
+                                        <label class="form-label fw-semibold small" for="denyReasonB{{ $batch->id }}">Reason for denial <span class="text-muted">(applied to all members)</span></label>
+                                        <textarea class="form-control" name="denial_reason" id="denyReasonB{{ $batch->id }}" rows="3" maxlength="1000" required placeholder="Explain why this batch does not meet the cooperative's lending criteria..."></textarea>
+                                        <div class="invalid-feedback">Please provide a reason for the denial.</div>
+                                    </div>
+                                    <div class="modal-footer bg-light">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-danger"><i class="fas fa-times me-1"></i> Deny batch</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             @endforeach
         @endif
@@ -359,7 +449,6 @@
     .la-decide { display: grid; gap: 0.8rem; padding: 1rem 1.5rem; border-top: 1px solid var(--palette-stone); background: var(--palette-surface-muted); }
     .la-decide-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: flex-end; }
     .la-decide-row p { margin: 0 auto 0 0; color: var(--palette-muted); font-size: 0.85rem; }
-    .la-decide textarea { min-height: 4.5rem; }
 
 </style>
 
@@ -379,57 +468,18 @@
         });
     });
 
-    // ---- Approve / Deny, confirmed in place ----
-    document.querySelectorAll('form[data-decide]').forEach(function (form) {
-        var subject = form.dataset.subject;
-        var isBatch = form.dataset.batch === '1';
-        var csrf = form.innerHTML;
-
-        function idle() {
-            form.innerHTML = csrf +
-                '<div class="la-decide-row"><p>Your decision is final and logged.</p>' +
-                '<button type="button" class="btn btn-outline-danger" data-act="deny"><i class="fas fa-times me-1"></i> Deny</button>' +
-                '<button type="button" class="btn btn-success" data-act="approve"><i class="fas fa-check me-1"></i> ' + form.dataset.approveLabel + '</button></div>';
-            form.querySelector('[data-act="deny"]').addEventListener('click', denyStep);
-            form.querySelector('[data-act="approve"]').addEventListener('click', approveStep);
-        }
-
-        function approveStep() {
-            form.innerHTML = csrf + '<div class="la-decide-row"><p></p>' +
-                '<button type="button" class="btn btn-outline-secondary" data-act="cancel">Cancel</button>' +
-                '<button type="button" class="btn btn-success" data-act="go"><i class="fas fa-check me-1"></i> Yes, approve</button></div>';
-            form.querySelector('.la-decide-row p').textContent = 'Approve ' + subject + '?';
-            form.querySelector('[data-act="cancel"]').addEventListener('click', idle);
-            form.querySelector('[data-act="go"]').addEventListener('click', function () {
-                this.disabled = true;
-                document.getElementById(form.dataset.approveForm).submit();
-            });
-        }
-
-        function denyStep() {
-            form.innerHTML = csrf +
-                '<div><label class="form-label fw-semibold small" for="' + form.id + 'Reason">Reason for denial' + (isBatch ? ' (applied to all members)' : '') + '</label>' +
-                '<textarea class="form-control" name="denial_reason" id="' + form.id + 'Reason" rows="2" maxlength="1000" placeholder="Explain why this request does not meet the cooperative\'s lending criteria..."></textarea>' +
-                '<div class="invalid-feedback">Please provide a reason for the denial.</div></div>' +
-                '<div class="la-decide-row"><p></p>' +
-                '<button type="button" class="btn btn-outline-secondary" data-act="cancel">Cancel</button>' +
-                '<button type="submit" class="btn btn-danger" data-act="go"><i class="fas fa-times me-1"></i> Deny ' + (isBatch ? 'batch' : 'request') + '</button></div>';
-            form.querySelector('.la-decide-row p').textContent = 'Deny ' + subject + '?';
-            form.querySelector('[data-act="cancel"]').addEventListener('click', idle);
-            form.querySelector('textarea').focus();
-        }
-
+    // ---- Deny modals: require a reason before submitting ----
+    document.querySelectorAll('.modal form[action*="deny"]').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             var reason = form.elements['denial_reason'];
             if (!reason || !reason.value.trim()) {
                 e.preventDefault();
-                if (reason) { reason.classList.add('is-invalid'); reason.focus(); }
+                reason.classList.add('is-invalid');
+                reason.focus();
                 return;
             }
-            form.querySelector('[data-act="go"]').disabled = true;
+            form.querySelector('[type="submit"]').disabled = true;
         });
-
-        idle();
     });
 })();
 </script>
