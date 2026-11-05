@@ -231,7 +231,7 @@
                 @csrf
                 <input type="hidden" name="source_modal" value="batchFinalizeModal{{ $batch->id }}">
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">Confirm to finalize all {{ $batch->loanRequests->count() }} approved members below into loans at once, each using their own requested amount and repayment term. This can't be undone from here. Set one interest rate and one disbursement date/method to apply across the batch — choosing today releases funds immediately, choosing a future date schedules it to disburse automatically that day.</p>
+                    <p class="text-muted small mb-3">Confirm to finalize all {{ $batch->loanRequests->count() }} approved members below into loans at once, each using their own requested amount and repayment term, under one shared interest rate. This can't be undone from here. Funds aren't released yet — once finalized, use Disburse All from Batch Loans to release funds to the whole batch on one shared date.</p>
                     <div class="table-responsive mb-3">
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
@@ -257,21 +257,6 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Interest Rate (%) <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" min="0" max="100" name="interest_rate" class="form-control" value="2.00" required>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <label class="form-label fw-semibold">Disbursement Date <span class="text-danger">*</span></label>
-                            <input type="date" name="disbursement_date" class="form-control" value="{{ now()->toDateString() }}" min="{{ now()->toDateString() }}" required>
-                        </div>
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <label class="form-label fw-semibold">Disbursement Method</label>
-                            <input type="text" class="form-control" value="Cash" disabled>
-                            <input type="hidden" name="disbursement_method" value="cash">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Reference No.</label>
-                            <input type="text" name="reference_no" class="form-control" placeholder="Optional">
-                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

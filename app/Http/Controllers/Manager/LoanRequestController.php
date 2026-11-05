@@ -450,12 +450,8 @@ class LoanRequestController extends Controller
 
         $validated = $request->validate([
             'interest_rate' => 'required|numeric|min:0|max:100',
-            'disbursement_date' => 'required|date|after_or_equal:today',
-            'disbursement_method' => 'required|string|in:cash',
-            'reference_no' => 'nullable|string|max:255',
         ]);
 
-        $isImmediate = now()->toDateString() >= $validated['disbursement_date'];
         $skipped = [];
 
         foreach ($members as $member) {
@@ -473,7 +469,19 @@ class LoanRequestController extends Controller
                 continue;
             }
 
-            $loan = Loan::create([
+            // Terms only — mirrors finalize()'s own Loan::create() exactly.
+            // Funds are released separately, one farmer at a time, via the
+            // same "Mark Disbursed" action individual loans already use
+            // (LoanManagementController::disburse(), reachable for a batch
+            // loan too since it redirects based on loan type). This is
+            // deliberate: an earlier version disbursed the whole batch the
+            // moment it was finalized (or automatically via the scheduled-
+            // disbursement cron), which could mark a farmer as funded before
+            // anyone actually confirmed money changed hands — e.g. only 8 of
+            // 10 members show up on the agreed date. Mark Disbursed is a
+            // real attestation ("I just handed this farmer their money");
+            // nothing should flip a loan to active without it.
+            Loan::create([
                 'loan_request_id' => $member->id,
                 'principal_amount' => $member->requested_amount,
                 'interest_rate' => $validated['interest_rate'],
@@ -481,31 +489,15 @@ class LoanRequestController extends Controller
                 'installment_amount' => round($member->requested_amount / $member->repayment_terms_months, 2),
                 'collateral' => $member->collateral,
                 'status' => 'pending_disbursement',
-                'scheduled_disbursement_date' => $validated['disbursement_date'],
-                'scheduled_by' => Auth::id(),
             ]);
 
             if ($member->farmer->account_user_id) {
                 Notification::notify(
                     $member->farmer->account_user_id,
                     'Loan Terms Finalized',
-                    'Your loan terms have been finalized: principal '.peso($member->requested_amount).", {$member->repayment_terms_months}-month term, as part of {$batch->label}.",
+                    'Your loan terms have been finalized: principal '.peso($member->requested_amount).", {$member->repayment_terms_months}-month term, as part of {$batch->label}. Awaiting disbursement.",
                     'loan_finalized',
                 );
-            }
-
-            if ($isImmediate) {
-                $loan->disburse(
-                    $validated['disbursement_method'],
-                    $validated['reference_no'] ?? null,
-                    Auth::id(),
-                    $validated['disbursement_date'],
-                );
-            } else {
-                $loan->update([
-                    'disbursement_method' => $validated['disbursement_method'],
-                    'reference_no' => $validated['reference_no'] ?? null,
-                ]);
             }
         }
 
@@ -516,9 +508,7 @@ class LoanRequestController extends Controller
                 ->with('error', "None of {$batch->label}'s members could be finalized — they already have an unpaid loan: ".implode(', ', $skipped).'.');
         }
 
-        $message = $isImmediate
-            ? "{$batch->label}'s {$finalizedCount} loan(s) are finalized and disbursed."
-            : "{$batch->label}'s {$finalizedCount} loan(s) are finalized and scheduled for disbursement on ".now()->parse($validated['disbursement_date'])->format('M d, Y').'.';
+        $message = "{$batch->label}'s {$finalizedCount} loan(s) are finalized. Awaiting disbursement — use Disburse All from Batch Loans once funds are actually released to the batch.";
 
         if ($skipped) {
             $message .= ' Skipped (already has an unpaid loan): '.implode(', ', $skipped).'.';

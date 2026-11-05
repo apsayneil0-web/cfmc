@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Loan;
+use App\Models\LoanBatch;
 use App\Models\LoanPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -151,6 +152,56 @@ class LoanManagementController extends Controller
         }
 
         return redirect()->route($this->redirectRouteFor($loan))
+            ->with('success', $message);
+    }
+
+    /**
+     * Disburse an entire batch at once, as a single group event, on one
+     * shared date — every member still awaiting disbursement is released
+     * (or scheduled) together rather than one farmer at a time.
+     */
+    public function disburseBatch(Request $request, LoanBatch $batch)
+    {
+        $loans = Loan::where('status', 'pending_disbursement')
+            ->whereNull('archived_at')
+            ->whereHas('loanRequest', fn ($q) => $q->where('batch_id', $batch->id)->where('type', 'batch'))
+            ->with('loanRequest.farmer')
+            ->get();
+
+        abort_if($loans->isEmpty(), 422, 'This batch has no loans awaiting disbursement.');
+
+        $validated = $request->validate([
+            'disbursed_at' => 'required|date|after_or_equal:today',
+            'disbursement_method' => 'required|string|in:cash',
+            'reference_no' => 'nullable|string|max:255',
+        ]);
+
+        $immediate = now()->toDateString() >= $validated['disbursed_at'];
+
+        foreach ($loans as $loan) {
+            if ($immediate) {
+                $loan->disburse(
+                    $validated['disbursement_method'],
+                    $validated['reference_no'] ?? null,
+                    Auth::id(),
+                    $validated['disbursed_at'],
+                );
+            } else {
+                $loan->update([
+                    'scheduled_disbursement_date' => $validated['disbursed_at'],
+                    'scheduled_by' => Auth::id(),
+                    'disbursement_method' => $validated['disbursement_method'],
+                    'reference_no' => $validated['reference_no'] ?? null,
+                ]);
+            }
+        }
+
+        $count = $loans->count();
+        $message = $immediate
+            ? "{$batch->label}: {$count} loan(s) have been disbursed and are now active."
+            : "{$batch->label}: {$count} loan(s) are scheduled for disbursement on ".now()->parse($validated['disbursed_at'])->format('M d, Y').'.';
+
+        return redirect()->route('manager.batch-loan-management')
             ->with('success', $message);
     }
 

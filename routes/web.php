@@ -142,6 +142,7 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::get('/manager/loan-management', [LoanManagementController::class, 'index'])->name('manager.loan-management');
     Route::put('/manager/loan-management/{loan}', [LoanManagementController::class, 'update'])->name('manager.loan-management.update');
     Route::patch('/manager/loan-management/{loan}/disburse', [LoanManagementController::class, 'disburse'])->name('manager.loan-management.disburse');
+    Route::patch('/manager/loan-management/batch/{batch}/disburse', [LoanManagementController::class, 'disburseBatch'])->name('manager.loan-management.batch-disburse');
     Route::patch('/manager/loan-management/{loan}/archive', [LoanManagementController::class, 'archive'])->name('manager.loan-management.archive');
     Route::patch('/manager/loan-management/{loan}/unarchive', [LoanManagementController::class, 'unarchive'])->name('manager.loan-management.unarchive');
 

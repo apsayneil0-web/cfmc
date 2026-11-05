@@ -184,7 +184,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body pt-2" data-batch-members>
-                @php $groupPending = $group->loans->every(fn ($loan) => $loan->status === 'pending_disbursement' && ! $loan->archived_at); @endphp
+                @php
+                    $groupPending = $group->loans->every(fn ($loan) => $loan->status === 'pending_disbursement' && ! $loan->archived_at);
+                    $awaitingDisbursement = $group->loans->filter(fn ($loan) => $loan->status === 'pending_disbursement' && ! $loan->archived_at);
+                @endphp
+                @if($awaitingDisbursement->isNotEmpty())
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 rounded-3 p-3 mb-4 bg-success-subtle border border-success-subtle">
+                    <p class="text-sm text-gray-700 mb-0">{{ $awaitingDisbursement->count() }} {{ Str::plural('loan', $awaitingDisbursement->count()) }} awaiting disbursement &mdash; released together, on one date, for the whole batch.</p>
+                    <button type="button" class="btn btn-success btn-sm text-nowrap" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'batchDisburseModal{{ $group->batch->id }}')"><i class="fas fa-money-check-alt me-1"></i>Disburse All</button>
+                </div>
+                @endif
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <div class="rounded-3 p-3 bg-light">
                         <p class="text-xs text-gray-500 mb-1">Total principal</p>
@@ -259,7 +268,10 @@
                                         <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">More</button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             @if(! $loan->archived_at)
-                                                @if(! in_array($loan->status, ['fully_paid', 'pending_disbursement'], true))
+                                                @if($loan->status === 'pending_disbursement')
+                                                <li><button type="button" class="dropdown-item" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'viewModal{{ $loan->id }}')"><i class="fas fa-eye me-2 text-gray-500"></i>View</button></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                @elseif(! in_array($loan->status, ['fully_paid'], true))
                                                 <li><button type="button" class="dropdown-item" onclick="switchModal('batchDetailModal{{ $group->batch->id }}', 'editModal{{ $loan->id }}')"><i class="fas fa-pen me-2 text-gray-500"></i>Edit loan</button></li>
                                                 <li><hr class="dropdown-divider"></li>
                                                 @endif
@@ -281,6 +293,43 @@
                 <p class="text-xs text-gray-500 mb-0">More holds Edit (while the loan is active or overdue) and Archive. Archived loans show Restore instead.</p>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Disburse All: one shared date for every member of this batch still
+     awaiting disbursement, via manager.loan-management.batch-disburse. -->
+<div class="modal fade" id="batchDisburseModal{{ $group->batch->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-money-check-alt me-2"></i>Disburse All &mdash; {{ $group->batch->label }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('manager.loan-management.batch-disburse', $group->batch) }}" method="POST">
+                @csrf
+                @method('PATCH')
+                <div class="modal-body">
+                    <p class="text-muted small">Confirm that funds have been released to every farmer in {{ $group->batch->label }} still awaiting disbursement, on the same date. Choosing today disburses immediately; choosing a future date schedules all of them to disburse automatically that day.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Disbursement Date <span class="text-danger">*</span></label>
+                        <input type="date" name="disbursed_at" class="form-control" value="{{ now()->toDateString() }}" min="{{ now()->toDateString() }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Disbursement Method</label>
+                        <input type="text" class="form-control" value="Cash" disabled>
+                        <input type="hidden" name="disbursement_method" value="cash">
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold">Reference No.</label>
+                        <input type="text" name="reference_no" class="form-control" placeholder="Receipt/voucher no. (optional)">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Disbursement</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
