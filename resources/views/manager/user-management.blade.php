@@ -36,7 +36,6 @@
                     <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">User ID</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Name</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Role</th>
-                    <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Phone</th>
                     <th class="d-none px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Temp Password</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Status</th>
                     <th class="px-4 px-md-6 py-3 text-left text-xs font-medium text-uppercase text-muted">Created At</th>
@@ -57,7 +56,6 @@
                         </div>
                     </td>
                     <td class="px-4 px-md-6 py-4 text-gray-700">{{ $user->roleID == 2 ? 'Manager' : 'Farmer' }}</td>
-                    <td class="px-4 px-md-6 py-4 text-gray-700 text-nowrap" style="font-variant-numeric: tabular-nums;">{{ $user->Phonenumber ? phone($user->Phonenumber) : '—' }}</td>
                     <td class="d-none px-4 px-md-6 py-4 text-muted">
                         @if($user->temp_password)
                         <span class="d-flex align-items-center gap-2">
@@ -78,7 +76,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-4 text-center text-muted">{{ $showArchived ? 'No archived users.' : 'No users found' }}</td>
+                    <td colspan="7" class="px-4 px-md-6 py-4 text-center text-muted">{{ $showArchived ? 'No archived users.' : 'No users found' }}</td>
                 </tr>
                 @endforelse
             </tbody>
