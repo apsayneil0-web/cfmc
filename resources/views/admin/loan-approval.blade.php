@@ -147,7 +147,7 @@
                                 <div><small>Repayment terms</small><b>{{ $req->repayment_terms_months }} months</b></div>
                                 <div><small>Collateral</small><b>{{ $req->collateral ?: '—' }}</b></div>
                                 <div><small>Monthly (approx.)</small><b>{{ $req->repayment_terms_months ? peso($req->requested_amount / $req->repayment_terms_months) : '—' }}</b></div>
-                                <div><small>Supporting document</small><b>@if($req->documents_path)<a href="{{ asset('storage/'.$req->documents_path) }}" target="_blank" rel="noopener">View document</a>@else &mdash; @endif</b></div>
+                                <div><small>Supporting document</small><b>@if($req->documents_path)<a href="{{ asset('storage/'.$req->documents_path) }}" data-file-viewer data-viewer-title="Supporting document — {{ $farmer->full_name }}">View document</a>@else &mdash; @endif</b></div>
                             </div>
                         </div>
 
@@ -219,7 +219,7 @@
                                                 <td class="text-muted">{{ $member->repayment_terms_months }} mo</td>
                                                 <td><x-status-badge :status="$member->farmer->status === 'approved' ? 'Member' : 'Non-member'" /></td>
                                                 <td class="text-muted">{{ $member->collateral ?: '—' }}</td>
-                                                <td class="text-nowrap">@if($member->documents_path)<a href="{{ asset('storage/'.$member->documents_path) }}" target="_blank" rel="noopener">View</a>@else <span class="text-muted">&mdash;</span> @endif</td>
+                                                <td class="text-nowrap">@if($member->documents_path)<a href="{{ asset('storage/'.$member->documents_path) }}" data-file-viewer data-viewer-title="Supporting document — {{ $member->farmer->full_name }}">View</a>@else <span class="text-muted">&mdash;</span> @endif</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
