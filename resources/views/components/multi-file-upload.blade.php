@@ -313,11 +313,31 @@
             $displayName = $token[2];
         }
     @endphp
+    @php
+        $fileUrl = asset('storage/'.$path);
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $isImage = in_array($extension, ['jpg', 'jpeg', 'png'], true);
+        $viewerTitle = trim(preg_replace('/^Upload\s+/i', '', $label)).(count($existingPaths) > 1 ? ' '.($loop->index + 1) : '');
+    @endphp
     <div class="mfu-current border rounded-3 p-2 mb-2 d-flex align-items-center gap-3 bg-light">
-        <i class="fas fa-check-circle text-success flex-shrink-0"></i>
+        {{-- Thumbnail of the saved file; click to open it full size in the viewer. --}}
+        <a href="{{ $fileUrl }}" target="_blank" data-file-viewer data-viewer-title="{{ $viewerTitle }}" data-viewer-group="{{ $baseId }}-current"
+           class="mu-thumb text-decoration-none" title="View {{ $displayName }}">
+            @if($isImage)
+                <img src="{{ $fileUrl }}" alt="" loading="lazy">
+            @elseif($extension === 'pdf')
+                <i class="fas fa-file-pdf"></i>
+            @else
+                <i class="fas fa-file text-secondary"></i>
+            @endif
+        </a>
         <span class="small flex-grow-1 text-truncate" style="min-width: 0;" title="{{ $fileName }}">
             <span class="text-success">Current:</span> {{ $displayName }}
         </span>
+        <a href="{{ $fileUrl }}" target="_blank" data-file-viewer data-viewer-title="{{ $viewerTitle }}" data-viewer-group="{{ $baseId }}-current-btn"
+           class="btn btn-outline-primary btn-sm flex-shrink-0">
+            <i class="fas fa-eye me-1"></i>View
+        </a>
         <div class="form-check mb-0 flex-shrink-0">
             <input type="checkbox" class="form-check-input" name="remove_{{ $field }}[]" value="{{ $path }}" id="{{ $baseId }}_remove_{{ $loop->index }}">
             <label class="form-check-label text-danger small" for="{{ $baseId }}_remove_{{ $loop->index }}">Remove</label>

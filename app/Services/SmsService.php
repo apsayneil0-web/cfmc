@@ -25,11 +25,23 @@ class SmsService
             return;
         }
 
-        $response = Http::asForm()->post('https://www.iprogsms.com/api/v1/sms_messages', [
-            'api_token' => $apiToken,
-            'phone_number' => $contactNumber,
-            'message' => $message,
-        ]);
+        // A text that can't be delivered (no internet, provider down) must
+        // never crash the page that triggered it — the approval, OTP or
+        // announcement has already been saved by then. Log and carry on.
+        try {
+            $response = Http::asForm()->timeout(10)->post('https://www.iprogsms.com/api/v1/sms_messages', [
+                'api_token' => $apiToken,
+                'phone_number' => $contactNumber,
+                'message' => $message,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('IPROG SMS send failed (could not reach provider)', [
+                'to' => $contactNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
 
         if ($response->failed() || $response->json('status') !== 200) {
             Log::error('IPROG SMS send failed', [

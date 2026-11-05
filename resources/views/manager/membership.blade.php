@@ -248,18 +248,27 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
                                             <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
-                                            <select name="province" class="form-select" id="editProvince{{ $farmer->id }}" required>
-                                                <option value="" disabled>Select Province</option>
-                                                <option value="Bukidnon" {{ $farmer->province == 'Bukidnon' ? 'selected' : '' }}>Bukidnon</option>
-                                                <option value="Camiguin" {{ $farmer->province == 'Camiguin' ? 'selected' : '' }}>Camiguin</option>
-                                                <option value="Lanao del Norte" {{ $farmer->province == 'Lanao del Norte' ? 'selected' : '' }}>Lanao del Norte</option>
-                                                <option value="Misamis Occidental" {{ $farmer->province == 'Misamis Occidental' ? 'selected' : '' }}>Misamis Occidental</option>
-                                                <option value="Misamis Oriental" {{ $farmer->province == 'Misamis Oriental' ? 'selected' : '' }}>Misamis Oriental</option>
-                                            </select>
+                                            <input type="text" class="form-control" value="{{ \App\Models\Farmer::PROVINCE }}" readonly>
+                                            <input type="hidden" name="province" value="{{ \App\Models\Farmer::PROVINCE }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
-                                            <input data-input="place" type="text" name="municipality" class="form-control" value="{{ $farmer->municipality }}" required>
+                                            <input type="text" class="form-control" value="{{ \App\Models\Farmer::MUNICIPALITY }}" readonly>
+                                            <input type="hidden" name="municipality" value="{{ \App\Models\Farmer::MUNICIPALITY }}">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Barangay</label>
+                                            <select name="barangay" class="form-select">
+                                                <option value="">Select Barangay</option>
+                                                @if($farmer->barangay && !in_array($farmer->barangay, \App\Models\Farmer::BARANGAYS, true))
+                                                <option value="{{ $farmer->barangay }}" selected>{{ $farmer->barangay }}</option>
+                                                @endif
+                                                @foreach(\App\Models\Farmer::BARANGAYS as $barangay)
+                                                <option value="{{ $barangay }}" {{ $farmer->barangay === $barangay ? 'selected' : '' }}>{{ $barangay }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
@@ -353,18 +362,27 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
                                             <label class="form-label fw-semibold">Province <span class="text-danger">*</span></label>
-                                            <select name="province" class="form-select" id="resubmitProvince{{ $farmer->id }}" required>
-                                                <option value="" disabled>Select Province</option>
-                                                <option value="Bukidnon" {{ $farmer->province == 'Bukidnon' ? 'selected' : '' }}>Bukidnon</option>
-                                                <option value="Camiguin" {{ $farmer->province == 'Camiguin' ? 'selected' : '' }}>Camiguin</option>
-                                                <option value="Lanao del Norte" {{ $farmer->province == 'Lanao del Norte' ? 'selected' : '' }}>Lanao del Norte</option>
-                                                <option value="Misamis Occidental" {{ $farmer->province == 'Misamis Occidental' ? 'selected' : '' }}>Misamis Occidental</option>
-                                                <option value="Misamis Oriental" {{ $farmer->province == 'Misamis Oriental' ? 'selected' : '' }}>Misamis Oriental</option>
-                                            </select>
+                                            <input type="text" class="form-control" value="{{ \App\Models\Farmer::PROVINCE }}" readonly>
+                                            <input type="hidden" name="province" value="{{ \App\Models\Farmer::PROVINCE }}">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Municipality <span class="text-danger">*</span></label>
-                                            <input data-input="place" type="text" name="municipality" class="form-control" value="{{ $farmer->municipality }}" required>
+                                            <input type="text" class="form-control" value="{{ \App\Models\Farmer::MUNICIPALITY }}" readonly>
+                                            <input type="hidden" name="municipality" value="{{ \App\Models\Farmer::MUNICIPALITY }}">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Barangay</label>
+                                            <select name="barangay" class="form-select">
+                                                <option value="">Select Barangay</option>
+                                                @if($farmer->barangay && !in_array($farmer->barangay, \App\Models\Farmer::BARANGAYS, true))
+                                                <option value="{{ $farmer->barangay }}" selected>{{ $farmer->barangay }}</option>
+                                                @endif
+                                                @foreach(\App\Models\Farmer::BARANGAYS as $barangay)
+                                                <option value="{{ $barangay }}" {{ $farmer->barangay === $barangay ? 'selected' : '' }}>{{ $barangay }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
