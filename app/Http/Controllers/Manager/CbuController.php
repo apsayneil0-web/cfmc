@@ -15,11 +15,26 @@ class CbuController extends Controller
      * Manager\PaymentController::recordCbuPayment) — this page only lets the
      * Manager correct an existing entry, not create new ones.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = CbuTransaction::with('cbu.farmer', 'recordedBy')
-            ->visibleAccount()
-            ->orderByDesc('created_at')
+        $query = CbuTransaction::with('cbu.farmer', 'recordedBy')
+            ->visibleAccount();
+
+        if ($request->filled('search')) {
+            $search = trim($request->string('search'));
+            $query->whereHas('cbu.farmer', fn ($q) => $q->whereRaw(
+                "CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?",
+                ["%{$search}%"]
+            ));
+        }
+
+        if ($request->input('cbu_status') === 'active') {
+            $query->whereHas('cbu', fn ($q) => $q->where('status', 'active'));
+        } elseif ($request->input('cbu_status') === 'inactive') {
+            $query->whereHas('cbu', fn ($q) => $q->where('status', 'inactive'));
+        }
+
+        $transactions = $query->orderByDesc('created_at')
             ->paginate(10)
             ->withQueryString();
 

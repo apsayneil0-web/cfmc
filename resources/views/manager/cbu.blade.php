@@ -37,15 +37,17 @@
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <div class="position-relative">
-                <input type="text" placeholder="Search members..." class="form-control ps-5" style="min-width: 240px;">
-                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
-            </div>
-            <select class="form-select" style="width: auto;">
-                <option value="">All Members</option>
-                <option>Active</option>
-                <option>Inactive</option>
-            </select>
+            <form method="GET" action="{{ route('manager.cbu') }}" class="d-flex flex-wrap align-items-center gap-3">
+                <x-live-search placeholder="Search members..." />
+                <select name="cbu_status" class="form-select" style="width: auto;" aria-label="CBU status" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+                    <option value="">All Members</option>
+                    <option value="active" @selected(request('cbu_status') === 'active')>Active</option>
+                    <option value="inactive" @selected(request('cbu_status') === 'inactive')>Inactive</option>
+                </select>
+                @if(request()->anyFilled(['search', 'cbu_status']))
+                <a href="{{ route('manager.cbu') }}" class="btn btn-link btn-sm">Clear filters</a>
+                @endif
+            </form>
         </x-slot:filters>
     </x-table-toolbar>
 
