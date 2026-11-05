@@ -37,6 +37,7 @@
 </div>
 
 <div class="la-bar">
+    @unless($tab === 'denied')
     <div class="la-tabs" role="tablist">
         <a role="tab" href="{{ route('admin.loan-approval', array_filter(['tab' => 'regular', 'search' => request('search')])) }}" class="la-tab" aria-selected="{{ $tab === 'regular' ? 'true' : 'false' }}">
             Regular loans <span class="la-n">{{ $pendingRegularCount }}</span>
@@ -45,6 +46,7 @@
             Batch loans <span class="la-n">{{ $batchGroups->total() }}</span>
         </a>
     </div>
+    @endunless
     <form method="GET" action="{{ route('admin.loan-approval') }}" class="d-flex flex-wrap align-items-center gap-3">
         <input type="hidden" name="tab" value="{{ $tab }}">
         <x-live-search placeholder="Search farmer or batch..." width="280px" />
@@ -55,14 +57,14 @@
 @endif
 
 @php
-    $items = $tab === 'batch' ? $batchGroups : $requests;
+    $items = $tab === 'batch' ? $batchGroups : ($tab === 'denied' ? $deniedRequests : $requests);
 @endphp
 
 <div class="la-split">
     {{-- Queue --}}
     <div class="la-queue">
         <div class="la-queue-head">
-            <span>Waiting &middot; newest first</span>
+            <span>{{ $tab === 'denied' ? 'Denied · newest first' : 'Waiting · newest first' }}</span>
             <span>{{ $items->total() }} {{ \Illuminate\Support\Str::plural($tab === 'batch' ? 'batch' : 'request', $items->total()) }}</span>
         </div>
 
@@ -78,6 +80,19 @@
                     <span class="la-item-amt">
                         {{ peso($item->loanRequests->sum('requested_amount')) }}
                         <span class="la-age {{ $days >= 5 ? 'old' : '' }}">{{ $waitingLabel($days) }}</span>
+                    </span>
+                </button>
+            @elseif($tab === 'denied')
+                @php $deniedDays = $daysWaiting($item->updated_at); @endphp
+                <button type="button" class="la-item" data-panel="panel-r{{ $item->id }}" aria-current="{{ $loop->first ? 'true' : 'false' }}">
+                    <x-avatar-initials :name="$item->farmer->full_name" />
+                    <span class="la-item-main">
+                        <span class="la-item-name">{{ $item->farmer->full_name }}</span>
+                        <span class="la-item-meta">{{ $item->purpose }} &middot; {{ $item->type === 'batch' ? ($item->batch?->label ?? 'Batch') : $item->repayment_terms_months.' mo' }}</span>
+                    </span>
+                    <span class="la-item-amt">
+                        {{ peso($item->requested_amount) }}
+                        <span class="la-age">{{ $deniedDays === 0 ? 'Denied today' : 'Denied '.$deniedDays.' '.\Illuminate\Support\Str::plural('day', $deniedDays).' ago' }}</span>
                     </span>
                 </button>
             @else
@@ -97,9 +112,11 @@
         @empty
             <p class="la-empty">
                 @if(request()->filled('search'))
-                    No waiting {{ $tab === 'batch' ? 'batches' : 'requests' }} match your search.
+                    No {{ $tab === 'denied' ? 'denied requests' : ($tab === 'batch' ? 'waiting batches' : 'waiting requests') }} match your search.
                 @elseif($tab === 'batch')
                     No batch is waiting. A batch shows up here once all its member slots are filled.
+                @elseif($tab === 'denied')
+                    No denied loan requests yet.
                 @else
                     Nothing waiting. New requests appear here after the Manager checks them.
                 @endif
@@ -119,13 +136,13 @@
             <div class="la-detail"><div class="la-body"><p class="text-muted mb-0">Select a request on the left to review it.</p></div></div>
         @endif
 
-        @if($tab === 'regular')
-            @foreach($requests as $req)
+        @if($tab === 'regular' || $tab === 'denied')
+            @foreach(($tab === 'denied' ? $deniedRequests : $requests) as $req)
                 @php
                     $farmer = $req->farmer;
                     $isMember = $farmer->status === 'approved';
                     $cbuBalance = (float) ($farmer->cbu->balance ?? 0);
-                    $inProcess = $farmer->loanInProcess($req->id);
+                    $inProcess = $tab === 'denied' ? null : $farmer->loanInProcess($req->id);
                 @endphp
                 <section class="la-detail" id="panel-r{{ $req->id }}" @if(! $loop->first) hidden @endif aria-label="{{ $farmer->full_name }}'s loan request">
                     <div class="la-head">
@@ -148,9 +165,22 @@
                                 <div><small>Collateral</small><b>{{ $req->collateral ?: '—' }}</b></div>
                                 <div><small>Monthly (approx.)</small><b>{{ $req->repayment_terms_months ? peso($req->requested_amount / $req->repayment_terms_months) : '—' }}</b></div>
                                 <div><small>Supporting document</small><b>@if($req->documents_path)<a href="{{ asset('storage/'.$req->documents_path) }}" data-file-viewer data-viewer-title="Supporting document — {{ $farmer->full_name }}">View document</a>@else &mdash; @endif</b></div>
+                                @if($req->type === 'batch')
+                                <div><small>Batch</small><b>{{ $req->batch?->label ?? 'Batch' }}</b></div>
+                                @endif
                             </div>
                         </div>
 
+                        @if($tab === 'denied')
+                        <div>
+                            <p class="la-sec">Decision</p>
+                            <div class="la-checks">
+                                <div class="la-check warn"><i>✕</i><span>Denied {{ $req->updated_at->format('M d, Y') }}</span></div>
+                            </div>
+                            <p class="la-sec mt-3">Denial reason</p>
+                            <p class="mb-0">{{ $req->denial_reason ?: '—' }}</p>
+                        </div>
+                        @else
                         <div>
                             <p class="la-sec">Farmer at a glance</p>
                             <div class="la-facts">
@@ -170,8 +200,10 @@
                                 <div class="la-check {{ $inProcess ? 'warn' : 'ok' }}"><i>{{ $inProcess ? '!' : '✓' }}</i><span>{{ $inProcess ? 'Already has a loan in process ('.$inProcess.'). Approving will be blocked.' : 'No other loan in process' }}</span></div>
                             </div>
                         </div>
+                        @endif
                     </div>
 
+                    @unless($tab === 'denied')
                     <form id="approveForm{{ $req->id }}" action="{{ route('admin.loan-approval.approve', $req) }}" method="POST" class="d-none">
                         @csrf
                         @method('PATCH')
@@ -181,6 +213,7 @@
                         @csrf
                         @method('PATCH')
                     </form>
+                    @endunless
                 </section>
             @endforeach
         @else

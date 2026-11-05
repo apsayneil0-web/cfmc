@@ -80,14 +80,27 @@ class LoanApprovalController extends Controller
             ->visibleAccount()
             ->count();
 
-        // Regular and batch requests are reviewed in separate tabs. Open the
-        // one asked for, or batches when nothing regular is waiting.
+        // Denied requests (regular and batch members alike) are read-only —
+        // the decision is already final — so they get their own tab rather
+        // than a separate page like Approved Loans has.
+        $deniedRequests = LoanRequest::with(['farmer', 'requestedBy', 'batch'])
+            ->where('status', 'denied')
+            ->visibleAccount()
+            ->when($search, fn ($q) => $q->whereHas('farmer', $farmerNameMatches))
+            ->orderByDesc('updated_at')
+            ->paginate(10, ['*'], 'denied_page')
+            ->withQueryString();
+
+        $deniedCount = LoanRequest::where('status', 'denied')->visibleAccount()->count();
+
+        // Regular, batch, and denied requests are reviewed in separate tabs.
+        // Open the one asked for, or batches when nothing regular is waiting.
         $tab = $request->input('tab');
-        if (! in_array($tab, ['regular', 'batch'], true)) {
+        if (! in_array($tab, ['regular', 'batch', 'denied'], true)) {
             $tab = $requests->total() === 0 && $batchGroups->total() > 0 ? 'batch' : 'regular';
         }
 
-        return view('admin.loan-approval', compact('requests', 'batchGroups', 'pendingBatchMemberCount', 'pendingRegularCount', 'approvedThisMonth', 'deniedThisMonth', 'tab'));
+        return view('admin.loan-approval', compact('requests', 'batchGroups', 'deniedRequests', 'deniedCount', 'pendingBatchMemberCount', 'pendingRegularCount', 'approvedThisMonth', 'deniedThisMonth', 'tab'));
     }
 
     private function paginateCollection($items, Request $request, string $pageName, int $perPage = 10): LengthAwarePaginator
