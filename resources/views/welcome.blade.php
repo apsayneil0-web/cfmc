@@ -384,6 +384,50 @@
         .footer-mid i { font-size: 0.82rem; color: var(--palette-muted); }
         .footer-meta { margin-left: auto; text-align: right; font-size: 0.82rem; color: var(--palette-muted); }
         @media (max-width: 640px) { .footer-meta { margin-left: 0; text-align: left; width: 100%; } }
+        .footer-credit { color: var(--palette-text-secondary); }
+        .footer-credit strong { font-weight: 600; color: var(--palette-ink); }
+
+        .footer-contact {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            padding-bottom: 1.75rem;
+            margin-bottom: 1.75rem;
+            border-bottom: 1px solid var(--palette-stone);
+        }
+        .contact-card {
+            display: flex;
+            gap: 0.9rem;
+            align-items: flex-start;
+            min-width: 0;
+            padding: 1.1rem 1.25rem;
+            border-radius: 1rem;
+            background: var(--palette-surface);
+            border: 1px solid var(--palette-stone);
+        }
+        .contact-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); flex-shrink: 0; }
+        .contact-icon svg { width: 1.15rem; height: 1.15rem; }
+        .contact-card h3 { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--palette-muted); }
+        .contact-value { display: block; margin-top: 0.3rem; font-family: var(--serif); font-weight: 600; font-size: 1.45rem; letter-spacing: 0.01em; color: var(--palette-ink); font-variant-numeric: tabular-nums; }
+        .contact-value.is-place { font-size: 1.2rem; letter-spacing: 0; }
+        .contact-note { margin-top: 0.3rem; font-size: 0.82rem; color: var(--palette-muted); }
+        .contact-copy {
+            margin-top: 0.6rem;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            font: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--palette-field);
+            background: transparent;
+            border: 1px solid var(--palette-sprout-border);
+            border-radius: 999px;
+            cursor: pointer;
+        }
+        .contact-copy:hover { background: var(--palette-sprout); }
+        :root[data-bs-theme="dark"] .contact-icon,
+        :root[data-bs-theme="dark"] .contact-copy { color: var(--palette-field-light); }
 
         /* ---------- Reveal-on-scroll ---------- */
         .reveal { opacity: 0; transform: translateY(16px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
@@ -855,6 +899,26 @@
     <!-- Footer -->
     <footer id="contact">
         <div class="container">
+            <div class="footer-contact">
+                <div class="contact-card">
+                    <span class="contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg></span>
+                    <div>
+                        <h3>Contact us</h3>
+                        <span class="contact-value" id="contactPhone">0948 314 1215</span>
+                        <p class="contact-note">For inquiries only.</p>
+                        <button type="button" class="contact-copy" id="copyContactPhone" data-phone="09483141215">Copy number</button>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <span class="contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                    <div>
+                        <h3>Visit us</h3>
+                        <span class="contact-value is-place">Centrala, Surallah</span>
+                        <p class="contact-note">South Cotabato</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="footer-band">
                 <svg viewBox="0 0 44 44" aria-hidden="true"><path d="M8 40C14 26 22 18 36 12" stroke="var(--palette-sprout-border)" stroke-width="1.5" fill="none"/><path d="M18 26c-6-1-9-6-8-11 6 1 9 6 8 11Z" fill="var(--palette-sprout-border)"/><path d="M26 20c1-6 6-9 11-8-1 6-6 9-11 8Z" fill="var(--palette-sprout-border)"/></svg>
                 <div class="footer-mid">
@@ -862,14 +926,35 @@
                     <i>Supporting our farmers. Building a stronger tomorrow.</i>
                 </div>
                 <div class="footer-meta">
-                    <p>Centrala, Surallah, South Cotabato</p>
                     <p>&copy; {{ date('Y') }} CFMC. All rights reserved.</p>
+                    <p class="footer-credit">System developed by <strong>Neil Delfin Apsay</strong></p>
                 </div>
             </div>
         </div>
     </footer>
 
     <script>
+        // Copy the inquiry number; if the browser refuses clipboard access,
+        // select the number on screen so it can be copied by hand.
+        (function () {
+            var btn = document.getElementById('copyContactPhone');
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                function selectNumber() {
+                    var range = document.createRange();
+                    range.selectNodeContents(document.getElementById('contactPhone'));
+                    var selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+                if (!navigator.clipboard) { selectNumber(); return; }
+                navigator.clipboard.writeText(btn.dataset.phone).then(function () {
+                    btn.textContent = 'Copied';
+                    setTimeout(function () { btn.textContent = 'Copy number'; }, 1600);
+                }, selectNumber);
+            });
+        })();
+
         (function () {
             var header = document.getElementById('siteHeader');
             function onScroll() {
