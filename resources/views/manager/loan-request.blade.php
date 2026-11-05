@@ -411,14 +411,13 @@
         </div>
         @endif
         <div class="d-flex flex-wrap align-items-center gap-3">
-            <form method="GET" action="{{ route('manager.loan-request') }}" id="loanRequestFilterForm" class="position-relative m-0">
+            <form method="GET" action="{{ route('manager.loan-request') }}" class="m-0">
                 @if($showArchived)
                 <input type="hidden" name="archived" value="1">
                 @elseif(request()->filled('status'))
                 <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
-                <input type="text" name="search" id="loanRequestSearchInput" value="{{ request('search') }}" placeholder="Search farmer" class="form-control ps-5" style="min-width: 240px;" autocomplete="off">
-                <i class="fas fa-search position-absolute start-3 top-50 translate-middle-y text-muted" style="font-size: 14px;"></i>
+                <x-live-search placeholder="Search farmer" width="240px" />
             </form>
             @if($showArchived)
             <a href="{{ route('manager.loan-request') }}" class="text-sm fw-semibold text-brand text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Back to Active</a>
@@ -532,7 +531,7 @@
                 @forelse($regularRequests as $req)
                 @php
                     $canFinalize = $req->status === 'approved' && ! $req->loan;
-                    $moreItems = ($canFinalize ? 1 : 0) + ($req->status === 'pending' ? 1 : 0) + ($req->status === 'denied' ? 2 : 0);
+                    $moreItems = ($canFinalize ? 1 : 0) + ($req->status === 'pending' ? 2 : 0) + ($req->status === 'denied' ? 2 : 0);
                 @endphp
                 <tr>
                     <td class="px-4 px-md-5 py-3">
@@ -558,6 +557,8 @@
                                 @endif
                                 @if($req->status === 'pending')
                                 <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editModal{{ $req->id }}"><i class="fas fa-pen me-2 text-gray-500"></i>Edit request</button></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#archiveModal{{ $req->id }}"><i class="fas fa-archive me-2"></i>Archive</button></li>
                                 @endif
                                 @if($req->archived_at)
                                 <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#unarchiveModal{{ $req->id }}"><i class="fas fa-box-open me-2 text-success"></i>Restore</button></li>
@@ -894,7 +895,7 @@
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-0">Restore this request for {{ $req->farmer->full_name }}? It will reappear on the active list as a denied request.</p>
+                                <p class="mb-0">Restore this request for {{ $req->farmer->full_name }}? It will reappear on the active list as a {{ $req->status }} request.</p>
                             </div>
                             <div class="modal-footer bg-light">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -1115,10 +1116,6 @@
 @endif
 
 <script>
-    if (document.getElementById('loanRequestSearchInput')) {
-        wireDebouncedSearch('loanRequestSearchInput', 'loanRequestFilterForm');
-    }
-
     // Batch requests view: stage tabs and "Search farmer in batches" filter the cards.
     document.querySelectorAll('[data-batch-board]').forEach(function (board) {
         var search = board.querySelector('[data-batch-search]');

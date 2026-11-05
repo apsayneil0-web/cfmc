@@ -29,7 +29,7 @@ class LoanApprovalController extends Controller
             ["%{$search}%"]
         );
 
-        $requests = LoanRequest::with('farmer')
+        $requests = LoanRequest::with(['farmer.cbu', 'requestedBy'])
             ->where('status', 'pending')
             ->where('type', 'regular')
             ->visibleAccount()
@@ -46,7 +46,7 @@ class LoanApprovalController extends Controller
 
         $pendingActiveMember = fn ($q) => $q->where('status', 'pending')->whereNull('archived_at')->visibleAccount();
         $batchGroups = LoanBatch::whereHas('loanRequests', $pendingActiveMember)
-            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with(['farmer', 'requestedBy'])->orderBy('created_at', 'desc')])
+            ->with(['loanRequests' => fn ($q) => $pendingActiveMember($q)->with(['farmer.cbu', 'requestedBy'])->orderBy('created_at', 'desc')])
             ->orderBy('created_at', 'desc')
             ->get()
             ->filter(fn (LoanBatch $batch) => $batch->is_full)
@@ -80,7 +80,14 @@ class LoanApprovalController extends Controller
             ->visibleAccount()
             ->count();
 
-        return view('admin.loan-approval', compact('requests', 'batchGroups', 'pendingBatchMemberCount', 'pendingRegularCount', 'approvedThisMonth', 'deniedThisMonth'));
+        // Regular and batch requests are reviewed in separate tabs. Open the
+        // one asked for, or batches when nothing regular is waiting.
+        $tab = $request->input('tab');
+        if (! in_array($tab, ['regular', 'batch'], true)) {
+            $tab = $requests->total() === 0 && $batchGroups->total() > 0 ? 'batch' : 'regular';
+        }
+
+        return view('admin.loan-approval', compact('requests', 'batchGroups', 'pendingBatchMemberCount', 'pendingRegularCount', 'approvedThisMonth', 'deniedThisMonth', 'tab'));
     }
 
     private function paginateCollection($items, Request $request, string $pageName, int $perPage = 10): LengthAwarePaginator
@@ -297,7 +304,7 @@ class LoanApprovalController extends Controller
             $message .= ' Skipped (already has a loan in process): '.$skipped->map(fn (LoanRequest $r) => $r->farmer->full_name)->implode(', ').'.';
         }
 
-        return redirect()->route('admin.loan-approval')
+        return redirect()->route('admin.loan-approval', ['tab' => 'batch'])
             ->with('success', $message);
     }
 
@@ -326,7 +333,7 @@ class LoanApprovalController extends Controller
             $this->notifyFarmerOfDecision($loan_request, 'loan_denied', 'Loan Request Denied', 'Your loan request for '.peso($loan_request->requested_amount)." as part of {$batch->label} has been denied. Reason: ".$validated['denial_reason']);
         }
 
-        return redirect()->route('admin.loan-approval')
+        return redirect()->route('admin.loan-approval', ['tab' => 'batch'])
             ->with('success', "{$batch->label}'s {$pendingRequests->count()} loan requests have been denied.");
     }
 

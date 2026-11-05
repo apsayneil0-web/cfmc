@@ -39,13 +39,18 @@ class LoanRequestController extends Controller
         $query = LoanRequest::with(['farmer', 'requestedBy', 'loan', 'batch', 'activityLogs'])->visibleAccount();
 
         // Archived requests live in their own view ("View Archived",
-        // ?archived=1; old ?status=archived links too). Only denied requests
-        // can be archived; pending batch members removed from a batch also
-        // carry archived_at but are not archived records, so they stay out.
+        // ?archived=1; old ?status=archived links too). Denied requests, and
+        // now pending *regular* requests, can be archived. Pending batch
+        // members removed from a batch also carry archived_at but are not
+        // archived records (they're freed slots, handled by
+        // removeBatchMember() instead), so they stay out.
         $showArchived = $request->boolean('archived') || $request->input('status') === 'archived';
 
         if ($showArchived) {
-            $query->whereNotNull('archived_at')->where('status', 'denied');
+            $query->whereNotNull('archived_at')->where(function ($q) {
+                $q->where('status', 'denied')
+                    ->orWhere(fn ($q2) => $q2->where('status', 'pending')->where('type', '!=', 'batch'));
+            });
         } else {
             $query->whereNull('archived_at');
 
@@ -194,7 +199,13 @@ class LoanRequestController extends Controller
             'termOptions' => self::TERMS,
             'farmersIneligibleForNewRequest' => $farmersIneligibleForNewRequest,
             'showArchived' => $showArchived,
-            'archivedCount' => LoanRequest::whereNotNull('archived_at')->where('status', 'denied')->visibleAccount()->count(),
+            'archivedCount' => LoanRequest::whereNotNull('archived_at')
+                ->where(function ($q) {
+                    $q->where('status', 'denied')
+                        ->orWhere(fn ($q2) => $q2->where('status', 'pending')->where('type', '!=', 'batch'));
+                })
+                ->visibleAccount()
+                ->count(),
         ]);
     }
 
@@ -518,9 +529,17 @@ class LoanRequestController extends Controller
             ->with('success', $message);
     }
 
+    /**
+     * Archive a regular loan request. Denied requests have always been
+     * archivable; pending regular requests can be too, e.g. a farmer asked
+     * to withdraw it. Batch members are excluded — removing a pending batch
+     * member instead goes through removeBatchMember(), which frees their
+     * slot, something this generic archive doesn't know how to do.
+     */
     public function archive(LoanRequest $loan_request)
     {
-        abort_if($loan_request->status !== 'denied', 422, 'Only denied/rejected loan requests can be archived.');
+        abort_if($loan_request->type === 'batch', 422, 'Batch members are removed from their batch instead of archived here.');
+        abort_if(! in_array($loan_request->status, ['pending', 'denied'], true), 422, 'Only pending or denied loan requests can be archived.');
 
         $loan_request->update(['archived_at' => now()]);
 
@@ -532,11 +551,12 @@ class LoanRequestController extends Controller
     }
 
     /**
-     * Restore an archived (denied) loan request back onto the active list.
+     * Restore an archived (pending or denied) loan request back onto the active list.
      */
     public function unarchive(LoanRequest $loan_request)
     {
-        abort_if($loan_request->status !== 'denied' || ! $loan_request->archived_at, 422, 'Only archived denied/rejected loan requests can be restored.');
+        abort_if($loan_request->type === 'batch', 422, 'Batch members are restored to their batch instead.');
+        abort_if(! in_array($loan_request->status, ['pending', 'denied'], true) || ! $loan_request->archived_at, 422, 'Only archived pending or denied loan requests can be restored.');
 
         $loan_request->update(['archived_at' => null]);
 

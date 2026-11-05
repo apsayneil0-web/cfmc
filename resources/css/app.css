@@ -2439,3 +2439,12 @@ td:has(> .row-actions),
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* Row-detail toggle caret (batch loan approval): rotate to show open state */
+[data-bs-toggle="collapse"] i.fa-chevron-down {
+    transition: transform 0.2s ease;
+}
+
+[data-bs-toggle="collapse"][aria-expanded="true"] i.fa-chevron-down {
+    transform: rotate(180deg);
+}
