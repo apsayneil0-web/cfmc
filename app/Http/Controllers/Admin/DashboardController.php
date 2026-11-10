@@ -12,7 +12,9 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $totalFarmers = Farmer::where('status', '!=', 'archived')->count();
+        // Registered = approved members only (pending/rejected applicants
+        // aren't members yet), matching the Manager dashboard.
+        $totalFarmers = Farmer::where('status', 'approved')->count();
         $pendingMembership = Farmer::where('status', 'pending')->count();
         $approvedFarmers = Farmer::where('status', 'approved')->count();
         $archivedFarmers = Farmer::where('status', 'archived')->count();

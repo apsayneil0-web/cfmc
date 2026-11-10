@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Cbu;
 use App\Models\CbuTransaction;
-use App\Models\Expense;
 use App\Models\Farmer;
 use App\Models\HarvestPayment;
 use App\Models\Loan;
@@ -14,9 +13,11 @@ use App\Models\Machine;
 use App\Models\Notification;
 use App\Models\ScheduleRequest;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class PaymentController extends Controller
@@ -29,8 +30,9 @@ class PaymentController extends Controller
     private const CBU_SUBSEQUENT_CONTRIBUTION_MINIMUM = 1000;
 
     /**
-     * Display recorded loan payments, CBU transactions, and cooperative
-     * expenses (operational/replaceable parts) in one unified feed.
+     * Display recorded loan payments, CBU transactions, and machine
+     * payments in one unified feed. Cooperative expenses are recorded in
+     * Financial Management and are not part of this feed.
      */
     public function index(Request $request)
     {
@@ -41,10 +43,6 @@ class PaymentController extends Controller
 
         $cbuTransactions = CbuTransaction::with('cbu.farmer')
             ->visibleAccount()
-            ->orderByDesc('created_at')
-            ->get();
-
-        $expenses = Expense::whereIn('category', ['operational', 'replaceable_parts'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -83,23 +81,10 @@ class PaymentController extends Controller
             'amount' => $transaction->amount,
             'balance_after' => $transaction->balance_after,
             'notes' => $transaction->notes,
+            'proof_url' => $transaction->proof_url,
             'status_label' => 'Completed',
             'filter_category' => 'CBU Payment',
             'model' => $transaction,
-        ]))->concat($expenses->map(fn ($expense) => (object) [
-            'kind' => 'expense',
-            'id' => $expense->id,
-            'transaction_code' => 'EXP-'.str_pad($expense->id, 3, '0', STR_PAD_LEFT),
-            'date' => $expense->expense_date,
-            'payer' => $expense->description,
-            'type_label' => $expense->category === 'operational' ? 'Operational Expense' : 'Replaceable Parts',
-            'reference' => '-',
-            'amount' => $expense->amount,
-            'balance_after' => null,
-            'notes' => null,
-            'status_label' => ucfirst($expense->status),
-            'filter_category' => 'Expense Payment',
-            'model' => $expense,
         ]))->concat($harvestPayments->map(fn ($harvest) => (object) [
             'kind' => 'harvest',
             'id' => $harvest->id,
@@ -146,10 +131,6 @@ class PaymentController extends Controller
             ->orderBy('last_name')
             ->get();
 
-        $payableExpenses = Expense::where('status', 'pending')
-            ->orderBy('expense_date')
-            ->get();
-
         // Past non-member names, so a returning walk-in harvester can be
         // picked consistently instead of retyped/misspelled each visit.
         $nonMemberNames = HarvestPayment::where('member_type', 'non-member')
@@ -167,8 +148,6 @@ class PaymentController extends Controller
         $stats = [
             'loan_payments' => LoanPayment::whereIn('type', ['payment', 'prepayment', 'partial'])->visibleAccount()->sum('amount'),
             'cbu_contributions' => CbuTransaction::where('type', 'contribution')->visibleAccount()->sum('amount'),
-            'operational_expenses' => Expense::where('category', 'operational')->sum('amount'),
-            'replaceable_parts' => Expense::where('category', 'replaceable_parts')->sum('amount'),
             'harvest_payments' => HarvestPayment::visibleAccount()->sum('payment_amount'),
         ];
 
@@ -177,7 +156,7 @@ class PaymentController extends Controller
         // in Machinery Management.
         $machineTypes = Machine::whereNull('archived_at')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
 
-        return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'payableExpenses', 'nonMemberNames', 'stats', 'machineTypes'));
+        return view('manager.payment', compact('payments', 'payableLoans', 'cbuFarmers', 'nonMemberNames', 'stats', 'machineTypes'));
     }
 
     private function paginateCollection($items, Request $request, int $perPage = 10): LengthAwarePaginator
@@ -205,6 +184,13 @@ class PaymentController extends Controller
             'category' => 'nullable|string|max:100',
             'amount' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string|max:1000',
+            // Receipt photo or deposit slip — required for contributions so
+            // every peso added to a CBU balance has proof on file.
+            'proof_document' => 'required_if:type,contribution|nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'proof_document.required_if' => 'Attach the proof of payment (receipt photo or deposit slip) before recording.',
+            'proof_document.mimes' => 'The proof of payment must be a JPG, PNG or PDF file.',
+            'proof_document.max' => 'The proof of payment must not be larger than 5 MB.',
         ]);
 
         $cbu = Cbu::firstOrCreate(
@@ -234,12 +220,19 @@ class PaymentController extends Controller
 
         abort_if($validated['type'] === 'expense' && (float) $validated['amount'] > (float) $cbu->balance, 422, 'Amount exceeds the farmer\'s CBU balance.');
 
+        // Stored only after every amount/balance check has passed, so a
+        // rejected payment never leaves an orphaned file behind.
+        $proofPath = $request->hasFile('proof_document')
+            ? $this->storeCbuProof($request->file('proof_document'))
+            : null;
+
         $cbu->recordTransaction(
             $validated['type'],
             $validated['category'] ?? null,
             (float) $validated['amount'],
             $validated['notes'] ?? null,
-            Auth::id()
+            Auth::id(),
+            $proofPath
         );
 
         if ($cbu->farmer->account_user_id) {
@@ -253,8 +246,25 @@ class PaymentController extends Controller
             );
         }
 
-        return redirect()->route('manager.payment')
+        // back() instead of a fixed route: this is now also submitted from
+        // the Membership page (recording an applicant's CBU payment before
+        // approval), so the manager should land back wherever they were —
+        // Payment Center or Membership — not always Payment Center.
+        return redirect()->back()
             ->with('success', 'CBU payment recorded successfully.');
+    }
+
+    /**
+     * Save a CBU proof of payment to the public disk and return its path.
+     * Shared with Manager\CbuController so a replaced proof is named the same way.
+     */
+    public static function storeCbuProof(UploadedFile $file): string
+    {
+        return $file->storeAs(
+            'cbu_proofs',
+            time().'_'.Str::random(6).'.'.strtolower($file->getClientOriginalExtension()),
+            'public'
+        );
     }
 
     /**
@@ -295,26 +305,6 @@ class PaymentController extends Controller
 
         return redirect()->route('manager.payment')
             ->with('success', 'Payment recorded successfully.');
-    }
-
-    /**
-     * Settle a pending cooperative expense (operational/machinery/replaceable
-     * parts) from the Payment page.
-     */
-    public function payExpense(Request $request)
-    {
-        $validated = $request->validate([
-            'expense_id' => 'required|exists:expenses,id',
-        ]);
-
-        $expense = Expense::findOrFail($validated['expense_id']);
-
-        abort_if($expense->status === 'paid', 422, 'This expense is already paid.');
-
-        $expense->markPaid(Auth::id());
-
-        return redirect()->route('manager.payment')
-            ->with('success', 'Expense payment recorded successfully.');
     }
 
     /**

@@ -175,6 +175,14 @@ class ReportController extends Controller
         $sheet->setCellValue($config['generatedCell'], ExcelDate::PHPToExcel(now()));
         $sheet->setCellValue('B6', $filtersText);
 
+        // The template's Expense header still carries the old Status column;
+        // expenses are now a plain record, so relabel it to match the data.
+        if ($reportType === 'expense') {
+            $sheet->setCellValue('B8', 'Kind of Expense');
+            $sheet->setCellValue('E8', 'Recorded By');
+            $sheet->setCellValue('F8', 'Recorded On');
+        }
+
         $startRow = 9;
         $templateDataRows = 10;
         $dataCount = count($data);
@@ -346,7 +354,7 @@ class ReportController extends Controller
             ])->values()->all(),
             'expense' => $rows->map(fn ($r) => [
                 $r->expense_date, ucfirst(str_replace('_', ' ', $r->category)), $r->description, $r->amount,
-                ucfirst($r->status), $r->recordedBy?->name,
+                $r->recordedBy?->name, $r->created_at?->format('M d, Y g:i A'),
             ])->values()->all(),
         };
     }
@@ -911,15 +919,15 @@ class ReportController extends Controller
 
     private function writeExpenseCsv($handle, $rows): void
     {
-        fputcsv($handle, ['Date', 'Category', 'Description', 'Amount', 'Status', 'Recorded By']);
+        fputcsv($handle, ['Date', 'Kind of Expense', 'Description', 'Amount', 'Recorded By', 'Recorded On']);
         foreach ($rows as $row) {
             fputcsv($handle, [
                 $row->expense_date->format('Y-m-d'),
                 ucfirst(str_replace('_', ' ', $row->category)),
                 $row->description,
                 $row->amount,
-                ucfirst($row->status),
                 $row->recordedBy?->name,
+                $row->created_at?->format('Y-m-d H:i'),
             ]);
         }
     }

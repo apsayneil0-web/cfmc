@@ -40,7 +40,7 @@ class Cbu extends Model
      * Record a contribution or expense against this farmer's CBU balance,
      * mirroring Loan::recordPayment()'s ledger pattern.
      */
-    public function recordTransaction(string $type, ?string $category, float $amount, ?string $notes, ?int $recordedBy): CbuTransaction
+    public function recordTransaction(string $type, ?string $category, float $amount, ?string $notes, ?int $recordedBy, ?string $proofDocument = null): CbuTransaction
     {
         $this->balance = $type === 'expense'
             ? max(0, round((float) $this->balance - $amount, 2))
@@ -54,6 +54,7 @@ class Cbu extends Model
             'transaction_date' => now()->toDateString(),
             'balance_after' => $this->balance,
             'notes' => $notes,
+            'proof_document' => $proofDocument,
             'recorded_by' => $recordedBy,
         ]);
     }

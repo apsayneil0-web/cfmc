@@ -39,6 +39,22 @@
 
     <div class="row g-3">
         <div class="col-md-6">
+            <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
+            <select name="crop_id" class="form-select crop-select" required>
+                <option value="">Select crop...</option>
+                @foreach($crops as $crop)
+                <option value="{{ $crop->id }}" {{ old('crop_id', $schedule->crop_id ?? '') == $crop->id ? 'selected' : '' }}>{{ $crop->name }}</option>
+                @endforeach
+                <option value="{{ \App\Models\Crop::OTHER_OPTION }}" {{ old('crop_id') == \App\Models\Crop::OTHER_OPTION ? 'selected' : '' }}>+ Other (type your own)</option>
+            </select>
+            <input type="text" name="new_crop_name" class="form-control crop-other-input mt-2 d-none" placeholder="e.g. Mango" value="{{ old('new_crop_name') }}" autocomplete="off">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+            <input type="date" name="scheduled_date" class="form-control" min="{{ \App\Models\ScheduleRequest::earliestAllowedDate()->format('Y-m-d') }}" value="{{ old('scheduled_date', $schedule?->scheduled_date?->format('Y-m-d')) }}" required>
+            <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
+        </div>
+        <div class="col-md-6">
             <label class="form-label fw-semibold">Machinery <span class="text-danger">*</span></label>
             <select name="machinery" class="form-select" required>
                 @foreach($machineryList as $machine)
@@ -46,7 +62,7 @@
                 @endforeach
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 schedule-units-wrapper d-none">
             <label class="form-label fw-semibold">Units Needed</label>
             <select name="units_requested" class="form-select" data-selected="{{ old('units_requested', $schedule->units_requested ?? 1) }}">
                 <option value="1">1 unit</option>
@@ -58,22 +74,6 @@
             <input type="number" step="0.1" min="0.1" name="land_size" class="form-control" value="{{ old('land_size', $schedule->land_size ?? '') }}" required>
             <small class="text-muted">End Time is estimated at {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }} hrs/hectare per unit.</small>
         </div>
-        <div class="col-md-6">
-            <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
-            <select name="crop_id" class="form-select crop-select" required>
-                <option value="">Select crop...</option>
-                @foreach($crops as $crop)
-                <option value="{{ $crop->id }}" {{ old('crop_id', $schedule->crop_id ?? '') == $crop->id ? 'selected' : '' }}>{{ $crop->name }}</option>
-                @endforeach
-                <option value="{{ \App\Models\Crop::OTHER_OPTION }}" {{ old('crop_id') == \App\Models\Crop::OTHER_OPTION ? 'selected' : '' }}>+ Other (type your own)</option>
-            </select>
-            <input type="text" name="new_crop_name" class="form-control crop-other-input mt-2 d-none" placeholder="e.g. Mango" value="{{ old('new_crop_name') }}" autocomplete="off">
-        </div>
-        <div class="col-md-4">
-            <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
-            <input type="date" name="scheduled_date" class="form-control" min="{{ \App\Models\ScheduleRequest::earliestAllowedDate()->format('Y-m-d') }}" value="{{ old('scheduled_date', $schedule?->scheduled_date?->format('Y-m-d')) }}" required>
-            <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
-        </div>
         <div class="col-md-4">
             <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
             <input type="time" name="start_time" class="form-control" value="{{ old('start_time', $schedule?->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('H:i') : '') }}" required>
@@ -82,7 +82,7 @@
             <label class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
             <input type="time" name="end_time" class="form-control" value="{{ old('end_time', $schedule?->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('H:i') : '') }}" required>
         </div>
-        <div class="col-12">
+        <div class="col-md-4">
             <label class="form-label fw-semibold">Location <span class="text-danger">*</span></label>
             <input type="text" name="location" class="form-control" value="{{ old('location', $schedule->location ?? '') }}" placeholder="e.g. Brgy. San Jose" required>
         </div>

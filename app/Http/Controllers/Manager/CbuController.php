@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cbu;
 use App\Models\CbuTransaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CbuController extends Controller
 {
@@ -65,7 +66,23 @@ class CbuController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'transaction_date' => 'required|date',
             'notes' => 'nullable|string|max:1000',
+            // Optional on edit: only sent when the Manager replaces the proof.
+            'proof_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'proof_document.mimes' => 'The proof of payment must be a JPG, PNG or PDF file.',
+            'proof_document.max' => 'The proof of payment must not be larger than 5 MB.',
         ]);
+
+        unset($validated['proof_document']);
+
+        if ($request->hasFile('proof_document')) {
+            $oldProof = $cbu_transaction->proof_document;
+            $validated['proof_document'] = PaymentController::storeCbuProof($request->file('proof_document'));
+
+            if ($oldProof) {
+                Storage::disk('public')->delete($oldProof);
+            }
+        }
 
         $cbu_transaction->update($validated);
         $cbu_transaction->cbu->recalculateBalances();

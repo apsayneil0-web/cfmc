@@ -369,10 +369,9 @@
             <thead class="table-light">
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Category</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Kind of Expense</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Description</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Reason</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Recorded By</th>
                 </tr>
             </thead>
@@ -383,12 +382,11 @@
                     <td class="px-4 px-md-6 py-4">{{ ucfirst(str_replace('_', ' ', $row->category)) }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->description }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($row->amount) }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($row->status)" /></td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->recordedBy?->name ?? '—' }}</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No expenses match these filters.</td>
+                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">No expenses match these filters.</td>
                 </tr>
                 @endforelse
             </tbody>

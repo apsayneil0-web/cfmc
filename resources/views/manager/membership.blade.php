@@ -158,6 +158,25 @@
                                         <label class="text-muted small">Date Registered</label>
                                         <p class="fw-semibold mb-0">{{ $farmer->created_at->format('M d, Y') }}</p>
                                     </div>
+                                    @php
+                                        $cbu = $farmer->cbu;
+                                        $cbuBalance = (float) ($cbu->balance ?? 0);
+                                        $cbuMinimum = $farmer->first_cbu_contribution_minimum;
+                                        $cbuMet = $cbuBalance >= $cbuMinimum;
+                                        $cbuHasContributed = $cbu && $cbu->transactions->where('type', 'contribution')->isNotEmpty();
+                                        $cbuPerPaymentMinimum = $cbuHasContributed ? 1000 : $cbuMinimum;
+                                    @endphp
+                                    <div class="col-md-6 mb-3">
+                                        <label class="text-muted small">CBU Contribution <span class="text-muted">(required for membership)</span></label>
+                                        <p class="fw-semibold mb-0">
+                                            {{ peso($cbuBalance) }} of {{ peso($cbuMinimum) }} required
+                                            @if($cbuMet)
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">Met</span>
+                                            @else
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">Not met</span>
+                                            @endif
+                                        </p>
+                                    </div>
                                     @if($farmer->status === 'rejected' && $farmer->rejection_reason)
                                     <div class="col-12 mb-3">
                                         <label class="text-muted small">Rejection Reason</label>
@@ -195,11 +214,58 @@
                                 @endif
                             </div>
                             <div class="modal-footer bg-light">
+                                @if($farmer->status === 'pending' && ! $cbuMet)
+                                <button type="button" class="btn btn-success me-auto" data-bs-toggle="modal" data-bs-target="#recordCbuPaymentModal{{ $farmer->id }}"><i class="fas fa-piggy-bank me-1"></i> Record CBU Payment</button>
+                                @endif
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                @if($farmer->status === 'pending' && ! $cbuMet)
+                <!-- Record CBU Payment Modal -->
+                <div class="modal fade" id="recordCbuPaymentModal{{ $farmer->id }}" tabindex="-1" aria-labelledby="recordCbuPaymentModalLabel{{ $farmer->id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold" id="recordCbuPaymentModalLabel{{ $farmer->id }}">
+                                    <i class="fas fa-piggy-bank me-2"></i>Record CBU Payment
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="{{ route('manager.payment.record-cbu') }}" method="POST" enctype="multipart/form-data" data-cbu-confirm="{{ $farmer->full_name }}">
+                                @csrf
+                                <input type="hidden" name="farmer_id" value="{{ $farmer->id }}">
+                                <input type="hidden" name="type" value="contribution">
+                                <div class="modal-body">
+                                    <p class="text-muted small">
+                                        For {{ $farmer->first_name }} {{ $farmer->last_name }}.
+                                        @if($cbuHasContributed)
+                                            Each additional CBU contribution must be at least {{ peso($cbuPerPaymentMinimum) }}.
+                                        @else
+                                            This is their first CBU contribution — minimum {{ peso($cbuPerPaymentMinimum) }}.
+                                        @endif
+                                    </p>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold small" for="cbuAmount{{ $farmer->id }}">Amount</label>
+                                        <input type="number" step="0.01" min="{{ $cbuPerPaymentMinimum }}" name="amount" id="cbuAmount{{ $farmer->id }}" class="form-control" value="{{ number_format($cbuPerPaymentMinimum, 2, '.', '') }}" required>
+                                    </div>
+                                    <x-cbu-proof-input id="cbuProof{{ $farmer->id }}" />
+                                    <div>
+                                        <label class="form-label fw-semibold small" for="cbuNotes{{ $farmer->id }}">Notes <span class="text-muted">(optional)</span></label>
+                                        <input type="text" name="notes" id="cbuNotes{{ $farmer->id }}" class="form-control" placeholder="e.g. Cash, OR #102">
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-success">Record Payment</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 <!-- Edit Modal -->
                 <div class="modal fade" id="editModal{{ $farmer->id }}" tabindex="-1" aria-labelledby="editModalLabel{{ $farmer->id }}" aria-hidden="true">
@@ -911,6 +977,21 @@
                 value = value.replace(/\+/g, '');
             }
             input.value = value;
+        });
+    });
+
+    // Confirmation step before an applicant's CBU payment is recorded.
+    // Deferred to DOMContentLoaded: <x-confirm-dialog /> renders after this.
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-cbu-confirm]').forEach(function (form) {
+            confirmBeforeSubmit(form, function () {
+                var amount = parseFloat(form.querySelector('[name="amount"]').value) || 0;
+                var proof = form.querySelector('[name="proof_document"]').files[0];
+                return 'Farmer: ' + form.dataset.cbuConfirm +
+                    '\nAmount: ₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+                    '\nProof: ' + (proof ? proof.name : 'none') +
+                    '\n\nThis will be added to the farmer\'s CBU balance.';
+            }, { title: 'Record this CBU payment?', confirmLabel: 'Yes, Record Payment', icon: 'fa-piggy-bank' });
         });
     });
 </script>

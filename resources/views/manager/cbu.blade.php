@@ -62,6 +62,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Running Balance</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Proof</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Actions</th>
                 </tr>
             </thead>
@@ -78,12 +79,19 @@
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($transaction->balance_after) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$transaction->cbu->status" /></td>
                     <td class="px-4 px-md-6 py-4">
+                        @if($transaction->proof_url)
+                        <a href="{{ $transaction->proof_url }}" target="_blank" data-file-viewer data-viewer-title="Proof of Payment — {{ $transaction->cbu->farmer->full_name }}" class="btn btn-link btn-sm text-nowrap"><i class="fas fa-paperclip me-1"></i>View</a>
+                        @else
+                        <span class="text-muted">&mdash;</span>
+                        @endif
+                    </td>
+                    <td class="px-4 px-md-6 py-4">
                         <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#editCbuEntryModal{{ $transaction->id }}">Edit</button>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No CBU entries recorded yet.</td>
+                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">No CBU entries recorded yet.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -95,7 +103,7 @@
 {{-- Modals live outside the table: a <div> can't be a direct child of <tbody>. --}}
 @foreach($transactions as $transaction)
 <x-modal id="editCbuEntryModal{{ $transaction->id }}" title="Edit CBU Entry">
-    <form action="{{ route('manager.cbu.update', $transaction) }}" method="POST">
+    <form action="{{ route('manager.cbu.update', $transaction) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         <div class="mb-3">
@@ -125,6 +133,7 @@
             <label class="form-label fw-semibold">Notes</label>
             <textarea name="notes" rows="2" class="form-control" placeholder="Optional remarks">{{ $transaction->notes }}</textarea>
         </div>
+        <x-cbu-proof-input id="editCbuProof{{ $transaction->id }}" :required="false" :existing-url="$transaction->proof_url" />
         <div class="text-end">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" class="btn btn-primary">Save Changes</button>

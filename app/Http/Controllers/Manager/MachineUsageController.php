@@ -17,11 +17,15 @@ class MachineUsageController extends Controller
     {
         $machines = Machine::whereNull('archived_at')->get();
 
+        $dueForRepair = $machines->filter(fn (Machine $m) => $m->isDueForRepair());
+
         $stats = [
             'total' => $machines->count(),
             'available' => $machines->where('status', 'available')->count(),
             'in_use' => $machines->where('status', 'in_use')->count(),
             'maintenance' => $machines->where('status', 'maintenance')->count(),
+            'due_for_repair' => $dueForRepair->count(),
+            'estimated_repair_cost' => $dueForRepair->sum('unavailable_estimated_cost'),
         ];
 
         if ($request->filled('search')) {
@@ -39,6 +43,10 @@ class MachineUsageController extends Controller
         if ($request->filled('maintenance')) {
             $tier = $request->string('maintenance')->toString();
             $machines = $machines->filter(fn (Machine $m) => $m->maintenance_level === $tier);
+        }
+
+        if ($request->boolean('repair')) {
+            $machines = $machines->filter(fn (Machine $m) => $m->isDueForRepair());
         }
 
         $machines = $machines->sortByDesc('created_at')->values();

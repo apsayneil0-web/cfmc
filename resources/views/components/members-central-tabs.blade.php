@@ -3,11 +3,10 @@
         'route' => 'manager.user-management',
         'label' => 'User Management',
         'icon' => 'fas fa-user-cog',
-        'count' => \App\Models\User::where('roleID', 3)->where('status', '!=', 'archived')->count(),
     ],
     [
         'route' => 'manager.membership',
-        'label' => 'Membership Registration',
+        'label' => 'Farmer Registration',
         'icon' => 'fas fa-user-plus',
         'count' => \App\Models\Farmer::where('status', 'pending')->count(),
     ],

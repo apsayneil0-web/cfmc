@@ -247,11 +247,13 @@ class MachineScheduleController extends Controller
 
         $validated = $request->validate([
             'harvest_yield' => [$isHarvester ? 'required' : 'nullable', 'numeric', 'min:0'],
+            'operator' => 'nullable|string|max:255',
         ]);
 
         $schedule->update([
             'status' => 'completed',
             'harvest_yield' => $isHarvester ? $validated['harvest_yield'] : null,
+            'operator' => $validated['operator'] ?: null,
         ]);
 
         if ($schedule->user_id) {

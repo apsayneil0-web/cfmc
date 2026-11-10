@@ -90,20 +90,26 @@
                     </td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
+                        @if($req->status === 'pending')
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-success btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#approveModal{{ $req->id }}">
+                                <i class="fas fa-check"></i>Approve
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#denyModal{{ $req->id }}">
+                                <i class="fas fa-xmark"></i>Deny
+                            </button>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">More</button>
+                                <ul class="dropdown-menu dropdown-menu-end grouped-menu">
+                                    <x-dropdown-item icon="fa-eye" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View details</x-dropdown-item>
+                                </ul>
+                            </div>
+                        </div>
+                        @else
                         <x-action-dropdown>
-                            <x-slot:primary>
-                                @if($req->status === 'pending')
-                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal{{ $req->id }}">Approve</button>
-                                @else
-                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View</button>
-                                @endif
-                            </x-slot:primary>
-                            @if($req->status === 'pending')
-                            <x-dropdown-item icon="fa-eye" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View details</x-dropdown-item>
-                            <li><hr class="dropdown-divider"></li>
-                            <x-dropdown-item icon="fa-times" :danger="true" data-bs-toggle="modal" data-bs-target="#denyModal{{ $req->id }}">Deny request</x-dropdown-item>
-                            @endif
+                            <x-slot:primary><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleModal{{ $req->id }}">View</button></x-slot:primary>
                         </x-action-dropdown>
+                        @endif
                     </td>
                 </tr>
 

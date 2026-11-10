@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Machine;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MachineController extends Controller
 {
@@ -135,11 +136,15 @@ class MachineController extends Controller
     {
         $validated = $request->validate([
             'unavailable_reason' => 'nullable|string|max:500',
+            'unavailable_reason_type' => ['required', Rule::in(array_keys(Machine::UNAVAILABLE_REASON_TYPES))],
+            'unavailable_estimated_cost' => 'nullable|numeric|min:0|max:9999999.99',
         ]);
 
         $machine->update([
             'unavailable_at' => now(),
             'unavailable_reason' => $validated['unavailable_reason'] ?: null,
+            'unavailable_reason_type' => $validated['unavailable_reason_type'],
+            'unavailable_estimated_cost' => $validated['unavailable_estimated_cost'] ?: null,
         ]);
 
         return redirect()->route('manager.machinery')
@@ -151,6 +156,8 @@ class MachineController extends Controller
         $machine->update([
             'unavailable_at' => null,
             'unavailable_reason' => null,
+            'unavailable_reason_type' => null,
+            'unavailable_estimated_cost' => null,
         ]);
 
         return redirect()->route('manager.machinery')

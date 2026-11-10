@@ -51,6 +51,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Archive this login and, for a farmer, their approved membership too, so
+     * the account and the membership never disagree (an archived login with
+     * a still-approved membership would keep counting as a registered farmer).
+     */
+    public function archiveWithMembership(): void
+    {
+        $this->update(['status' => 'archived']);
+
+        $this->farmer()->where('status', 'approved')->update(['status' => 'archived']);
+    }
+
+    /**
+     * Restore this login to active use and, for a farmer, bring an archived
+     * membership back to approved alongside it.
+     */
+    public function restoreWithMembership(): void
+    {
+        $this->update([
+            'status' => 'active',
+            'FailedLoginAttemps' => 0,
+        ]);
+
+        $this->farmer()->where('status', 'archived')->update(['status' => 'approved']);
+    }
+
+    /**
      * Get the staff profile linked to this account.
      */
     public function staff()

@@ -119,9 +119,17 @@
             </p>
             @if($machine->unavailable_at)
             <div class="rounded-3 bg-light border p-2 mb-3">
-                <p class="text-xs fw-semibold text-gray-700 mb-0">Unavailable since {{ $machine->unavailable_at->format('M d, Y') }}</p>
+                <p class="text-xs fw-semibold text-gray-700 mb-0">
+                    Unavailable since {{ $machine->unavailable_at->format('M d, Y') }}
+                    @if($machine->unavailable_reason_type)
+                    &mdash; {{ \App\Models\Machine::UNAVAILABLE_REASON_TYPES[$machine->unavailable_reason_type] ?? ucfirst($machine->unavailable_reason_type) }}
+                    @endif
+                </p>
                 @if($machine->unavailable_reason)
                 <p class="text-xs text-gray-500 mb-0">Reason: {{ $machine->unavailable_reason }}</p>
+                @endif
+                @if($machine->unavailable_estimated_cost)
+                <p class="text-xs text-gray-500 mb-0">Estimated cost: ₱{{ number_format($machine->unavailable_estimated_cost, 2) }}</p>
                 @endif
             </div>
             @endif
@@ -354,9 +362,33 @@
                 @method('PATCH')
                 <div class="modal-body">
                     <p>Mark {{ $machine->name }} unavailable? Farmers won't be able to request it until you mark it available again.</p>
-                    <div class="mb-0">
-                        <label class="form-label fw-semibold">Reason (optional)</label>
+                    @php $lastOperatorSchedule = $machine->last_operator_schedule; @endphp
+                    @if($lastOperatorSchedule)
+                    <div class="bg-light border rounded-3 p-2 mb-3">
+                        <p class="text-xs fw-semibold text-gray-700 mb-0">Last operator on record</p>
+                        <p class="text-sm mb-0">{{ $lastOperatorSchedule->operator }} &mdash; {{ $lastOperatorSchedule->scheduled_date->format('M d, Y') }}</p>
+                    </div>
+                    @endif
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Reason Type <span class="text-danger">*</span></label>
+                        <select name="unavailable_reason_type" class="form-select" required>
+                            <option value="">Select a reason...</option>
+                            @foreach(\App\Models\Machine::UNAVAILABLE_REASON_TYPES as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Reason details (optional)</label>
                         <textarea name="unavailable_reason" rows="2" class="form-control" maxlength="500" placeholder="e.g. Engine repair"></textarea>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Estimated Repair/Service Cost (optional)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" step="0.01" min="0" name="unavailable_estimated_cost" class="form-control" placeholder="0.00">
+                        </div>
+                        <small class="text-muted">Shown on the Usage Monitor's repair total when Reason Type is "Repair / Breakdown".</small>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

@@ -16,8 +16,18 @@ class CbuTransaction extends Model
         'transaction_date',
         'balance_after',
         'notes',
+        'proof_document',
         'recorded_by',
     ];
+
+    /**
+     * Public URL of the attached proof of payment, or null when none is on
+     * file (older entries, expenses).
+     */
+    public function getProofUrlAttribute(): ?string
+    {
+        return $this->proof_document ? asset('storage/'.$this->proof_document) : null;
+    }
 
     protected function casts(): array
     {

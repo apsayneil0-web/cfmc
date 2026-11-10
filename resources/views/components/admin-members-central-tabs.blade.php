@@ -9,7 +9,6 @@
         'label' => 'Member Information',
         'icon' => 'fas fa-users',
         'active' => $onMembers && request('status') !== 'approved',
-        'count' => \App\Models\Farmer::whereIn('status', ['approved', 'archived'])->count(),
     ],
     [
         'route' => 'admin.members',

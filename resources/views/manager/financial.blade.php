@@ -33,9 +33,8 @@
     <x-stat-card label="Total Expenses" value="{{ peso($stats['total']) }}" icon="fa-chart-line" color="primary" />
 </div>
 
-<!-- Breakdown and Income Notice -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <!-- Expense Breakdown -->
+<!-- Expense Breakdown -->
+<div class="mb-6">
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
         <div class="space-y-4">
@@ -47,7 +46,7 @@
                 ];
                 $barColors = ['Operational' => 'bg-secondary', 'Machinery' => 'bg-warning', 'Replaceable Parts' => 'bg-danger'];
             @endphp
-            @forelse($breakdown as $label => $amount)
+            @foreach($breakdown as $label => $amount)
             <div>
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-sm text-gray-600">{{ $label }}</span>
@@ -60,27 +59,17 @@
             @endforeach
         </div>
     </div>
-
-    <!-- Income Tracking Notice -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Income Tracking</h3>
-        <div class="h-full d-flex flex-column align-items-center justify-content-center text-center py-4">
-            <i class="fas fa-circle-info text-4xl text-muted mb-3"></i>
-            <p class="text-muted mb-0">Income tracking (harvest sales, machine rental, CBU/loan interest, cooperative share) isn't implemented yet.</p>
-            <p class="text-muted small mt-2 mb-0">This page currently reflects recorded expenses only.</p>
-        </div>
-    </div>
 </div>
 
-<!-- Expense Reports Table -->
+<!-- Expense Records Table -->
 <div class="section-card">
     <x-table-toolbar>
         <x-slot:filters>
-            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Expense Reports</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-0 me-2">Expense Records</h3>
         </x-slot:filters>
         <x-slot:actions>
-            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
-                <i class="fas fa-plus"></i><span>Add Expense</span>
+            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#recordExpenseModal">
+                <i class="fas fa-plus"></i><span>Record Expense</span>
             </button>
         </x-slot:actions>
     </x-table-toolbar>
@@ -90,9 +79,10 @@
                 <tr>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Date</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Description</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Category</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Kind of Expense</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
-                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Status</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Recorded By</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Proof</th>
                 </tr>
             </thead>
             <tbody>
@@ -105,11 +95,18 @@
                     <td class="px-4 px-md-6 py-4">{{ $expense->description }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $categoryLabels[$expense->category] }}</td>
                     <td class="px-4 px-md-6 py-4">{{ peso($expense->amount) }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($expense->status)" /></td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $expense->recordedBy?->name ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4">
+                        @if($expense->proof_url)
+                        <a href="{{ $expense->proof_url }}" target="_blank" data-file-viewer data-viewer-title="Proof of Expense — {{ $expense->description }}" class="btn btn-link btn-sm p-0 text-nowrap"><i class="fas fa-paperclip me-1"></i>View</a>
+                        @else
+                        <span class="text-muted">—</span>
+                        @endif
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">No expenses recorded yet.</td>
+                    <td colspan="6" class="px-4 px-md-6 py-6 text-center text-muted">No expenses recorded yet.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -117,19 +114,19 @@
     </div>
 </div>
 
-<!-- Add Expense Modal -->
-<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
+<!-- Record Expense Modal -->
+<div class="modal fade" id="recordExpenseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice me-2"></i>Add Expense</h5>
+                <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice me-2"></i>Record Expense</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('manager.financial.store') }}" method="POST">
+            <form action="{{ route('manager.financial.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Kind of Expense <span class="text-danger">*</span></label>
                         <select name="category" class="form-select" required>
                             <option value="operational">Operational</option>
                             <option value="machinery">Machinery</option>
@@ -141,23 +138,22 @@
                         <input type="text" name="description" class="form-control" placeholder="e.g. Fuel - Tractor #001" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Amount <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Amount (₱) <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
                         <input type="date" name="expense_date" class="form-control" value="{{ now()->toDateString() }}" required>
                     </div>
-                    <div>
-                        <label class="form-label fw-semibold">Status</label>
-                        <input type="text" class="form-control" value="Pending" disabled>
-                        <input type="hidden" name="status" value="pending">
-                        <div class="form-text">New expenses are recorded as Pending.</div>
-                    </div>
+                    <x-cbu-proof-input id="recordExpenseProof"
+                        label="Proof of Expense"
+                        hint="Photo of the receipt or invoice · JPG, PNG or PDF · up to 5 MB"
+                        missing-message="Attach the proof of the expense (receipt photo or invoice) before recording." />
+                    <p class="text-muted small mb-0">The expense is saved straight to the records. No payment step needed.</p>
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Expense</button>
+                    <button type="submit" class="btn btn-primary">Record Expense</button>
                 </div>
             </form>
         </div>

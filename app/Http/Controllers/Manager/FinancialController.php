@@ -6,14 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class FinancialController extends Controller
 {
     /**
-     * Expense-side financial overview. Income (harvest sales, machine rental,
-     * CBU/loan interest, cooperative share) isn't tracked anywhere in the
-     * system yet, so this view deliberately shows expenses only rather than
-     * fabricating income figures.
+     * Expense records: each entry is simply the kind of expense and its
+     * amount. Expenses are recorded here only — they are not settled through
+     * the Payment module.
      */
     public function index()
     {
@@ -38,8 +38,18 @@ class FinancialController extends Controller
             'description' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0.01',
             'expense_date' => 'required|date',
-            'status' => 'required|in:pending,paid',
+            'proof_document' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'proof_document.required' => 'Attach the proof of the expense (receipt photo or invoice) before recording.',
+            'proof_document.mimes' => 'The proof must be a JPG, PNG or PDF file.',
+            'proof_document.max' => 'The proof must not be larger than 5 MB.',
         ]);
+
+        $validated['proof_document'] = $request->file('proof_document')->storeAs(
+            'expense_proofs',
+            time().'_'.Str::random(6).'.'.strtolower($request->file('proof_document')->getClientOriginalExtension()),
+            'public'
+        );
 
         Expense::create([
             ...$validated,

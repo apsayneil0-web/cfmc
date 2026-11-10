@@ -24,6 +24,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Type</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Amount</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Running Balance</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Receipt</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,10 +34,11 @@
                     <td class="px-4 px-md-6 py-4" data-label="Type">{{ $contribution->category ?? 'Contribution' }}</td>
                     <td class="px-4 px-md-6 py-4 text-success fw-medium" data-label="Amount">+{{ peso($contribution->amount) }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark" data-label="Running Balance">{{ peso($contribution->balance_after) }}</td>
+                    <td class="px-4 px-md-6 py-4" data-label="Receipt">@if($contribution->proof_url)<a href="{{ $contribution->proof_url }}" target="_blank" data-file-viewer data-viewer-title="CBU Receipt — {{ $contribution->transaction_date->format('M d, Y') }}" class="text-nowrap"><i class="fas fa-paperclip me-1"></i>View</a>@else<span class="text-muted">&mdash;</span>@endif</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="px-4 px-md-6 py-6 text-center text-muted">No contributions recorded yet.</td>
+                    <td colspan="5" class="px-4 px-md-6 py-6 text-center text-muted">No contributions recorded yet.</td>
                 </tr>
                 @endforelse
             </tbody>

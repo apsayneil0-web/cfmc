@@ -49,7 +49,7 @@
     }
     .cd.is-danger .cd-icon { background: var(--brand-danger-light, #f6e5e0); color: var(--brand-danger-text, #9c4532); }
     .cd-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 0.4rem; }
-    .cd-message { margin: 0 0 1.4rem; color: var(--text-secondary, #4a5249); font-size: 0.95rem; }
+    .cd-message { margin: 0 0 1.4rem; color: var(--text-secondary, #4a5249); font-size: 0.95rem; white-space: pre-line; }
     .cd-actions { display: flex; gap: 0.6rem; }
     .cd-actions .btn { flex: 1; }
     @keyframes cd-fade { from { opacity: 0; } }
@@ -101,6 +101,25 @@
             box.hidden = false;
             okBtn.focus();
             return new Promise(function (resolve) { resolver = resolve; });
+        };
+
+        // Ask before a form actually submits, with a message built from what
+        // was filled in at that moment (e.g. "₱4,000.00 for Juan Dela Cruz").
+        // Runs only after the browser's own required/format checks pass, and
+        // submits the form exactly once on confirm.
+        //     confirmBeforeSubmit(form, function (form) { return '...'; }, { title: '...' });
+        window.confirmBeforeSubmit = function (form, buildMessage, options) {
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                if (form.dataset.confirmed === '1') return;
+                e.preventDefault();
+                confirmDialog(buildMessage(form), options).then(function (ok) {
+                    if (!ok) return;
+                    form.dataset.confirmed = '1';
+                    form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = true; });
+                    form.submit();
+                });
+            });
         };
 
         okBtn.addEventListener('click', function () { finish(true); });

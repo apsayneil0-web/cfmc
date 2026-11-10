@@ -155,6 +155,22 @@
                     <p class="detail-label">RSBSA</p>
                     <p class="detail-value">{{ $application->documentPaths('rsbsa_path') ? 'Submitted' : 'Not submitted' }}</p>
                 </div>
+                @php
+                    $cbuBalance = (float) ($application->cbu->balance ?? 0);
+                    $cbuMinimum = $application->first_cbu_contribution_minimum;
+                    $cbuMet = $cbuBalance >= $cbuMinimum;
+                @endphp
+                <div>
+                    <p class="detail-label">CBU Contribution</p>
+                    <p class="detail-value">
+                        {{ peso($cbuBalance) }} of {{ peso($cbuMinimum) }} required
+                        @if($cbuMet)
+                        <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">Met</span>
+                        @else
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">Not met</span>
+                        @endif
+                    </p>
+                </div>
             </div>
 
             <p class="detail-label mb-2">Documents</p>

@@ -13,11 +13,13 @@
 @endif
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
     <x-stat-card label="Total Machinery" value="{{ $stats['total'] }}" icon="fa-cogs" color="secondary" />
     <x-stat-card label="Available" value="{{ $stats['available'] }}" icon="fa-check-circle" color="success" />
     <x-stat-card label="In Use" value="{{ $stats['in_use'] }}" icon="fa-tractor" color="primary" />
     <x-stat-card label="Under Maintenance" value="{{ $stats['maintenance'] }}" icon="fa-wrench" color="danger" />
+    <x-stat-card label="Due for Repair" value="{{ $stats['due_for_repair'] }}" icon="fa-triangle-exclamation" color="danger" />
+    <x-stat-card label="Est. Repair Expense" value="₱{{ number_format($stats['estimated_repair_cost'], 2) }}" icon="fa-peso-sign" color="warning" />
 </div>
 
 <!-- Usage Table -->
@@ -43,7 +45,11 @@
                     <option value="full" {{ request('maintenance') == 'full' ? 'selected' : '' }}>Full Maintenance</option>
                     <option value="comprehensive" {{ request('maintenance') == 'comprehensive' ? 'selected' : '' }}>Comprehensive Servicing</option>
                 </select>
-                @if(request()->anyFilled(['search', 'status', 'maintenance']))
+                <label class="d-flex align-items-center gap-2 text-sm mb-0">
+                    <input type="checkbox" name="repair" value="1" class="form-check-input" {{ request()->boolean('repair') ? 'checked' : '' }} onchange="this.form.submit()">
+                    Due for Repair only
+                </label>
+                @if(request()->anyFilled(['search', 'status', 'maintenance', 'repair']))
                 <a href="{{ route('manager.machine-usage') }}" class="btn btn-link btn-sm">Clear</a>
                 @endif
             </form>
@@ -66,6 +72,7 @@
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Times Used</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Maintenance</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Assigned Operator</th>
+                    <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Last Operator</th>
                     <th class="px-4 px-md-6 py-3 text-xs font-medium text-uppercase text-muted">Details</th>
                 </tr>
             </thead>
@@ -79,13 +86,21 @@
                     <td class="px-4 px-md-6 py-4 text-muted" title="Completed bookings for this machine">{{ $machine->times_used }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$machine->maintenance_label" :title="$machine->maintenance_recommendation" /></td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $machine->assigned_operator ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">
+                        @if($machine->last_operator_schedule)
+                        {{ $machine->last_operator_schedule->operator }}
+                        <span class="d-block" style="font-size: 11px;">{{ $machine->last_operator_schedule->scheduled_date->format('M d, Y') }}</span>
+                        @else
+                        —
+                        @endif
+                    </td>
                     <td class="px-4 px-md-6 py-4">
                         <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#viewUsageModal{{ $machine->id }}">View</button>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 px-md-6 py-6 text-center text-muted">No machinery on record yet.</td>
+                    <td colspan="9" class="px-4 px-md-6 py-6 text-center text-muted">No machinery on record yet.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -101,11 +116,34 @@
         <div class="col-6"><label class="text-muted small d-block">Machine Name</label><p class="fw-medium mb-0">{{ $machine->name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucwords(str_replace('_', ' ', $machine->status))" /></div>
         <div class="col-6"><label class="text-muted small d-block">Assigned Operator</label><p class="fw-medium mb-0">{{ $machine->assigned_operator ?? '—' }}</p></div>
+        <div class="col-6">
+            <label class="text-muted small d-block">Last Operator</label>
+            <p class="fw-medium mb-0">
+                @if($machine->last_operator_schedule)
+                {{ $machine->last_operator_schedule->operator }} &mdash; {{ $machine->last_operator_schedule->scheduled_date->format('M d, Y') }}
+                @else
+                —
+                @endif
+            </p>
+        </div>
         <div class="col-6"><label class="text-muted small d-block">Usage Hours</label><p class="fw-medium mb-0">{{ $machine->usage_hours }} hrs</p></div>
         <div class="col-6"><label class="text-muted small d-block">Times Used</label><p class="fw-medium mb-0">{{ $machine->times_used }} completed booking(s)</p></div>
         <div class="col-6"><label class="text-muted small d-block">Daily Hectare Limit</label><p class="fw-medium mb-0">{{ $machine->daily_hectare_limit }} ha / day</p></div>
         <div class="col-6"><label class="text-muted small d-block mb-1">Maintenance Tier</label><x-status-badge :status="$machine->maintenance_label" /></div>
         <div class="col-12"><label class="text-muted small d-block">Maintenance Recommendation</label><p class="fw-medium mb-0">{{ $machine->maintenance_recommendation }}</p></div>
+        @if($machine->isDueForRepair())
+        <div class="col-12">
+            <div class="alert alert-danger mb-0 py-2 px-3">
+                <p class="fw-semibold mb-0"><i class="fas fa-triangle-exclamation me-1"></i>Due for Repair</p>
+                @if($machine->unavailable_reason_type)
+                <p class="mb-0 small">{{ \App\Models\Machine::UNAVAILABLE_REASON_TYPES[$machine->unavailable_reason_type] ?? ucfirst($machine->unavailable_reason_type) }}@if($machine->unavailable_reason) — {{ $machine->unavailable_reason }}@endif</p>
+                @endif
+                @if($machine->unavailable_estimated_cost)
+                <p class="mb-0 small">Estimated cost: ₱{{ number_format($machine->unavailable_estimated_cost, 2) }}</p>
+                @endif
+            </div>
+        </div>
+        @endif
     </div>
 </x-modal>
 @endforeach

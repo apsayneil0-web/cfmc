@@ -92,6 +92,7 @@ class ScheduleRequest extends Model
         'denial_reason',
         'remarks',
         'harvest_yield',
+        'operator',
         'archived_at',
     ];
 

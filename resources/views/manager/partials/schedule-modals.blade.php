@@ -69,15 +69,26 @@
                 @csrf
                 @method('PATCH')
                 <div class="modal-body">
+                    <p>Confirm that this schedule is finished{{ $isHarvester ? ' and record the total harvest yield' : '' }}. Once marked complete, it can't be reopened.</p>
+                    <div class="row g-2 bg-light border rounded-3 p-2 mx-0 mb-3">
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Farmer</label><p class="fw-semibold mb-0">{{ $req->display_name }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Machinery</label><p class="fw-semibold mb-0">{{ $req->machinery }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Crop</label><p class="fw-semibold mb-0">{{ $req->crop->name ?? '—' }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Land Size</label><p class="fw-semibold mb-0">{{ $req->land_size }} ha</p></div>
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Date</label><p class="fw-semibold mb-0">{{ $req->scheduled_date->format('M d, Y') }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Location</label><p class="fw-semibold mb-0">{{ $req->location }}</p></div>
+                    </div>
                     @if($isHarvester)
-                    <p>Confirm that this schedule for <strong>{{ $req->display_name }}</strong> is finished and record the total harvest yield. Once marked complete, it can't be reopened.</p>
-                    <div class="mb-0">
+                    <div class="mb-3">
                         <label class="form-label fw-semibold">Harvest Yield (sacks/tons) <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" min="0" name="harvest_yield" class="form-control" required>
                     </div>
-                    @else
-                    <p class="mb-0">Confirm that this schedule for <strong>{{ $req->display_name }}</strong> is finished. Once marked complete, it can't be reopened.</p>
                     @endif
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Operator</label>
+                        <input type="text" name="operator" class="form-control" placeholder="Who ran the machine for this job?">
+                        <small class="text-muted">Kept on record so the machine's Usage Monitor can show who had it last.</small>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

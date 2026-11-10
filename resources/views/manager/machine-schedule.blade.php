@@ -438,6 +438,7 @@
         var endTimeInput = form.querySelector('input[name="end_time"]');
         var machinerySelect = form.querySelector('select[name="machinery"]');
         var unitsSelect = form.querySelector('select[name="units_requested"]');
+        var unitsWrapper = form.querySelector('.schedule-units-wrapper');
 
         function estimateEndTime() {
             var landSize = parseFloat(landSizeInput.value);
@@ -470,6 +471,10 @@
             }
             unitsSelect.value = Math.min(desired, quantity);
             unitsSelect.dataset.initialized = '1';
+
+            // Nothing to choose when the machine only has one physical unit —
+            // hide the field instead of showing a dropdown stuck on "1 unit".
+            unitsWrapper.classList.toggle('d-none', quantity <= 1);
 
             estimateEndTime();
         }

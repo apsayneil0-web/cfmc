@@ -23,7 +23,7 @@ class MembershipController extends Controller
     {
         $crops = Crop::all();
 
-        $query = Farmer::with(['crops', 'activityLogs']);
+        $query = Farmer::with(['crops', 'activityLogs', 'cbu.transactions']);
 
         // Default to Pending when no status filter is chosen yet — that's the
         // actionable list a manager lands on this page to work through.
@@ -294,6 +294,11 @@ class MembershipController extends Controller
     public function archive(Farmer $farmer)
     {
         $farmer->update(['status' => 'archived']);
+
+        // Archive the member's login with the membership so it stops counting
+        // as an active farmer account. Unarchiving the membership sends it back
+        // to pending; re-approval reactivates this login.
+        $farmer->account()->where('status', '!=', 'archived')->update(['status' => 'archived']);
 
         return redirect()->back()
             ->with('success', 'Farmer archived successfully!');

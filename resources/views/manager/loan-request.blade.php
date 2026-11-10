@@ -963,7 +963,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Loan Amount <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" min="1" name="requested_amount" class="form-control" placeholder="&#8369;0.00" required>
+                            <input type="number" step="0.01" min="1" name="requested_amount" id="createAmountInput" class="form-control" placeholder="&#8369;0.00" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Purpose <span class="text-danger">*</span></label>
@@ -978,7 +978,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Repayment Terms <span class="text-danger">*</span></label>
-                            <select name="repayment_terms_months" class="form-select" required>
+                            <select name="repayment_terms_months" id="createTermsSelect" class="form-select" required>
                                 <option value="">Select Terms</option>
                                 @foreach($termOptions as $term)
                                 <option value="{{ $term }}">{{ $term }} months</option>
@@ -990,6 +990,20 @@
                             <input type="text" name="collateral" class="form-control" placeholder="Describe collateral" required>
                         </div>
                     </div>
+
+                    {{-- Client-side only, same philosophy as the Harvest Payment
+                         preview on the Payment Center page: never trusted as the
+                         real figure, just an estimate at the standard 2% rate so
+                         the Manager sees roughly what they're encoding before the
+                         Admin approves and the real rate is set at Finalize. --}}
+                    <div class="bg-light rounded p-3 mb-3 d-none" id="createLoanBreakdown">
+                        <div class="d-flex justify-content-between small"><span>Monthly Installment</span><b id="createBreakdownInstallment">—</b></div>
+                        <div class="d-flex justify-content-between small"><span>Total Interest</span><b id="createBreakdownInterest">—</b></div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between"><span class="fw-semibold">Total to Repay</span><b class="text-success" id="createBreakdownTotal">—</b></div>
+                        <p class="small text-muted mb-0 mt-2">Estimated at 2% — the actual rate is set when the Manager finalizes this loan.</p>
+                    </div>
+
                     <div>
                         <label class="form-label fw-semibold">Collateral Proof <span class="text-danger">*</span></label>
                         <input type="file" name="documents" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
@@ -1027,6 +1041,50 @@
             });
         });
     });
+
+    // Live, client-side-only estimate of the monthly payment as the Manager
+    // picks amount/terms — mirrors Loan::getMonthlyDueAttribute()'s real
+    // formula so the preview matches what Finalize will actually compute
+    // once the Admin approves and a rate is set, but is never itself
+    // submitted or trusted as the real figure (same approach as the
+    // Harvest Payment preview on the Payment Center page).
+    (function () {
+        var ESTIMATE_RATE = 0.02;
+        var amountInput = document.getElementById('createAmountInput');
+        var termsSelect = document.getElementById('createTermsSelect');
+        var card = document.getElementById('createLoanBreakdown');
+        if (!amountInput || !termsSelect || !card) {
+            return;
+        }
+
+        function peso(n) {
+            return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function updateLoanBreakdown() {
+            var amount = parseFloat(amountInput.value);
+            var term = parseInt(termsSelect.value, 10);
+
+            if (!amount || amount <= 0 || !term || term <= 0) {
+                card.classList.add('d-none');
+                return;
+            }
+
+            var installment = Math.round((amount / term) * 100) / 100;
+            var minimumDue = Math.round(amount * ESTIMATE_RATE * 100) / 100;
+            var monthlyDue = Math.round((minimumDue + installment) * 100) / 100;
+            var totalToRepay = Math.round((monthlyDue * term) * 100) / 100;
+            var totalInterest = Math.round((totalToRepay - amount) * 100) / 100;
+
+            document.getElementById('createBreakdownInstallment').textContent = peso(monthlyDue);
+            document.getElementById('createBreakdownInterest').textContent = peso(totalInterest);
+            document.getElementById('createBreakdownTotal').textContent = peso(totalToRepay);
+            card.classList.remove('d-none');
+        }
+
+        amountInput.addEventListener('input', updateLoanBreakdown);
+        termsSelect.addEventListener('change', updateLoanBreakdown);
+    })();
 
     function toggleBatchField(select) {
         var wrapper = document.getElementById(select.dataset.batchWrapper);

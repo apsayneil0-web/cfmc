@@ -123,7 +123,7 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
                                             <label class="form-label fw-semibold">Loan Amount <span class="text-danger">*</span></label>
-                                            <input type="number" step="0.01" min="1" @if($loanEligibility) max="{{ $loanEligibility['max_loanable'] }}" @endif name="requested_amount" class="form-control" value="{{ $appointment->requested_amount }}" required>
+                                            <input type="number" step="0.01" min="1" @if($loanEligibility) max="{{ $loanEligibility['max_loanable'] }}" @endif name="requested_amount" id="editAmountInput{{ $appointment->id }}" class="form-control" value="{{ $appointment->requested_amount }}" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-semibold">Purpose <span class="text-danger">*</span></label>
@@ -138,13 +138,25 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6 mb-3 mb-md-0">
                                             <label class="form-label fw-semibold">Repayment Terms <span class="text-danger">*</span></label>
-                                            <select name="repayment_terms_months" class="form-select" required>
+                                            <select name="repayment_terms_months" id="editTermsSelect{{ $appointment->id }}" class="form-select" required>
                                                 <option value="">Select Terms</option>
                                                 @foreach($loanTerms as $term)
                                                 <option value="{{ $term }}" {{ (int) $appointment->repayment_terms_months === $term ? 'selected' : '' }}>{{ $term }} months</option>
                                                 @endforeach
                                             </select>
                                         </div>
+                                    </div>
+
+                                    {{-- Client-side only, same philosophy as the Harvest Payment
+                                         preview on the Manager's Payment Center page: never
+                                         trusted as the real figure, just an estimate at the
+                                         standard 2% rate. --}}
+                                    <div class="bg-light rounded p-3 mb-3 d-none" id="editLoanBreakdown{{ $appointment->id }}">
+                                        <div class="d-flex justify-content-between small"><span>Monthly Installment</span><b id="editBreakdownInstallment{{ $appointment->id }}">—</b></div>
+                                        <div class="d-flex justify-content-between small"><span>Total Interest</span><b id="editBreakdownInterest{{ $appointment->id }}">—</b></div>
+                                        <hr class="my-2">
+                                        <div class="d-flex justify-content-between"><span class="fw-semibold">Total to Repay</span><b class="text-success" id="editBreakdownTotal{{ $appointment->id }}">—</b></div>
+                                        <p class="small text-muted mb-0 mt-2">Estimated at 2% — the actual rate is set when the Manager finalizes this loan.</p>
                                     </div>
 
                                     {{-- PLACEHOLDER LEGAL TEXT — replace the Republic Act citation and terms
@@ -277,7 +289,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Loan Amount <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" min="1" @if($loanEligibility) max="{{ $loanEligibility['max_loanable'] }}" @endif name="requested_amount" class="form-control" placeholder="&#8369;0.00" required>
+                            <input type="number" step="0.01" min="1" @if($loanEligibility) max="{{ $loanEligibility['max_loanable'] }}" @endif name="requested_amount" id="createAmountInput" class="form-control" placeholder="&#8369;0.00" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Purpose <span class="text-danger">*</span></label>
@@ -292,13 +304,27 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label class="form-label fw-semibold">Repayment Terms <span class="text-danger">*</span></label>
-                            <select name="repayment_terms_months" class="form-select" required>
+                            <select name="repayment_terms_months" id="createTermsSelect" class="form-select" required>
                                 <option value="">Select Terms</option>
                                 @foreach($loanTerms as $term)
                                 <option value="{{ $term }}">{{ $term }} months</option>
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+
+                    {{-- Client-side only, same philosophy as the Harvest Payment
+                         preview on the Manager's Payment Center page: never
+                         trusted as the real figure, just an estimate at the
+                         standard 2% rate so the farmer sees roughly what
+                         they're asking for before the Manager encodes the
+                         official loan request. --}}
+                    <div class="bg-light rounded p-3 mb-3 d-none" id="createLoanBreakdown">
+                        <div class="d-flex justify-content-between small"><span>Monthly Installment</span><b id="createBreakdownInstallment">—</b></div>
+                        <div class="d-flex justify-content-between small"><span>Total Interest</span><b id="createBreakdownInterest">—</b></div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between"><span class="fw-semibold">Total to Repay</span><b class="text-success" id="createBreakdownTotal">—</b></div>
+                        <p class="small text-muted mb-0 mt-2">Estimated at 2% — the actual rate is set when the Manager finalizes this loan.</p>
                     </div>
 
                     {{-- PLACEHOLDER LEGAL TEXT — replace the Republic Act citation and terms
@@ -501,6 +527,76 @@
             openTarget();
         }
     }
+
+    // Live, client-side-only estimate of the monthly payment as amount/terms
+    // are picked — mirrors Loan::getMonthlyDueAttribute()'s real formula, but
+    // is never itself submitted or trusted as the real figure (same approach
+    // as the Harvest Payment preview on the Manager's Payment Center page).
+    // Shared by the New Appointment modal (fixed ids) and every per-appointment
+    // Reschedule modal (ids suffixed with the appointment id).
+    function wireLoanBreakdown(amountInput, termsSelect, card, elInstallment, elInterest, elTotal) {
+        var ESTIMATE_RATE = 0.02;
+
+        function peso(n) {
+            return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function update() {
+            var amount = parseFloat(amountInput.value);
+            var term = parseInt(termsSelect.value, 10);
+
+            if (!amount || amount <= 0 || !term || term <= 0) {
+                card.classList.add('d-none');
+                return;
+            }
+
+            var installment = Math.round((amount / term) * 100) / 100;
+            var minimumDue = Math.round(amount * ESTIMATE_RATE * 100) / 100;
+            var monthlyDue = Math.round((minimumDue + installment) * 100) / 100;
+            var totalToRepay = Math.round((monthlyDue * term) * 100) / 100;
+            var totalInterest = Math.round((totalToRepay - amount) * 100) / 100;
+
+            elInstallment.textContent = peso(monthlyDue);
+            elInterest.textContent = peso(totalInterest);
+            elTotal.textContent = peso(totalToRepay);
+            card.classList.remove('d-none');
+        }
+
+        amountInput.addEventListener('input', update);
+        termsSelect.addEventListener('change', update);
+    }
+
+    (function () {
+        var amountInput = document.getElementById('createAmountInput');
+        var termsSelect = document.getElementById('createTermsSelect');
+        var card = document.getElementById('createLoanBreakdown');
+
+        if (amountInput && termsSelect && card) {
+            wireLoanBreakdown(
+                amountInput, termsSelect, card,
+                document.getElementById('createBreakdownInstallment'),
+                document.getElementById('createBreakdownInterest'),
+                document.getElementById('createBreakdownTotal')
+            );
+        }
+    })();
+
+    document.querySelectorAll('[id^="editAmountInput"]').forEach(function (amountInput) {
+        var suffix = amountInput.id.replace('editAmountInput', '');
+        var termsSelect = document.getElementById('editTermsSelect' + suffix);
+        var card = document.getElementById('editLoanBreakdown' + suffix);
+
+        if (!termsSelect || !card) {
+            return;
+        }
+
+        wireLoanBreakdown(
+            amountInput, termsSelect, card,
+            document.getElementById('editBreakdownInstallment' + suffix),
+            document.getElementById('editBreakdownInterest' + suffix),
+            document.getElementById('editBreakdownTotal' + suffix)
+        );
+    });
 
     // Intercepts the New Appointment form's submit into a confirmation step
     // instead of posting straight away — native required-field validation

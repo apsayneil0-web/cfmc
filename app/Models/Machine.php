@@ -21,6 +21,19 @@ class Machine extends Model
     public const DEFAULT_DAILY_HECTARE_LIMIT = 6.00;
 
     /**
+     * Categorizes why a machine was manually marked unavailable. Only
+     * 'repair' counts toward isDueForRepair() / the Usage Monitor's repair
+     * total — the others are real reasons a machine is off the roster but
+     * don't imply a service cost.
+     */
+    public const UNAVAILABLE_REASON_TYPES = [
+        'repair' => 'Repair / Breakdown',
+        'routine' => 'Routine Servicing',
+        'operator_unavailable' => 'Operator Unavailable',
+        'other' => 'Other',
+    ];
+
+    /**
      * Known machine-type abbreviations for CFMC-[code]-[year]-[number] serial
      * numbers. Keyed lowercase; typeCode() falls back to an initials-based
      * guess for any type not listed here.
@@ -83,6 +96,8 @@ class Machine extends Model
         'archived_at',
         'unavailable_at',
         'unavailable_reason',
+        'unavailable_reason_type',
+        'unavailable_estimated_cost',
     ];
 
     protected function casts(): array
@@ -91,6 +106,7 @@ class Machine extends Model
             'daily_hectare_limit' => 'decimal:2',
             'archived_at' => 'datetime',
             'unavailable_at' => 'datetime',
+            'unavailable_estimated_cost' => 'decimal:2',
         ];
     }
 
@@ -222,5 +238,32 @@ class Machine extends Model
     public function isOutOfService(): bool
     {
         return in_array($this->status, ['maintenance', 'unavailable'], true);
+    }
+
+    /**
+     * The most recently completed booking that recorded an operator — so a
+     * manager flagging a machine down can see who had it last. Null if no
+     * completed booking ever recorded one.
+     */
+    public function getLastOperatorScheduleAttribute(): ?ScheduleRequest
+    {
+        return $this->scheduleRequests()
+            ->where('status', 'completed')
+            ->whereNull('archived_at')
+            ->whereNotNull('operator')
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('end_time')
+            ->first();
+    }
+
+    /**
+     * Flagged for a real repair/breakdown — either the usage-hours threshold
+     * was crossed, or a Manager manually marked it unavailable specifically
+     * for repair (as opposed to routine servicing, no operator, etc.).
+     */
+    public function isDueForRepair(): bool
+    {
+        return $this->status === 'maintenance'
+            || ($this->status === 'unavailable' && $this->unavailable_reason_type === 'repair');
     }
 }

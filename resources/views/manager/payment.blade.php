@@ -26,11 +26,10 @@
 @endif
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <x-stat-card label="Loan Payments" value="₱{{ number_format($stats['loan_payments'], 2) }}" icon="fa-hand-holding-usd" color="primary" />
     <x-stat-card label="CBU Contributions" value="₱{{ number_format($stats['cbu_contributions'], 2) }}" icon="fa-piggy-bank" color="info" />
     <x-stat-card label="Machine Payments" value="₱{{ number_format($stats['harvest_payments'], 2) }}" icon="fa-seedling" color="success" />
-    <x-stat-card label="Operational Expenses" value="₱{{ number_format($stats['operational_expenses'], 2) }}" icon="fa-file-invoice" color="warning" />
 </div>
 
 <!-- Payments Table -->
@@ -46,7 +45,6 @@
                     <option value="">All Types</option>
                     <option value="Loan Payment" {{ request('type') == 'Loan Payment' ? 'selected' : '' }}>Loan Payment</option>
                     <option value="CBU Payment" {{ request('type') == 'CBU Payment' ? 'selected' : '' }}>CBU Payment</option>
-                    <option value="Expense Payment" {{ request('type') == 'Expense Payment' ? 'selected' : '' }}>Expense Payment</option>
                     <option value="Machine Payment" {{ request('type') == 'Machine Payment' ? 'selected' : '' }}>Machine Payment</option>
                 </select>
                 <input type="date" name="date" value="{{ request('date') }}" class="form-control" style="width: auto;" onchange="this.form.submit()">
@@ -69,11 +67,6 @@
                     <li>
                         <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#recordCbuPaymentModal">
                             <i class="fas fa-piggy-bank text-primary"></i>CBU Payment
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#payExpenseModal">
-                            <i class="fas fa-file-invoice text-warning"></i>Expense Payment
                         </a>
                     </li>
                     <li>
@@ -104,7 +97,12 @@
                 <tr>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $payment->date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $payment->payer }}</td>
-                    <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->type_label" /></td>
+                    <td class="px-4 px-md-6 py-4 text-nowrap">
+                        <x-status-badge :status="$payment->type_label" />
+                        @if($payment->proof_url ?? null)
+                        <i class="fas fa-paperclip text-primary ms-1" title="Proof of payment attached" aria-label="Proof of payment attached"></i>
+                        @endif
+                    </td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $payment->reference }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ peso($payment->amount) }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$payment->status_label" /></td>
@@ -142,6 +140,18 @@
         @endif
         @if($payment->notes)
         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $payment->notes }}</p></div>
+        @endif
+        @if($payment->kind === 'cbu')
+        <div class="col-12">
+            <label class="text-muted small d-block">Proof of Payment</label>
+            @if($payment->proof_url)
+            <a href="{{ $payment->proof_url }}" target="_blank" data-file-viewer data-viewer-title="Proof of Payment — {{ $payment->payer }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-paperclip me-1"></i> View Proof
+            </a>
+            @else
+            <p class="text-muted mb-0">No proof on file.</p>
+            @endif
+        </div>
         @endif
     </div>
     @if($payment->kind === 'loan')
@@ -265,7 +275,7 @@
                 <h5 class="modal-title fw-bold"><i class="fas fa-piggy-bank me-2"></i>Record CBU Payment</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('manager.payment.record-cbu') }}" method="POST">
+            <form action="{{ route('manager.payment.record-cbu') }}" method="POST" enctype="multipart/form-data" id="recordCbuPaymentForm">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -289,44 +299,10 @@
                         <input type="number" step="0.01" min="0.01" name="amount" id="recordCbuAmountInput" class="form-control" required>
                         <p class="text-muted small mb-0 mt-1" id="recordCbuMinimumHint"></p>
                     </div>
+                    <x-cbu-proof-input id="recordCbuProof" />
                     <div>
                         <label class="form-label fw-semibold">Notes</label>
                         <textarea name="notes" rows="2" class="form-control" placeholder="Optional remarks"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Record Payment</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Record Expense Payment Modal -->
-<div class="modal fade" id="payExpenseModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice me-2"></i>Record Expense Payment</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('manager.payment.pay-expense') }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Pending Expense <span class="text-danger">*</span></label>
-                        <select name="expense_id" id="payExpenseSelect" class="form-select searchable-select" data-placeholder="Search expenses..." required>
-                            <option value="" disabled selected>Select an expense</option>
-                            @forelse($payableExpenses as $expense)
-                            <option value="{{ $expense->id }}">
-                                EXP-{{ str_pad($expense->id, 3, '0', STR_PAD_LEFT) }} — {{ $expense->description }} ({{ peso($expense->amount) }})
-                            </option>
-                            @empty
-                            <option value="" disabled>No pending expenses</option>
-                            @endforelse
-                        </select>
-                        <p class="text-muted small mb-0 mt-1">Marks the expense as paid, dated today.</p>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -419,7 +395,7 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Confirm &amp; Record Payment</button>
+                    <button type="submit" class="btn btn-primary">Record Payment</button>
                 </div>
             </form>
         </div>
@@ -703,5 +679,37 @@
     });
     document.getElementById('harvestAmountInput')?.addEventListener('input', updateHarvestPreview);
 
+    // Confirmation step before CBU and Machine payments are
+    // recorded (Loan Payment has its own paymentConfirmModal above).
+    // Deferred to DOMContentLoaded because <x-confirm-dialog /> — which
+    // defines confirmBeforeSubmit — is rendered after this page's content.
+    document.addEventListener('DOMContentLoaded', function () {
+        function selectedText(id) {
+            var select = document.getElementById(id);
+            var option = select && select.options[select.selectedIndex];
+            return option ? option.textContent.trim() : '';
+        }
+
+        confirmBeforeSubmit(document.getElementById('recordCbuPaymentForm'), function () {
+            var farmer = selectedText('recordCbuFarmerSelect').replace(/\s*\(CBU Balance:.*\)\s*$/, '');
+            var proof = document.getElementById('recordCbuProof').files[0];
+            return 'Farmer: ' + farmer +
+                '\nAmount: ' + pesoFormat(document.getElementById('recordCbuAmountInput').value) +
+                '\nProof: ' + (proof ? proof.name : 'none') +
+                '\n\nThis will be added to the farmer\'s CBU balance.';
+        }, { title: 'Record this CBU payment?', confirmLabel: 'Yes, Record Payment', icon: 'fa-piggy-bank' });
+
+        confirmBeforeSubmit(document.getElementById('recordHarvestForm'), function () {
+            var isMember = document.getElementById('harvestMemberType').value === 'member';
+            var payer = isMember
+                ? selectedText('harvestFarmerSelect')
+                : document.getElementById('harvestFarmerNameInput').value.trim() + ' (Non-member)';
+            var due = document.getElementById('harvestPreview').classList.contains('d-none')
+                ? '' : document.getElementById('harvestPreviewPayment').textContent;
+            return 'Machine: ' + selectedText('harvestMachineType') +
+                '\nPayer: ' + payer +
+                (due ? '\nAmount: ' + due : '');
+        }, { title: 'Record this machine payment?', confirmLabel: 'Yes, Record Payment', icon: 'fa-seedling' });
+    });
 </script>
 @endsection

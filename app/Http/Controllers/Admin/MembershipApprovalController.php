@@ -27,7 +27,7 @@ class MembershipApprovalController extends Controller
             $status = 'pending';
         }
 
-        $query = Farmer::with('crops')->where('status', $status);
+        $query = Farmer::with(['crops', 'cbu'])->where('status', $status);
 
         // Search by applicant name, barangay or contact number.
         if ($request->filled('search')) {
@@ -53,6 +53,21 @@ class MembershipApprovalController extends Controller
      */
     public function approve(Farmer $farmer)
     {
+        // Membership requires the cooperative's CBU contribution to have
+        // been paid first — the Manager records it from the Membership
+        // page; this is the hard gate on the Admin side. A ValidationException
+        // (rather than abort_if) keeps the Approve button clickable and
+        // renders through the page's existing $errors->any() block instead
+        // of a raw error page, matching reject()'s own validation failures.
+        $minimum = $farmer->first_cbu_contribution_minimum;
+        $balance = (float) ($farmer->cbu->balance ?? 0);
+
+        if ($balance < $minimum) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'cbu' => ["{$farmer->full_name} hasn't met the required CBU contribution yet (".peso($balance).' of '.peso($minimum).'). Ask the Manager to record their CBU payment first.'],
+            ]);
+        }
+
         $credentials = DB::transaction(function () use (&$farmer) {
             // Re-fetch under a row lock so a duplicate submit (double-click, slow
             // network retry) that arrives while this transaction is still open
@@ -66,6 +81,10 @@ class MembershipApprovalController extends Controller
             ]);
 
             if ($farmer->account_user_id) {
+                // Re-approval after an unarchive: the login was archived along
+                // with the membership, so bring it back too.
+                $farmer->account()->where('status', 'archived')->update(['status' => 'active', 'FailedLoginAttemps' => 0]);
+
                 return null;
             }
 

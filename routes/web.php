@@ -156,7 +156,6 @@ Route::middleware(['auth', 'timeout', 'account.active', 'nocache'])->group(funct
     Route::get('/manager/payment', [PaymentController::class, 'index'])->name('manager.payment');
     Route::post('/manager/payment', [PaymentController::class, 'recordLoanPayment'])->name('manager.payment.record');
     Route::post('/manager/payment/cbu', [PaymentController::class, 'recordCbuPayment'])->name('manager.payment.record-cbu');
-    Route::post('/manager/payment/expense', [PaymentController::class, 'payExpense'])->name('manager.payment.pay-expense');
     Route::post('/manager/payment/harvest', [PaymentController::class, 'recordHarvestPayment'])->name('manager.payment.record-harvest');
     Route::get('/manager/payment/{loan_payment}/receipt', [PaymentController::class, 'receipt'])->name('manager.payment.receipt');
 

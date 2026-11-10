@@ -133,6 +133,22 @@
             </button>
         </div>
         <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
+                <select name="machines[__IDX__][crop_id]" class="form-select crop-select" required>
+                    <option value="">Select crop...</option>
+                    @foreach($crops as $crop)
+                    <option value="{{ $crop->id }}">{{ $crop->name }}</option>
+                    @endforeach
+                    <option value="{{ \App\Models\Crop::OTHER_OPTION }}">+ Other (type your own)</option>
+                </select>
+                <input type="text" name="machines[__IDX__][new_crop_name]" class="form-control crop-other-input mt-2 d-none" placeholder="e.g. Mango" autocomplete="off">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Preferred Date <span class="text-danger">*</span></label>
+                <input type="date" name="machines[__IDX__][scheduled_date]" class="form-control machine-date" min="{{ $earliestAllowedDate->format('Y-m-d') }}" required>
+                <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today. Pick this first so the machine list below can show real availability.</small>
+            </div>
             <div class="col-12">
                 <label class="form-label fw-semibold">Choose a machine <span class="text-danger">*</span></label>
                 <div class="d-flex flex-column gap-2">
@@ -152,7 +168,7 @@
                     @endforeach
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 machine-units-wrapper d-none">
                 <label class="form-label fw-semibold">Units Needed</label>
                 <select name="machines[__IDX__][units_requested]" class="form-select machine-units-select">
                     <option value="1">1 unit</option>
@@ -163,22 +179,6 @@
                 <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
                 <input type="number" step="0.1" min="0.1" name="machines[__IDX__][land_size]" class="form-control machine-land-size" required>
                 <small class="text-danger d-none machine-capacity-hint"></small>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
-                <select name="machines[__IDX__][crop_id]" class="form-select crop-select" required>
-                    <option value="">Select crop...</option>
-                    @foreach($crops as $crop)
-                    <option value="{{ $crop->id }}">{{ $crop->name }}</option>
-                    @endforeach
-                    <option value="{{ \App\Models\Crop::OTHER_OPTION }}">+ Other (type your own)</option>
-                </select>
-                <input type="text" name="machines[__IDX__][new_crop_name]" class="form-control crop-other-input mt-2 d-none" placeholder="e.g. Mango" autocomplete="off">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Preferred Date <span class="text-danger">*</span></label>
-                <input type="date" name="machines[__IDX__][scheduled_date]" class="form-control machine-date" min="{{ $earliestAllowedDate->format('Y-m-d') }}" required>
-                <small class="text-muted">Must be at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days from today.</small>
             </div>
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
@@ -247,6 +247,7 @@
         var startTimeInput = row.querySelector('.machine-start-time');
         var endTimeInput = row.querySelector('.machine-end-time');
         var unitsSelect = row.querySelector('.machine-units-select');
+        var unitsWrapper = row.querySelector('.machine-units-wrapper');
         var finishNote = row.querySelector('.machine-finish-note');
         var capacityHint = row.querySelector('.machine-capacity-hint');
         var timeError = row.querySelector('.machine-time-error');
@@ -308,6 +309,10 @@
             }
             unitsSelect.value = Math.min(desired, quantity);
             unitsSelect.dataset.initialized = '1';
+
+            // Nothing to choose when the machine only has one physical unit —
+            // hide the field instead of showing a dropdown stuck on "1 unit".
+            unitsWrapper.classList.toggle('d-none', quantity <= 1);
 
             estimateEndTime();
         }

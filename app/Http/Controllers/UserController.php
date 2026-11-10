@@ -60,7 +60,7 @@ class UserController extends Controller
     {
         try {
             $previousStatus = $user->status;
-            $user->update(['status' => 'archived']);
+            $user->archiveWithMembership();
             ActivityLogger::log(Auth::user(), 'user.archived', "Archived {$user->name}'s account.", $user);
 
             // Unarchive always restores to "active", so only offer Undo when
@@ -103,10 +103,7 @@ class UserController extends Controller
         }
 
         try {
-            $user->update([
-                'status' => 'active',
-                'FailedLoginAttemps' => 0,
-            ]);
+            $user->restoreWithMembership();
 
             ActivityLogger::log(Auth::user(), 'user.unarchived', "Unarchived {$user->name}'s account.", $user);
 
