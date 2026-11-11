@@ -19,6 +19,10 @@ class ScheduleApprovalController extends Controller
             ->whereNull('archived_at')
             ->visibleAccount()
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'denied', 'completed')")
+            // Pending requests are a queue, so they list oldest first (the
+            // order they must be decided in); everything else newest first.
+            ->orderByRaw("CASE WHEN status = 'pending' THEN created_at END ASC")
+            ->orderByRaw("CASE WHEN status = 'pending' THEN id END ASC")
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
@@ -42,7 +46,26 @@ class ScheduleApprovalController extends Controller
 
         $requests = $query->paginate(10)->withQueryString();
 
-        return view('manager.schedule-approval', compact('requests'));
+        $nextInQueue = ScheduleRequest::nextInQueue();
+
+        return view('manager.schedule-approval', compact('requests', 'nextInQueue'));
+    }
+
+    /**
+     * First-in, first-out: refuse to decide a request while an earlier one
+     * is still pending. Returns the redirect to send back, or null when
+     * this request is the one at the front of the queue.
+     */
+    private function blockedByQueue(ScheduleRequest $schedule)
+    {
+        $next = ScheduleRequest::nextInQueue();
+
+        if (! $next || $next->id === $schedule->id) {
+            return null;
+        }
+
+        return redirect()->route('manager.schedule-approval')
+            ->with('error', "Requests are processed in the order they were submitted. Approve or deny {$next->display_name}'s {$next->machinery} request (submitted ".$next->created_at->format('M d, Y g:i A').') first.');
     }
 
     /**
@@ -52,6 +75,10 @@ class ScheduleApprovalController extends Controller
     public function approve(Request $request, ScheduleRequest $schedule)
     {
         abort_if($schedule->status !== 'pending', 422, 'Only pending requests can be approved.');
+
+        if ($blocked = $this->blockedByQueue($schedule)) {
+            return $blocked;
+        }
 
         if (ScheduleRequest::hasConflict($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), $schedule->start_time, $schedule->end_time, $schedule->id, $schedule->units_requested)) {
             return redirect()->route('manager.schedule-approval')
@@ -105,6 +132,10 @@ class ScheduleApprovalController extends Controller
     public function deny(Request $request, ScheduleRequest $schedule)
     {
         abort_if($schedule->status !== 'pending', 422, 'Only pending requests can be denied.');
+
+        if ($blocked = $this->blockedByQueue($schedule)) {
+            return $blocked;
+        }
 
         $validated = $request->validate([
             'denial_reason' => 'required|string|max:1000',

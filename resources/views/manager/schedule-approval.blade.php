@@ -87,17 +87,27 @@
                         @else
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">New Request</span>
                         @endif
+                        @if($req->status === 'pending' && $nextInQueue && $nextInQueue->id === $req->id)
+                        <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">Next in queue</span>
+                        @endif
                     </td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($req->status)" /></td>
                     <td class="px-4 px-md-6 py-4">
                         @if($req->status === 'pending')
+                        @php $isNextInQueue = $nextInQueue && $nextInQueue->id === $req->id; @endphp
                         <div class="row-actions">
+                            @if($isNextInQueue)
                             <button type="button" class="btn btn-success btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#approveModal{{ $req->id }}">
                                 <i class="fas fa-check"></i>Approve
                             </button>
                             <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#denyModal{{ $req->id }}">
                                 <i class="fas fa-xmark"></i>Deny
                             </button>
+                            @else
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" title="Earlier requests must be approved or denied first">
+                                <i class="fas fa-hourglass-half me-1"></i>Waiting in queue
+                            </span>
+                            @endif
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">More</button>
                                 <ul class="dropdown-menu dropdown-menu-end grouped-menu">

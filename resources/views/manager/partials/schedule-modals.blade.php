@@ -19,7 +19,15 @@
         <div class="col-12"><label class="text-muted small d-block">Original Schedule</label><p class="fw-medium mb-0">{{ $req->originalSchedule->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->originalSchedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->originalSchedule->end_time)->format('g:i A') }}</p></div>
         @endif
         @if($req->status === 'completed')
+        @if($req->actual_start_time && $req->actual_end_time)
+        <div class="col-6"><label class="text-muted small d-block">Actual Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($req->actual_start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->actual_end_time)->format('g:i A') }}</p></div>
+        @endif
+        @if($req->harvest_yield !== null)
         <div class="col-6"><label class="text-muted small d-block">Harvest Yield</label><p class="fw-medium mb-0">{{ $req->harvest_yield }}</p></div>
+        @endif
+        @if($req->operator)
+        <div class="col-6"><label class="text-muted small d-block">Operator</label><p class="fw-medium mb-0">{{ $req->operator }}</p></div>
+        @endif
         @endif
         @if($req->rescheduleRequests->isNotEmpty())
         <div class="col-12"><label class="text-muted small d-block">Reschedule Requests</label>
@@ -77,6 +85,19 @@
                         <div class="col-6"><label class="text-muted small d-block mb-0">Land Size</label><p class="fw-semibold mb-0">{{ $req->land_size }} ha</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-0">Date</label><p class="fw-semibold mb-0">{{ $req->scheduled_date->format('M d, Y') }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-0">Location</label><p class="fw-semibold mb-0">{{ $req->location }}</p></div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Actual Start Time <span class="text-danger">*</span></label>
+                            <input type="time" name="actual_start_time" class="form-control" value="{{ \Carbon\Carbon::parse($req->start_time)->format('H:i') }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Actual End Time <span class="text-danger">*</span></label>
+                            <input type="time" name="actual_end_time" class="form-control" value="{{ \Carbon\Carbon::parse($req->end_time)->format('H:i') }}" required>
+                        </div>
+                        <div class="col-12 mt-1">
+                            <small class="text-muted">Pre-filled with the scheduled (estimated) time. Change it to when the machine really ran — this is what counts toward its usage hours.</small>
+                        </div>
                     </div>
                     @if($isHarvester)
                     <div class="mb-3">

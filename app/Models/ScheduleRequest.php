@@ -85,6 +85,8 @@ class ScheduleRequest extends Model
         'scheduled_date',
         'start_time',
         'end_time',
+        'actual_start_time',
+        'actual_end_time',
         'location',
         'status',
         'is_reschedule',
@@ -105,6 +107,37 @@ class ScheduleRequest extends Model
             'harvest_yield' => 'decimal:2',
             'archived_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The pending request the Manager must decide next. Requests are handled
+     * first-in, first-out: the oldest pending one has to be approved or
+     * denied before any later one can be touched. Requests from deactivated
+     * accounts are hidden from the approval list, so they are skipped here
+     * too rather than blocking the queue invisibly.
+     */
+    public static function nextInQueue(): ?self
+    {
+        return self::where('status', 'pending')
+            ->whereNull('archived_at')
+            ->visibleAccount()
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * Hours the machine really ran for this booking. The scheduled
+     * start/end are only an estimate made at request time, so the actual
+     * times recorded at completion win; bookings completed before those
+     * were captured fall back to the scheduled ones.
+     */
+    public function getHoursWorkedAttribute(): float
+    {
+        $start = $this->actual_start_time ?? $this->start_time;
+        $end = $this->actual_end_time ?? $this->end_time;
+
+        return Carbon::parse($start)->diffInMinutes(Carbon::parse($end)) / 60;
     }
 
     public function user(): BelongsTo

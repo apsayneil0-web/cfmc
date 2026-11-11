@@ -128,8 +128,7 @@ class Machine extends Model
 
     /**
      * Total hours actually worked, summed from every completed booking's
-     * start/end time. Replaces manual entry so the figure can't drift from
-     * what was really scheduled.
+     * recorded actual times (see ScheduleRequest::hours_worked).
      */
     public function getUsageHoursAttribute(): float
     {
@@ -137,7 +136,7 @@ class Machine extends Model
             ->where('status', 'completed')
             ->whereNull('archived_at')
             ->get()
-            ->sum(fn (ScheduleRequest $r) => Carbon::parse($r->start_time)->diffInMinutes(Carbon::parse($r->end_time)) / 60), 1);
+            ->sum(fn (ScheduleRequest $r) => $r->hours_worked), 1);
     }
 
     /**

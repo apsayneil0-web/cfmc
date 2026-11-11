@@ -512,9 +512,7 @@ class ReportController extends Controller
                 }
 
                 $bookings = $completed->get();
-                $hours = round($bookings->sum(
-                    fn (ScheduleRequest $b) => Carbon::parse($b->start_time)->diffInMinutes(Carbon::parse($b->end_time)) / 60
-                ), 1);
+                $hours = round($bookings->sum(fn (ScheduleRequest $b) => $b->hours_worked), 1);
 
                 return (object) [
                     'machine' => $machine,

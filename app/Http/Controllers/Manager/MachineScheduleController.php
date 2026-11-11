@@ -248,12 +248,18 @@ class MachineScheduleController extends Controller
         $validated = $request->validate([
             'harvest_yield' => [$isHarvester ? 'required' : 'nullable', 'numeric', 'min:0'],
             'operator' => 'nullable|string|max:255',
+            'actual_start_time' => 'required|date_format:H:i',
+            'actual_end_time' => 'required|date_format:H:i|after:actual_start_time',
+        ], [
+            'actual_end_time.after' => 'The actual end time must be after the actual start time.',
         ]);
 
         $schedule->update([
             'status' => 'completed',
+            'actual_start_time' => $validated['actual_start_time'],
+            'actual_end_time' => $validated['actual_end_time'],
             'harvest_yield' => $isHarvester ? $validated['harvest_yield'] : null,
-            'operator' => $validated['operator'] ?: null,
+            'operator' => ($validated['operator'] ?? null) ?: null,
         ]);
 
         if ($schedule->user_id) {
