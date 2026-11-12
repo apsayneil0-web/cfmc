@@ -79,6 +79,7 @@ class ScheduleRequest extends Model
         'member_type',
         'machinery',
         'machine_id',
+        'purpose',
         'land_size',
         'units_requested',
         'crop_id',
@@ -124,6 +125,26 @@ class ScheduleRequest extends Model
             ->orderBy('created_at')
             ->orderBy('id')
             ->first();
+    }
+
+    public function isBorrowOnly(): bool
+    {
+        return $this->purpose === 'borrow';
+    }
+
+    /**
+     * Crop shown in lists and details. A borrow-only request (truck,
+     * hauling) has no crop by design, which reads differently from a crop
+     * request whose crop record is simply missing.
+     */
+    public function getCropLabelAttribute(): string
+    {
+        return $this->isBorrowOnly() ? 'Borrow only' : ($this->crop->name ?? '—');
+    }
+
+    public function getLandSizeLabelAttribute(): string
+    {
+        return $this->land_size === null ? '—' : $this->land_size.' ha';
     }
 
     /**
@@ -299,6 +320,13 @@ class ScheduleRequest extends Model
                 $reservedHectares = $reserved[$key]['hectares'] ?? 0.0;
                 $reservedUnits = $reserved[$key]['units'] ?? 0;
                 $quantity = max(1, (int) $machine->quantity);
+
+                // A general-use machine is booked by time slot, not hectares,
+                // so it never fills up a whole day here.
+                if (! $machine->requires_crop) {
+                    $hasCapacity = true;
+                    break;
+                }
 
                 if ($reservedHectares < $machine->effective_daily_limit && $reservedUnits < $quantity) {
                     $hasCapacity = true;

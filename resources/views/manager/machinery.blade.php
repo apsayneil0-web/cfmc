@@ -146,6 +146,10 @@
                     <p class="text-xs text-gray-500 mb-0">Assigned operator</p>
                     <p class="text-sm fw-semibold text-gray-900 mb-0">{{ $machine->assigned_operator ?: 'No operator yet' }}</p>
                 </div>
+                <div class="col-span-2">
+                    <p class="text-xs text-gray-500 mb-0">Used for</p>
+                    <p class="text-sm fw-semibold text-gray-900 mb-0">{{ $machine->crops_label }}</p>
+                </div>
             </div>
             <div class="d-flex justify-content-between text-xs mb-1">
                 <span class="text-gray-500">Usage before maintenance</span>
@@ -268,6 +272,7 @@
         <div class="col-6"><label class="text-muted small d-block">Quantity</label><p class="fw-medium mb-0">{{ $machine->quantity }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Daily Hectare Limit</label><p class="fw-medium mb-0">{{ $machine->daily_hectare_limit }} ha / day</p></div>
         <div class="col-6"><label class="text-muted small d-block">Assigned Operator</label><p class="fw-medium mb-0">{{ $machine->assigned_operator ?? '—' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Used For</label><p class="fw-medium mb-0">{{ $machine->crops_label }}</p></div>
         @if($machine->notes)
         <div class="col-12"><label class="text-muted small d-block">Notes</label><p class="fw-medium mb-0">{{ $machine->notes }}</p></div>
         @endif
@@ -331,6 +336,7 @@
                             <label class="form-label fw-semibold">Assigned Operator</label>
                             <input type="text" name="assigned_operator" class="form-control" value="{{ $machine->assigned_operator }}">
                         </div>
+                        @include('manager.partials.machine-crop-fields', ['prefix' => 'editMachine'.$machine->id, 'machine' => $machine])
                         <div class="col-12">
                             <p class="text-muted small mb-0"><i class="fas fa-circle-info me-1"></i>Usage hours, status, and maintenance tier are tracked automatically from completed bookings — see the <a href="{{ route('manager.machine-usage') }}">Usage Monitor</a> for those.</p>
                         </div>
@@ -525,6 +531,7 @@
                             <label class="form-label fw-semibold">Assigned Operator</label>
                             <input type="text" name="assigned_operator" class="form-control" value="{{ old('assigned_operator') }}">
                         </div>
+                        @include('manager.partials.machine-crop-fields', ['prefix' => 'addMachine', 'machine' => null])
                         <div class="col-12">
                             <p class="text-muted small mb-0"><i class="fas fa-circle-info me-1"></i>Usage hours and status will be tracked automatically once bookings are scheduled and completed — visible on the <a href="{{ route('manager.machine-usage') }}">Usage Monitor</a>.</p>
                         </div>
@@ -615,6 +622,16 @@
         typeInput.addEventListener('input', updateSerialPreview);
         updateSerialPreview();
     })();
+
+    // "Needs a crop" off = general-use machine, so its crop list is hidden.
+    document.querySelectorAll('.machine-crop-settings').forEach(function (block) {
+        var toggle = block.querySelector('.machine-requires-crop');
+        var list = block.querySelector('.machine-crop-list');
+
+        toggle.addEventListener('change', function () {
+            list.classList.toggle('d-none', !toggle.checked);
+        });
+    });
 
     wireDebouncedSearch('machinerySearchInput', 'machineryFilterForm');
 </script>

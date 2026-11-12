@@ -133,7 +133,30 @@
             </button>
         </div>
         <div class="row g-3">
-            <div class="col-md-6">
+            <div class="col-12">
+                <label class="form-label fw-semibold d-block">What do you need the machine for? <span class="text-danger">*</span></label>
+                <div class="row g-2">
+                    <div class="col-sm-6">
+                        <input type="radio" class="btn-check machine-purpose-input" name="machines[__IDX__][purpose]" id="machines___IDX___purposeCrop" value="crop" autocomplete="off" checked>
+                        <label class="machine-option h-100" for="machines___IDX___purposeCrop">
+                            <span style="min-width: 0;">
+                                <span class="machine-option-name">For a crop</span>
+                                <span class="machine-option-detail">Planting, land preparation or harvesting</span>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-sm-6">
+                        <input type="radio" class="btn-check machine-purpose-input" name="machines[__IDX__][purpose]" id="machines___IDX___purposeBorrow" value="borrow" autocomplete="off">
+                        <label class="machine-option h-100" for="machines___IDX___purposeBorrow">
+                            <span style="min-width: 0;">
+                                <span class="machine-option-name">Borrow only</span>
+                                <span class="machine-option-detail">Hauling or transport, no crop needed</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 machine-crop-wrapper">
                 <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
                 <select name="machines[__IDX__][crop_id]" class="form-select crop-select" required>
                     <option value="">Select crop...</option>
@@ -156,6 +179,7 @@
                     @php $isUnavailable = $machine['status'] == 'Unavailable'; @endphp
                     <input type="radio" class="btn-check machine-option-input" name="machines[__IDX__][machinery]" id="machines___IDX___machinery{{ $loop->index }}"
                         value="{{ $machine['name'] }}" data-quantity="{{ $machine['quantity'] }}"
+                        data-requires-crop="{{ $machine['requires_crop'] ? '1' : '0' }}" data-crops="{{ implode(',', $machine['crop_ids']) }}"
                         data-maintenance="{{ $isUnavailable ? '1' : '0' }}" {{ $isUnavailable ? 'disabled' : '' }}
                         autocomplete="off" required>
                     <label class="machine-option" for="machines___IDX___machinery{{ $loop->index }}">
@@ -166,6 +190,7 @@
                         <span class="badge machine-option-badge {{ $isUnavailable ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'd-none' }}">{{ $isUnavailable ? 'Unavailable' : '' }}</span>
                     </label>
                     @endforeach
+                    <div class="machine-empty-note border rounded-3 p-3 text-center text-muted small d-none"></div>
                 </div>
             </div>
             <div class="col-md-4 machine-units-wrapper d-none">
@@ -175,7 +200,7 @@
                 </select>
                 <small class="text-muted">Request more than one to work in parallel and finish faster.</small>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 machine-land-wrapper">
                 <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
                 <input type="number" step="0.1" min="0.1" name="machines[__IDX__][land_size]" class="form-control machine-land-size" required>
                 <small class="text-danger d-none machine-capacity-hint"></small>
@@ -189,7 +214,7 @@
                 <input type="time" name="machines[__IDX__][end_time]" class="form-control machine-end-time" required>
                 <small class="text-danger d-none machine-time-error">End Time must be after Start Time.</small>
             </div>
-            <div class="col-12">
+            <div class="col-12 machine-finish-wrapper">
                 <div class="schedule-finish-note">
                     <i class="far fa-clock mt-1"></i>
                     <span>
@@ -252,6 +277,17 @@
         var capacityHint = row.querySelector('.machine-capacity-hint');
         var timeError = row.querySelector('.machine-time-error');
         var cropSelect = row.querySelector('select[name$="[crop_id]"]');
+        var cropWrapper = row.querySelector('.machine-crop-wrapper');
+        var landWrapper = row.querySelector('.machine-land-wrapper');
+        var finishWrapper = row.querySelector('.machine-finish-wrapper');
+        var emptyNote = row.querySelector('.machine-empty-note');
+        var purposeInputs = row.querySelectorAll('.machine-purpose-input');
+        var CROP_OTHER = '{{ \App\Models\Crop::OTHER_OPTION }}';
+
+        function isBorrow() {
+            var checked = row.querySelector('.machine-purpose-input:checked');
+            return !!checked && checked.value === 'borrow';
+        }
 
         // Catches "End Time before/equal to Start Time" in the browser,
         // right on the row, instead of letting it round-trip to the server.
@@ -280,7 +316,9 @@
             var startTime = startTimeInput.value;
             var units = parseInt(unitsSelect.value, 10) || 1;
 
-            if (!landSize || landSize <= 0 || !startTime) {
+            // Borrow-only has no land size to estimate from; the farmer
+            // sets the end time directly.
+            if (isBorrow() || !landSize || landSize <= 0 || !startTime) {
                 return;
             }
 
@@ -361,6 +399,14 @@
                 var badge = label.querySelector('.machine-option-badge');
                 var info = availability[input.value];
 
+                // Hidden by the purpose/crop filter: keep it unselectable
+                // whatever the availability lookup says.
+                if (input.dataset.filtered === '1') {
+                    input.disabled = true;
+                    input.checked = false;
+                    return;
+                }
+
                 if (input.dataset.maintenance === '1') {
                     return;
                 }
@@ -375,9 +421,16 @@
                 if (info.status === 'booked') {
                     input.disabled = true;
                     input.checked = false;
-                    detail.textContent = 'Fully booked on ' + dayLabel;
+                    detail.textContent = (input.dataset.requiresCrop === '0' ? 'Booked at that time on ' : 'Fully booked on ') + dayLabel;
                     badge.className = 'badge machine-option-badge bg-warning-subtle text-warning border border-warning-subtle';
                     badge.textContent = 'Booked';
+                } else if (input.dataset.requiresCrop === '0') {
+                    input.disabled = false;
+                    detail.textContent = info.units_free !== null
+                        ? info.units_free + ' of ' + input.dataset.quantity + ' ' + (info.units_free === 1 ? 'unit' : 'units') + ' free at that time on ' + dayLabel
+                        : 'Available on ' + dayLabel + ' \u00b7 set a time to confirm';
+                    badge.className = 'badge machine-option-badge bg-success-subtle text-success border border-success-subtle';
+                    badge.textContent = 'Available';
                 } else {
                     input.disabled = false;
                     detail.textContent = info.units_free !== null
@@ -396,12 +449,80 @@
             var landSize = parseFloat(landSizeInput.value);
             var info = checked ? availability[checked.value] : null;
 
-            if (info && info.status === 'available' && landSize > info.hectares_left) {
+            if (!isBorrow() && info && info.status === 'available' && info.hectares_left !== null && landSize > info.hectares_left) {
                 capacityHint.textContent = 'Only ' + formatHectares(info.hectares_left) + ' ha left on ' + dayLabel + ' for ' + checked.value + '.';
                 capacityHint.classList.remove('d-none');
             } else {
                 capacityHint.classList.add('d-none');
             }
+        }
+
+        // Shows only the machines that fit the chosen purpose: crop
+        // machines matched to the selected crop, or general-use machines
+        // for "Borrow only". The server enforces the same rule on submit.
+        function applyMachineFilter() {
+            var borrow = isBorrow();
+            var crop = cropSelect.value;
+            var visibleCount = 0;
+
+            row.querySelectorAll('.machine-option-input').forEach(function (input) {
+                var requiresCrop = input.dataset.requiresCrop === '1';
+                var crops = input.dataset.crops ? input.dataset.crops.split(',') : [];
+                var show;
+
+                if (borrow) {
+                    show = !requiresCrop;
+                } else if (!requiresCrop || crop === '') {
+                    show = false;
+                } else {
+                    // A typed-in crop has no matches set up yet, so any
+                    // crop machine may take it.
+                    show = crop === CROP_OTHER || crops.length === 0 || crops.indexOf(crop) !== -1;
+                }
+
+                input.dataset.filtered = show ? '0' : '1';
+                row.querySelector('label[for="' + input.id + '"]').classList.toggle('d-none', !show);
+
+                if (show) {
+                    visibleCount++;
+                    if (input.dataset.maintenance !== '1') { input.disabled = false; }
+                } else {
+                    input.disabled = true;
+                    input.checked = false;
+                }
+            });
+
+            if (visibleCount === 0) {
+                emptyNote.textContent = borrow
+                    ? 'No general-use machine (truck or hauling) is available to borrow yet.'
+                    : (crop === '' ? 'Pick a crop above to see the machines that work with it.' : 'No machine is set up for this crop yet. Please contact the cooperative.');
+            }
+            emptyNote.classList.toggle('d-none', visibleCount > 0);
+
+            renderAvailability(dateInput.value || null);
+            refreshUnits();
+        }
+
+        function applyPurpose() {
+            var borrow = isBorrow();
+
+            cropWrapper.classList.toggle('d-none', borrow);
+            landWrapper.classList.toggle('d-none', borrow);
+            finishWrapper.classList.toggle('d-none', borrow);
+
+            if (borrow) {
+                cropSelect.removeAttribute('required');
+                cropSelect.value = '';
+                landSizeInput.removeAttribute('required');
+                landSizeInput.value = '';
+                capacityHint.classList.add('d-none');
+            } else {
+                cropSelect.setAttribute('required', 'required');
+                landSizeInput.setAttribute('required', 'required');
+            }
+
+            toggleCropOther();
+            applyMachineFilter();
         }
 
         removeBtn.addEventListener('click', function () {
@@ -419,6 +540,7 @@
             radio.addEventListener('change', refreshAvailability);
         });
         dateInput.addEventListener('change', refreshAvailability);
+        startTimeInput.addEventListener('change', refreshAvailability);
         endTimeInput.addEventListener('change', refreshAvailability);
         landSizeInput.addEventListener('input', refreshAvailability);
 
@@ -427,7 +549,7 @@
         var cropOtherInput = row.querySelector('.crop-other-input');
 
         function toggleCropOther() {
-            var isOther = cropSelect.value === '{{ \App\Models\Crop::OTHER_OPTION }}';
+            var isOther = cropSelect.value === CROP_OTHER;
             cropOtherInput.classList.toggle('d-none', !isOther);
             if (isOther) {
                 cropOtherInput.setAttribute('required', 'required');
@@ -437,25 +559,33 @@
             }
         }
 
-        if (cropSelect && cropOtherInput) {
-            cropSelect.addEventListener('change', toggleCropOther);
-        }
+        cropSelect.addEventListener('change', toggleCropOther);
+        cropSelect.addEventListener('change', applyMachineFilter);
+        purposeInputs.forEach(function (input) {
+            input.addEventListener('change', applyPurpose);
+        });
 
         // Repopulate this row from old() input, e.g. after a validation error.
-        if (oldValues.machinery) {
-            var radio = row.querySelector('.machine-option-input[value="' + CSS.escape(oldValues.machinery) + '"]');
-            if (radio) { radio.checked = true; }
+        if (oldValues.purpose === 'borrow') {
+            row.querySelector('.machine-purpose-input[value="borrow"]').checked = true;
         }
-        if (oldValues.land_size) { landSizeInput.value = oldValues.land_size; }
         if (oldValues.crop_id && cropSelect) { cropSelect.value = oldValues.crop_id; }
+        if (oldValues.land_size) { landSizeInput.value = oldValues.land_size; }
         if (oldValues.new_crop_name && cropOtherInput) { cropOtherInput.value = oldValues.new_crop_name; }
         if (oldValues.scheduled_date) { dateInput.value = oldValues.scheduled_date; }
         if (oldValues.start_time) { startTimeInput.value = oldValues.start_time; }
         if (oldValues.end_time) { endTimeInput.value = oldValues.end_time; }
 
-        if (cropSelect && cropOtherInput) {
-            toggleCropOther();
+        // Purpose and crop decide which machines are selectable, so apply
+        // them before restoring the previously chosen machine.
+        applyPurpose();
+        if (oldValues.machinery) {
+            var radio = row.querySelector('.machine-option-input[value="' + CSS.escape(oldValues.machinery) + '"]');
+            if (radio && !radio.disabled) { radio.checked = true; }
         }
+        // applyPurpose() already ran refreshUnits() with no machine picked;
+        // let the next run pick the old units value back up.
+        delete unitsSelect.dataset.initialized;
 
         refreshUnits();
         refreshAvailability();
@@ -572,8 +702,8 @@
                         @if($req->is_reschedule)<span class="badge bg-info-subtle text-info border border-info-subtle ms-1">Reschedule</span>@endif
                         @if($req->batch_id)<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1" title="Submitted together with {{ $req->batchSiblings->count() }} other machine(s)"><i class="fas fa-link"></i></span>@endif
                     </td>
-                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Land Size">{{ $req->land_size }} ha</td>
-                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Crop">{{ $req->crop->name ?? '—' }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Land Size">{{ $req->land_size_label }}</td>
+                    <td class="px-4 px-md-6 py-4 text-muted" data-label="Crop">{{ $req->crop_label }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Date &amp; Time">{{ $req->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted" data-label="Location">{{ $req->location }}</td>
                     <td class="px-4 px-md-6 py-4" data-label="Status"><x-status-badge :status="ucfirst($req->status)" /></td>

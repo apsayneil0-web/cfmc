@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Machine extends Model
@@ -91,6 +92,7 @@ class Machine extends Model
         'serial_number',
         'quantity',
         'daily_hectare_limit',
+        'requires_crop',
         'assigned_operator',
         'notes',
         'archived_at',
@@ -107,7 +109,71 @@ class Machine extends Model
             'archived_at' => 'datetime',
             'unavailable_at' => 'datetime',
             'unavailable_estimated_cost' => 'decimal:2',
+            'requires_crop' => 'boolean',
         ];
+    }
+
+    /**
+     * Crops this machine is limited to. Empty means it works with every
+     * crop; only meaningful while requires_crop is true.
+     */
+    public function crops(): BelongsToMany
+    {
+        return $this->belongsToMany(Crop::class);
+    }
+
+    /**
+     * One-line summary of what the machine can be requested for.
+     */
+    public function getCropsLabelAttribute(): string
+    {
+        if (! $this->requires_crop) {
+            return 'General use (borrow only)';
+        }
+
+        return $this->crops->isEmpty() ? 'All crops' : $this->crops->pluck('name')->implode(', ');
+    }
+
+    /**
+     * Whether a "for a crop" request may book this machine for that crop.
+     * General-use machines (requires_crop = false) are borrow-only and never
+     * match a crop.
+     */
+    public function supportsCrop(int $cropId): bool
+    {
+        if (! $this->requires_crop) {
+            return false;
+        }
+
+        $cropIds = $this->crops->pluck('id');
+
+        return $cropIds->isEmpty() || $cropIds->contains($cropId);
+    }
+
+    /**
+     * Why this machine can't be booked for the given purpose, or null when
+     * it can. Shared by the farmer's request form and the Manager's
+     * Add/Edit Schedule form so the browser-side filter can't be bypassed.
+     * A crop the requester just typed in ("+ Other") has no matches set up
+     * yet, so it is allowed on any crop machine.
+     */
+    public function purposeMismatch(string $purpose, ?int $cropId, bool $isNewCrop = false): ?string
+    {
+        if ($purpose === 'borrow') {
+            return $this->requires_crop
+                ? $this->name.' needs a crop. Choose "For a crop" to request it.'
+                : null;
+        }
+
+        if (! $this->requires_crop) {
+            return $this->name.' is a general-use machine. Choose "Borrow only" to request it.';
+        }
+
+        if (! $isNewCrop && $cropId && ! $this->supportsCrop($cropId)) {
+            return $this->name.' is not set up for that crop. Pick one of the machines listed for it.';
+        }
+
+        return null;
     }
 
     public function scheduleRequests(): HasMany

@@ -81,7 +81,7 @@
         <div class="col-6"><label class="text-muted small d-block">Status</label><p class="fw-medium mb-0"><x-status-badge :status="ucfirst($schedule->status)" /></p></div>
         <div class="col-6"><label class="text-muted small d-block">Farmer Name</label><p class="fw-medium mb-0">{{ $schedule->display_name }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Machinery</label><p class="fw-medium mb-0">{{ $schedule->machinery }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Land Size</label><p class="fw-medium mb-0">{{ $schedule->land_size }} ha</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Land Size</label><p class="fw-medium mb-0">{{ $schedule->land_size_label }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">{{ $schedule->location }}</p></div>

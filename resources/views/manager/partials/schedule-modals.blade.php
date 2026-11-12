@@ -12,8 +12,8 @@
         <div class="col-6"><label class="text-muted small d-block">Date</label><p class="fw-medium mb-0">{{ $req->scheduled_date->format('M d, Y') }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Time</label><p class="fw-medium mb-0">{{ \Carbon\Carbon::parse($req->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->end_time)->format('g:i A') }}</p></div>
         <div class="col-6"><label class="text-muted small d-block">Location</label><p class="fw-medium mb-0">{{ $req->location }}</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Land Area</label><p class="fw-medium mb-0">{{ $req->land_size }} hectares</p></div>
-        <div class="col-6"><label class="text-muted small d-block">Crop to be Harvested</label><p class="fw-medium mb-0">{{ $req->crop->name ?? '—' }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Land Area</label><p class="fw-medium mb-0">{{ $req->land_size_label }}</p></div>
+        <div class="col-6"><label class="text-muted small d-block">Crop to be Harvested</label><p class="fw-medium mb-0">{{ $req->crop_label }}</p></div>
         <div class="col-6"><label class="text-muted small d-block mb-1">Status</label><x-status-badge :status="ucfirst($req->status)" /></div>
         @if($req->is_reschedule && $req->originalSchedule)
         <div class="col-12"><label class="text-muted small d-block">Original Schedule</label><p class="fw-medium mb-0">{{ $req->originalSchedule->scheduled_date->format('M d, Y') }}, {{ \Carbon\Carbon::parse($req->originalSchedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($req->originalSchedule->end_time)->format('g:i A') }}</p></div>
@@ -81,8 +81,8 @@
                     <div class="row g-2 bg-light border rounded-3 p-2 mx-0 mb-3">
                         <div class="col-6"><label class="text-muted small d-block mb-0">Farmer</label><p class="fw-semibold mb-0">{{ $req->display_name }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-0">Machinery</label><p class="fw-semibold mb-0">{{ $req->machinery }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block mb-0">Crop</label><p class="fw-semibold mb-0">{{ $req->crop->name ?? '—' }}</p></div>
-                        <div class="col-6"><label class="text-muted small d-block mb-0">Land Size</label><p class="fw-semibold mb-0">{{ $req->land_size }} ha</p></div>
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Crop</label><p class="fw-semibold mb-0">{{ $req->crop_label }}</p></div>
+                        <div class="col-6"><label class="text-muted small d-block mb-0">Land Size</label><p class="fw-semibold mb-0">{{ $req->land_size_label }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-0">Date</label><p class="fw-semibold mb-0">{{ $req->scheduled_date->format('M d, Y') }}</p></div>
                         <div class="col-6"><label class="text-muted small d-block mb-0">Location</label><p class="fw-semibold mb-0">{{ $req->location }}</p></div>
                     </div>

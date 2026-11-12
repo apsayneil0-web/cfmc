@@ -187,7 +187,7 @@
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->scheduled_date->format('M d, Y') }}</td>
                     <td class="px-4 px-md-6 py-4">{{ $row->display_name }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->machinery }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->land_size }} ha</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->land_size_label }}</td>
                     <td class="px-4 px-md-6 py-4 fw-medium text-dark">{{ $row->harvest_yield }}</td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->location }}</td>
                 </tr>
@@ -292,7 +292,7 @@
                     <td class="px-4 px-md-6 py-4">{{ $row->display_name }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="$row->member_type === 'member' ? 'Member' : 'Non-Member'" /></td>
                     <td class="px-4 px-md-6 py-4 text-muted">{{ $row->machine?->name ?? $row->machinery }}</td>
-                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->land_size }} ha</td>
+                    <td class="px-4 px-md-6 py-4 text-muted">{{ $row->land_size_label }}</td>
                     <td class="px-4 px-md-6 py-4"><x-status-badge :status="ucfirst($row->status)" /></td>
                 </tr>
                 @empty

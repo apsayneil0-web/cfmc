@@ -156,11 +156,11 @@
                         </div>
                         <div class="col-6">
                             <label class="text-muted small d-block">Land Area</label>
-                            <p class="fw-medium mb-0">{{ $req->land_size }} hectares</p>
+                            <p class="fw-medium mb-0">{{ $req->land_size_label }}</p>
                         </div>
                         <div class="col-6">
                             <label class="text-muted small d-block">Crop to be Harvested</label>
-                            <p class="fw-medium mb-0">{{ $req->crop->name ?? '—' }}</p>
+                            <p class="fw-medium mb-0">{{ $req->crop_label }}</p>
                         </div>
                         @if($req->is_reschedule && $req->originalSchedule)
                         <div class="col-12">

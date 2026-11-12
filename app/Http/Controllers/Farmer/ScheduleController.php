@@ -18,11 +18,14 @@ class ScheduleController extends Controller
 {
     public function index(Request $request)
     {
-        $machines = Machine::whereNull('archived_at')->orderBy('created_at', 'desc')->get();
+        $machines = Machine::with('crops')->whereNull('archived_at')->orderBy('created_at', 'desc')->get();
         $machinery = $machines->map(fn (Machine $m) => [
             'name' => $m->name,
             'status' => $m->isOutOfService() ? 'Unavailable' : 'Available',
             'quantity' => max(1, (int) $m->quantity),
+            'requires_crop' => $m->requires_crop,
+            // Empty = works with every crop.
+            'crop_ids' => $m->requires_crop ? $m->crops->pluck('id')->all() : [],
         ])->all();
         $machineryList = $machines->pluck('name')->all();
         $crops = Crop::orderBy('name')->get();
@@ -71,19 +74,33 @@ class ScheduleController extends Controller
 
         $machines = Machine::whereNull('archived_at')->get()->map(function (Machine $machine) use ($date, $startTime, $endTime, $hasWindow) {
             if ($machine->isOutOfService()) {
-                return ['name' => $machine->name, 'status' => 'unavailable', 'hectares_left' => 0, 'units_free' => 0];
+                return ['name' => $machine->name, 'status' => 'unavailable', 'hectares_left' => 0, 'units_free' => 0, 'requires_crop' => $machine->requires_crop];
             }
 
-            $hectaresLeft = ScheduleRequest::remainingCapacity($machine->id, $date, $machine->effective_daily_limit);
             $unitsFree = $hasWindow
                 ? max(0, ScheduleRequest::unitsFree($machine->id, $date, $startTime, $endTime))
                 : null;
+
+            // A general-use machine has no hectare limit; only an
+            // overlapping time slot can make it unavailable.
+            if (! $machine->requires_crop) {
+                return [
+                    'name' => $machine->name,
+                    'status' => $unitsFree === 0 ? 'booked' : 'available',
+                    'hectares_left' => null,
+                    'units_free' => $unitsFree,
+                    'requires_crop' => false,
+                ];
+            }
+
+            $hectaresLeft = ScheduleRequest::remainingCapacity($machine->id, $date, $machine->effective_daily_limit);
 
             return [
                 'name' => $machine->name,
                 'status' => $hectaresLeft <= 0 || $unitsFree === 0 ? 'booked' : 'available',
                 'hectares_left' => round($hectaresLeft, 2),
                 'units_free' => $unitsFree,
+                'requires_crop' => true,
             ];
         })->values();
 
@@ -106,7 +123,8 @@ class ScheduleController extends Controller
             'machines' => 'required|array|min:1',
         ]);
 
-        $machineryNames = Machine::whereNull('archived_at')->pluck('name');
+        $machinesByName = Machine::with('crops')->whereNull('archived_at')->get()->keyBy('name');
+        $machineryNames = $machinesByName->keys();
 
         // Pass 1: validate every block's own fields up front, so the farmer
         // sees every problem at once instead of fixing one row at a time.
@@ -116,17 +134,23 @@ class ScheduleController extends Controller
         $cropIds = Crop::pluck('id')->all();
 
         foreach ($request->input('machines') as $index => $block) {
+            $block['purpose'] = $block['purpose'] ?? 'crop';
+
             $validator = Validator::make($block, [
+                'purpose' => ['required', Rule::in(['crop', 'borrow'])],
                 'machinery' => ['required', 'string', Rule::in($machineryNames)],
-                'land_size' => 'required|numeric|min:0.1',
+                'land_size' => 'nullable|required_if:purpose,crop|numeric|min:0.1',
                 'units_requested' => 'nullable|integer|min:1',
-                'crop_id' => ['required', Rule::in(array_merge($cropIds, [Crop::OTHER_OPTION]))],
+                'crop_id' => ['nullable', 'required_if:purpose,crop', Rule::in(array_merge($cropIds, [Crop::OTHER_OPTION]))],
                 'new_crop_name' => 'nullable|required_if:crop_id,'.Crop::OTHER_OPTION.'|string|max:255',
                 'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
                 'start_time' => 'required|date_format:H:i',
                 'end_time' => 'required|date_format:H:i|after:start_time',
             ], [
                 'scheduled_date.after_or_equal' => 'the date must be at least '.ScheduleRequest::MIN_LEAD_DAYS.' days from today.',
+                'land_size.required_if' => 'the land size is required when requesting a machine for a crop.',
+                'crop_id.required_if' => 'choose the crop this machine is for.',
+                'machinery.required' => 'choose a machine.',
             ]);
 
             if ($validator->fails()) {
@@ -136,16 +160,45 @@ class ScheduleController extends Controller
             }
 
             $validated = $validator->validated();
+            $isBorrow = $validated['purpose'] === 'borrow';
+            $isNewCrop = false;
+            $cropId = null;
 
-            if ($validated['crop_id'] === Crop::OTHER_OPTION) {
-                $validated['crop_id'] = Crop::findOrCreateByName($validated['new_crop_name'])->id;
+            if (! $isBorrow) {
+                if ($validated['crop_id'] === Crop::OTHER_OPTION) {
+                    $existing = Crop::findByName($validated['new_crop_name']);
+                    $isNewCrop = ! $existing;
+                    $cropId = $existing?->id;
+                } else {
+                    $cropId = (int) $validated['crop_id'];
+                }
             }
+
+            $mismatch = $machinesByName[$validated['machinery']]->purposeMismatch($validated['purpose'], $cropId, $isNewCrop);
+
+            if ($mismatch) {
+                $errors[] = 'Machine #'.($index + 1).': '.$mismatch;
+
+                continue;
+            }
+
+            // A borrow-only request carries no crop and no land size.
+            $validated['crop_id'] = $isBorrow ? null : ($cropId ?? Crop::OTHER_OPTION);
+            $validated['land_size'] = $isBorrow ? null : $validated['land_size'];
 
             $blocks[$index] = $validated;
         }
 
         if (! empty($errors)) {
             return back()->withErrors($errors)->withInput();
+        }
+
+        // Only now that every row is valid, create any crop typed in under
+        // "+ Other" — a rejected submission shouldn't leave new crops behind.
+        foreach ($blocks as $index => $validated) {
+            if ($validated['crop_id'] === Crop::OTHER_OPTION) {
+                $blocks[$index]['crop_id'] = Crop::findOrCreateByName($validated['new_crop_name'])->id;
+            }
         }
 
         // Pass 2: conflict/capacity checks + creation, one block at a time
@@ -176,7 +229,7 @@ class ScheduleController extends Controller
 
                     $dailyLimit = $machine->effective_daily_limit;
 
-                    if (ScheduleRequest::wouldExceedDailyCapacity($machine->id, $validated['scheduled_date'], (float) $validated['land_size'], $dailyLimit)) {
+                    if ($validated['purpose'] !== 'borrow' && ScheduleRequest::wouldExceedDailyCapacity($machine->id, $validated['scheduled_date'], (float) $validated['land_size'], $dailyLimit)) {
                         $remaining = ScheduleRequest::remainingCapacity($machine->id, $validated['scheduled_date'], $dailyLimit);
                         throw new \RuntimeException('Machine #'.($index + 1).": {$machine->name} has reached its {$dailyLimit} hectare daily limit for this date. Only {$remaining} hectare(s) remaining.");
                     }
@@ -188,6 +241,7 @@ class ScheduleController extends Controller
                         'member_type' => $farmer && $farmer->status === 'approved' ? 'member' : 'non-member',
                         'machinery' => $machine->name,
                         'machine_id' => $machine->id,
+                        'purpose' => $validated['purpose'],
                         'land_size' => $validated['land_size'],
                         'units_requested' => $unitsRequested,
                         'crop_id' => $validated['crop_id'],
@@ -241,7 +295,7 @@ class ScheduleController extends Controller
 
         $dailyLimit = $schedule->machine?->effective_daily_limit ?? Machine::DEFAULT_DAILY_HECTARE_LIMIT;
 
-        if (ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $validated['scheduled_date'], (float) $schedule->land_size, $dailyLimit, $schedule->id)) {
+        if (! $schedule->isBorrowOnly() && ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $validated['scheduled_date'], (float) $schedule->land_size, $dailyLimit, $schedule->id)) {
             $remaining = ScheduleRequest::remainingCapacity($schedule->machine_id, $validated['scheduled_date'], $dailyLimit, $schedule->id);
             return back()->withErrors(['scheduled_date' => "{$schedule->machinery} has reached its {$dailyLimit} hectare daily limit for this date. Only {$remaining} hectare(s) remaining."])->withInput();
         }
@@ -252,6 +306,7 @@ class ScheduleController extends Controller
             'member_type' => $schedule->member_type,
             'machinery' => $schedule->machinery,
             'machine_id' => $schedule->machine_id,
+            'purpose' => $schedule->purpose,
             'land_size' => $schedule->land_size,
             'units_requested' => $schedule->units_requested,
             'crop_id' => $schedule->crop_id,

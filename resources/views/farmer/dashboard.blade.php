@@ -39,7 +39,7 @@
                 <i class="fas fa-tractor text-brand"></i>
             </div>
             <div class="flex-1">
-                <p class="text-sm font-medium text-gray-900 mb-0">{{ $schedule->machinery }} &middot; {{ $schedule->land_size }} ha</p>
+                <p class="text-sm font-medium text-gray-900 mb-0">{{ $schedule->machinery }} &middot; {{ $schedule->isBorrowOnly() ? 'Borrow only' : $schedule->land_size_label }}</p>
                 <p class="text-xs text-gray-500 mb-0">{{ $schedule->scheduled_date->format('M d, Y') }}</p>
             </div>
             <x-status-badge :status="ucfirst($schedule->status)" />

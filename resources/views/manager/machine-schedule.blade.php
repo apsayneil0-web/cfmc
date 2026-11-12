@@ -439,13 +439,24 @@
         var machinerySelect = form.querySelector('select[name="machinery"]');
         var unitsSelect = form.querySelector('select[name="units_requested"]');
         var unitsWrapper = form.querySelector('.schedule-units-wrapper');
+        var cropWrapper = form.querySelector('.schedule-crop-wrapper');
+        var landWrapper = form.querySelector('.schedule-land-wrapper');
+        var machineryHint = form.querySelector('.schedule-machinery-hint');
+        var purposeRadios = form.querySelectorAll('input[name="purpose"]');
+        var CROP_OTHER = '{{ \App\Models\Crop::OTHER_OPTION }}';
+
+        function isBorrow() {
+            var checked = form.querySelector('input[name="purpose"]:checked');
+            return !!checked && checked.value === 'borrow';
+        }
 
         function estimateEndTime() {
             var landSize = parseFloat(landSizeInput.value);
             var startTime = startTimeInput.value;
             var units = parseInt(unitsSelect.value, 10) || 1;
 
-            if (!landSize || landSize <= 0 || !startTime) {
+            // Borrow-only has no land size to estimate from.
+            if (isBorrow() || !landSize || landSize <= 0 || !startTime) {
                 return;
             }
 
@@ -490,8 +501,68 @@
         var cropSelect = form.querySelector('.crop-select');
         var cropOtherInput = form.querySelector('.crop-other-input');
 
+        // Lists only the machines that fit the purpose: crop machines
+        // matched to the chosen crop, or general-use ones for Borrow only.
+        // validateSchedule() enforces the same rule on the server.
+        function applyMachineFilter() {
+            var borrow = isBorrow();
+            var crop = cropSelect.value;
+            var visibleCount = 0;
+
+            Array.prototype.forEach.call(machinerySelect.options, function (option) {
+                if (option.value === '') { return; }
+
+                var requiresCrop = option.dataset.requiresCrop === '1';
+                var crops = option.dataset.crops ? option.dataset.crops.split(',') : [];
+                var show;
+
+                if (borrow) {
+                    show = !requiresCrop;
+                } else if (!requiresCrop || crop === '') {
+                    show = false;
+                } else {
+                    show = crop === CROP_OTHER || crops.length === 0 || crops.indexOf(crop) !== -1;
+                }
+
+                option.hidden = !show;
+                option.disabled = !show;
+                if (show) { visibleCount++; }
+                if (!show && option.selected) { machinerySelect.value = ''; }
+            });
+
+            if (visibleCount > 0) {
+                machineryHint.textContent = '';
+            } else if (borrow) {
+                machineryHint.textContent = 'No general-use machine yet. Turn off "Needs a crop" on a machine in Machinery.';
+            } else {
+                machineryHint.textContent = crop === '' ? 'Pick a crop first to list its machines.' : 'No machine is set up for this crop.';
+            }
+
+            refreshUnitsOptions();
+        }
+
+        function applyPurpose() {
+            var borrow = isBorrow();
+
+            cropWrapper.classList.toggle('d-none', borrow);
+            landWrapper.classList.toggle('d-none', borrow);
+
+            if (borrow) {
+                cropSelect.removeAttribute('required');
+                cropSelect.value = '';
+                landSizeInput.removeAttribute('required');
+                landSizeInput.value = '';
+            } else {
+                cropSelect.setAttribute('required', 'required');
+                landSizeInput.setAttribute('required', 'required');
+            }
+
+            toggleCropOther();
+            applyMachineFilter();
+        }
+
         function toggleCropOther() {
-            var isOther = cropSelect.value === '{{ \App\Models\Crop::OTHER_OPTION }}';
+            var isOther = cropSelect.value === CROP_OTHER;
             cropOtherInput.classList.toggle('d-none', !isOther);
             if (isOther) {
                 cropOtherInput.setAttribute('required', 'required');
@@ -502,7 +573,11 @@
         }
 
         cropSelect.addEventListener('change', toggleCropOther);
-        toggleCropOther();
+        cropSelect.addEventListener('change', applyMachineFilter);
+        purposeRadios.forEach(function (radio) {
+            radio.addEventListener('change', applyPurpose);
+        });
+        applyPurpose();
     });
 
     // Clicking a day focuses it in the side panel; while picking days for

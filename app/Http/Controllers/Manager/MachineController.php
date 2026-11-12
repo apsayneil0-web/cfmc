@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\Crop;
 use App\Models\Machine;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -42,7 +43,8 @@ class MachineController extends Controller
             });
         }
 
-        $machines = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
+        $machines = $query->with('crops')->orderByDesc('created_at')->paginate(10)->withQueryString();
+        $crops = Crop::orderBy('name')->get();
 
         $existingTypes = Machine::whereNull('archived_at')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
 
@@ -61,7 +63,7 @@ class MachineController extends Controller
         // one at save time, so a stale preview here is harmless.
         $serialPreview = $existingTypes->mapWithKeys(fn ($type) => [$type => Machine::generateSerialNumber($type)]);
 
-        return view('manager.machinery', compact('machines', 'stats', 'existingTypes', 'serialPreview', 'showArchived', 'typeCounts', 'viewMode'));
+        return view('manager.machinery', compact('machines', 'stats', 'existingTypes', 'serialPreview', 'showArchived', 'typeCounts', 'viewMode', 'crops'));
     }
 
     public function store(Request $request)
@@ -74,8 +76,9 @@ class MachineController extends Controller
 
         $validated = $this->validateRequest($request);
         $validated['serial_number'] = Machine::generateSerialNumber($validated['type']);
+        $cropIds = $this->pullCropIds($validated);
 
-        Machine::create($validated);
+        Machine::create($validated)->crops()->sync($cropIds);
 
         return redirect()->route('manager.machinery')
             ->with('success', "{$validated['name']} ({$validated['type']}) added to the machinery fleet — serial {$validated['serial_number']}.");
@@ -84,8 +87,10 @@ class MachineController extends Controller
     public function update(Request $request, Machine $machine)
     {
         $validated = $this->validateRequest($request, $machine->id);
+        $cropIds = $this->pullCropIds($validated);
 
         $machine->update($validated);
+        $machine->crops()->sync($cropIds);
 
         return redirect()->route('manager.machinery')
             ->with('success', "{$machine->name} updated.");
@@ -190,6 +195,22 @@ class MachineController extends Controller
             'daily_hectare_limit' => 'required|numeric|min:0.1|max:9999.99',
             'assigned_operator' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
+            'requires_crop' => 'required|boolean',
+            'crop_ids' => 'nullable|array',
+            'crop_ids.*' => 'integer|exists:crops,id',
         ]);
+    }
+
+    /**
+     * Takes crop_ids out of the validated data (it's a pivot, not a column)
+     * and returns the crops to match. A general-use machine keeps none.
+     */
+    private function pullCropIds(array &$validated): array
+    {
+        $cropIds = $validated['crop_ids'] ?? [];
+        unset($validated['crop_ids']);
+        $validated['requires_crop'] = (bool) $validated['requires_crop'];
+
+        return $validated['requires_crop'] ? $cropIds : [];
     }
 }

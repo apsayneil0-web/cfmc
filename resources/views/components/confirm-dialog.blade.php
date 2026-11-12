@@ -113,10 +113,23 @@
             form.addEventListener('submit', function (e) {
                 if (form.dataset.confirmed === '1') return;
                 e.preventDefault();
-                confirmDialog(buildMessage(form), options).then(function (ok) {
+                var message;
+                try {
+                    message = buildMessage(form);
+                } catch (err) {
+                    // Never leave the button dead: if the summary can't be built,
+                    // still ask, just without the details.
+                    console.error(err);
+                    message = '';
+                }
+                confirmDialog(message, options).then(function (ok) {
                     if (!ok) return;
                     form.dataset.confirmed = '1';
-                    form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = true; });
+                    // form.elements also covers fields the browser associated with
+                    // the form without nesting them (e.g. a form inside <tbody>).
+                    Array.prototype.forEach.call(form.elements, function (el) {
+                        if (el.type === 'submit') el.disabled = true;
+                    });
                     form.submit();
                 });
             });

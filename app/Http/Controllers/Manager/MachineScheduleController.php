@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class MachineScheduleController extends Controller
 {
@@ -102,6 +103,13 @@ class MachineScheduleController extends Controller
 
         $machineryList = $this->machineryNames()->all();
         $machineQuantities = Machine::whereNull('archived_at')->pluck('quantity', 'name');
+        // Drives the Add/Edit Schedule form's purpose/crop machine filter.
+        $machineMeta = Machine::with('crops')->whereNull('archived_at')->get()->mapWithKeys(fn (Machine $machine) => [
+            $machine->name => [
+                'requires_crop' => $machine->requires_crop,
+                'crops' => $machine->requires_crop ? $machine->crops->pluck('id')->implode(',') : '',
+            ],
+        ]);
         $crops = Crop::orderBy('name')->get();
         $selectedMonth = $month;
         $firstWeekday = $month->copy()->startOfMonth()->dayOfWeek;
@@ -112,7 +120,7 @@ class MachineScheduleController extends Controller
         $modalSchedules = $requests->getCollection()->concat($dayBookings)->unique('id');
 
         return view('manager.machine-schedule', compact(
-            'requests', 'machineryList', 'machineQuantities', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'showArchived',
+            'requests', 'machineryList', 'machineQuantities', 'machineMeta', 'members', 'crops', 'selectedMonth', 'firstWeekday', 'daysInMonth', 'showArchived',
             'machineryFilter', 'statusFilter', 'viewMode', 'bookingsByDay', 'movableByDay', 'selectedDay', 'dayBookings', 'machineCards', 'modalSchedules'
         ) + ['archivedCount' => ScheduleRequest::whereNotNull('archived_at')->whereBetween('scheduled_date', [$monthStart, $monthEnd])->visibleAccount()->count()]);
     }
@@ -134,7 +142,7 @@ class MachineScheduleController extends Controller
 
         $dailyLimit = $machine->effective_daily_limit;
 
-        if (ScheduleRequest::wouldExceedDailyCapacity($machine->id, $validated['scheduled_date'], (float) $validated['land_size'], $dailyLimit)) {
+        if ($validated['purpose'] !== 'borrow' && ScheduleRequest::wouldExceedDailyCapacity($machine->id, $validated['scheduled_date'], (float) $validated['land_size'], $dailyLimit)) {
             $remaining = ScheduleRequest::remainingCapacity($machine->id, $validated['scheduled_date'], $dailyLimit);
             return redirect()->route('manager.machine-schedule')
                 ->with('error', "{$machine->name} has reached its {$dailyLimit} hectare daily limit for this date. Only {$remaining} hectare(s) remaining.");
@@ -147,6 +155,7 @@ class MachineScheduleController extends Controller
             'member_type' => $validated['member_type'],
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
+            'purpose' => $validated['purpose'],
             'land_size' => $validated['land_size'],
             'units_requested' => $unitsRequested,
             'crop_id' => $validated['crop_id'],
@@ -177,7 +186,7 @@ class MachineScheduleController extends Controller
 
         $dailyLimit = $machine->effective_daily_limit;
 
-        if (ScheduleRequest::wouldExceedDailyCapacity($machine->id, $validated['scheduled_date'], (float) $validated['land_size'], $dailyLimit, $schedule->id)) {
+        if ($validated['purpose'] !== 'borrow' && ScheduleRequest::wouldExceedDailyCapacity($machine->id, $validated['scheduled_date'], (float) $validated['land_size'], $dailyLimit, $schedule->id)) {
             $remaining = ScheduleRequest::remainingCapacity($machine->id, $validated['scheduled_date'], $dailyLimit, $schedule->id);
             return redirect()->route('manager.machine-schedule')
                 ->with('error', "{$machine->name} has reached its {$dailyLimit} hectare daily limit for this date. Only {$remaining} hectare(s) remaining.");
@@ -190,6 +199,7 @@ class MachineScheduleController extends Controller
             'member_type' => $validated['member_type'],
             'machinery' => $machine->name,
             'machine_id' => $machine->id,
+            'purpose' => $validated['purpose'],
             'land_size' => $validated['land_size'],
             'units_requested' => $unitsRequested,
             'crop_id' => $validated['crop_id'],
@@ -499,10 +509,11 @@ class MachineScheduleController extends Controller
             'user_id' => 'nullable|required_if:member_type,member|exists:users,id',
             'farmer_name' => 'nullable|required_if:member_type,non-member|string|max:255',
             'contact_number' => 'nullable|required_if:member_type,non-member|string|max:20',
+            'purpose' => ['required', Rule::in(['crop', 'borrow'])],
             'machinery' => ['required', Rule::in($this->machineryNames())],
-            'land_size' => 'required|numeric|min:0.1',
+            'land_size' => 'nullable|required_if:purpose,crop|numeric|min:0.1',
             'units_requested' => 'nullable|integer|min:1',
-            'crop_id' => ['required', Rule::in(array_merge(Crop::pluck('id')->all(), [Crop::OTHER_OPTION]))],
+            'crop_id' => ['nullable', 'required_if:purpose,crop', Rule::in(array_merge(Crop::pluck('id')->all(), [Crop::OTHER_OPTION]))],
             'new_crop_name' => 'nullable|required_if:crop_id,'.Crop::OTHER_OPTION.'|string|max:255',
             'scheduled_date' => ['required', 'date', 'after_or_equal:'.ScheduleRequest::earliestAllowedDate()->toDateString()],
             'start_time' => 'required|date_format:H:i',
@@ -510,6 +521,8 @@ class MachineScheduleController extends Controller
             'location' => 'required|string|max:255',
         ], [
             'scheduled_date.after_or_equal' => 'The schedule date must be at least '.ScheduleRequest::MIN_LEAD_DAYS.' days from today.',
+            'land_size.required_if' => 'The land size is required when the schedule is for a crop.',
+            'crop_id.required_if' => 'Choose the crop this schedule is for.',
         ]);
 
         if ($validated['member_type'] === 'member' && empty($validated['farmer_name'])) {
@@ -517,8 +530,32 @@ class MachineScheduleController extends Controller
             $validated['farmer_name'] = $farmer?->full_name;
         }
 
-        if ($validated['crop_id'] === Crop::OTHER_OPTION) {
-            $validated['crop_id'] = Crop::findOrCreateByName($validated['new_crop_name'])->id;
+        $isBorrow = $validated['purpose'] === 'borrow';
+        $isNewCrop = false;
+        $cropId = null;
+
+        if (! $isBorrow) {
+            if ($validated['crop_id'] === Crop::OTHER_OPTION) {
+                $existing = Crop::findByName($validated['new_crop_name']);
+                $isNewCrop = ! $existing;
+                $cropId = $existing?->id;
+            } else {
+                $cropId = (int) $validated['crop_id'];
+            }
+        }
+
+        $machine = Machine::with('crops')->whereNull('archived_at')->where('name', $validated['machinery'])->first();
+
+        if ($mismatch = $machine?->purposeMismatch($validated['purpose'], $cropId, $isNewCrop)) {
+            throw ValidationException::withMessages(['machinery' => $mismatch]);
+        }
+
+        // A borrow-only schedule carries no crop and no land size.
+        if ($isBorrow) {
+            $validated['crop_id'] = null;
+            $validated['land_size'] = null;
+        } else {
+            $validated['crop_id'] = $cropId ?? Crop::findOrCreateByName($validated['new_crop_name'])->id;
         }
 
         return $validated;

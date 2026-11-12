@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Crop extends Model
 {
@@ -27,9 +28,16 @@ class Crop extends Model
      */
     public static function findOrCreateByName(string $name): self
     {
-        $name = trim($name);
+        return self::findByName($name) ?? self::create(['name' => trim($name)]);
+    }
 
-        return self::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first()
-            ?? self::create(['name' => $name]);
+    public static function findByName(string $name): ?self
+    {
+        return self::whereRaw('LOWER(name) = ?', [mb_strtolower(trim($name))])->first();
+    }
+
+    public function machines(): BelongsToMany
+    {
+        return $this->belongsToMany(Machine::class);
     }
 }

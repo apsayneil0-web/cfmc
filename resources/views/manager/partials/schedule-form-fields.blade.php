@@ -1,5 +1,6 @@
 @php
     $isMember = old('member_type', $schedule->member_type ?? 'member') === 'member';
+    $isBorrowOnly = old('purpose', $schedule->purpose ?? 'crop') === 'borrow';
 @endphp
 <div class="schedule-form">
     <div class="mb-3">
@@ -37,8 +38,22 @@
         <small class="text-muted">Used to text the farmer when this schedule changes.</small>
     </div>
 
+    <div class="mb-3">
+        <label class="form-label fw-semibold d-block">Purpose <span class="text-danger">*</span></label>
+        <div class="d-flex gap-3 flex-wrap">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="purpose" id="{{ $prefix }}_purposeCrop" value="crop" {{ $isBorrowOnly ? '' : 'checked' }}>
+                <label class="form-check-label" for="{{ $prefix }}_purposeCrop">For a crop</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="purpose" id="{{ $prefix }}_purposeBorrow" value="borrow" {{ $isBorrowOnly ? 'checked' : '' }}>
+                <label class="form-check-label" for="{{ $prefix }}_purposeBorrow">Borrow only (hauling / transport)</label>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3">
-        <div class="col-md-6">
+        <div class="col-md-6 schedule-crop-wrapper">
             <label class="form-label fw-semibold">Crop to be Harvested <span class="text-danger">*</span></label>
             <select name="crop_id" class="form-select crop-select" required>
                 <option value="">Select crop...</option>
@@ -57,10 +72,14 @@
         <div class="col-md-6">
             <label class="form-label fw-semibold">Machinery <span class="text-danger">*</span></label>
             <select name="machinery" class="form-select" required>
+                <option value="">Select machinery...</option>
                 @foreach($machineryList as $machine)
-                <option value="{{ $machine }}" data-quantity="{{ $machineQuantities[$machine] ?? 1 }}" {{ old('machinery', $schedule->machinery ?? '') == $machine ? 'selected' : '' }}>{{ $machine }}</option>
+                <option value="{{ $machine }}" data-quantity="{{ $machineQuantities[$machine] ?? 1 }}"
+                    data-requires-crop="{{ ($machineMeta[$machine]['requires_crop'] ?? true) ? '1' : '0' }}" data-crops="{{ $machineMeta[$machine]['crops'] ?? '' }}"
+                    {{ old('machinery', $schedule->machinery ?? '') == $machine ? 'selected' : '' }}>{{ $machine }}</option>
                 @endforeach
             </select>
+            <small class="text-muted schedule-machinery-hint"></small>
         </div>
         <div class="col-md-3 schedule-units-wrapper d-none">
             <label class="form-label fw-semibold">Units Needed</label>
@@ -69,7 +88,7 @@
             </select>
             <small class="text-muted">More than one works the land in parallel.</small>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 schedule-land-wrapper">
             <label class="form-label fw-semibold">Land Size (hectares) <span class="text-danger">*</span></label>
             <input type="number" step="0.1" min="0.1" name="land_size" class="form-control" value="{{ old('land_size', $schedule->land_size ?? '') }}" required>
             <small class="text-muted">End Time is estimated at {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }} hrs/hectare per unit.</small>

@@ -981,12 +981,17 @@
     });
 
     // Confirmation step before an applicant's CBU payment is recorded.
-    // Deferred to DOMContentLoaded: <x-confirm-dialog /> renders after this.
+    // Deferred to DOMContentLoaded: the layout's confirm-dialog component
+    // (which defines confirmBeforeSubmit) renders after this script.
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('form[data-cbu-confirm]').forEach(function (form) {
             confirmBeforeSubmit(form, function () {
-                var amount = parseFloat(form.querySelector('[name="amount"]').value) || 0;
-                var proof = form.querySelector('[name="proof_document"]').files[0];
+                // form.elements, not form.querySelector: these modals sit directly
+                // inside <tbody>, where the browser leaves the form's fields
+                // associated with it but not nested inside it.
+                var amount = parseFloat(form.elements['amount'].value) || 0;
+                var proofInput = form.elements['proof_document'];
+                var proof = proofInput && proofInput.files[0];
                 return 'Farmer: ' + form.dataset.cbuConfirm +
                     '\nAmount: ₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
                     '\nProof: ' + (proof ? proof.name : 'none') +

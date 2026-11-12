@@ -91,7 +91,7 @@ class ScheduleApprovalController extends Controller
         // together exceed its daily limit — this is the point that catches it.
         $dailyLimit = $schedule->machine?->effective_daily_limit ?? Machine::DEFAULT_DAILY_HECTARE_LIMIT;
 
-        if (ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), (float) $schedule->land_size, $dailyLimit, $schedule->id)) {
+        if (! $schedule->isBorrowOnly() && ScheduleRequest::wouldExceedDailyCapacity($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), (float) $schedule->land_size, $dailyLimit, $schedule->id)) {
             $remaining = ScheduleRequest::remainingCapacity($schedule->machine_id, $schedule->scheduled_date->format('Y-m-d'), $dailyLimit, $schedule->id);
 
             return redirect()->route('manager.schedule-approval')

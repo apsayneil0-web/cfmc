@@ -681,8 +681,8 @@
 
     // Confirmation step before CBU and Machine payments are
     // recorded (Loan Payment has its own paymentConfirmModal above).
-    // Deferred to DOMContentLoaded because <x-confirm-dialog /> — which
-    // defines confirmBeforeSubmit — is rendered after this page's content.
+    // Deferred to DOMContentLoaded because the layout's confirm-dialog
+    // component (which defines confirmBeforeSubmit) renders after this page's content.
     document.addEventListener('DOMContentLoaded', function () {
         function selectedText(id) {
             var select = document.getElementById(id);
