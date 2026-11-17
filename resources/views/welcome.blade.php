@@ -6,1170 +6,812 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Centrala Farmers Marketing Cooperative - CFMC</title>
     <meta name="description" content="The cooperative management system of Centrala Farmers Marketing Cooperative: membership, farmer loans, CBU and machine rental in one place.">
-    @include('partials.fonts')
-    @vite('resources/css/palette.css')
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=libre-caslon-display:400&family=libre-caslon-text:400,400i&family=hanken-grotesk:400,500,600&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="{{ asset('images/landing/hero-harvest.jpg') }}">
     <script>
-        document.documentElement.classList.add('js');
-        // Motion layer is opt-in: visitors who prefer reduced motion get a static page.
+        // Motion is opt-in: visitors who prefer reduced motion get a still page.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             document.documentElement.classList.add('motion');
         }
-        // Same saved theme as the dashboards; applied before paint so there's no flash.
-        (function () {
-            var saved = null;
-            try { saved = localStorage.getItem('cfmc-theme'); } catch (e) {}
-            var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-bs-theme', theme);
-        })();
     </script>
     <style>
+        /* Quiet editorial landing page on pale sage paper. Light only by design.
+           Left-aligned type, the cooperative's own photos in one shared color
+           grade with caption lines, a ledger row for the live figures, a loan
+           estimator, and deep-forest bands for the motto and sign-in. */
         :root {
-            --serif: 'Bitter', Georgia, 'Times New Roman', serif;
-            --sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-            --sprout-soft: color-mix(in srgb, var(--palette-sprout) 60%, var(--palette-paper));
-            --shadow-color: var(--palette-ink);
-            --shadow-card: 0 1px 2px color-mix(in srgb, var(--shadow-color) 4%, transparent);
-            --shadow-photo: 0 24px 48px -24px color-mix(in srgb, var(--shadow-color) 35%, transparent);
-            --ease: cubic-bezier(0.4, 0, 0.2, 1);
+            --paper: #eef1ea;
+            --paper-2: #e4e9e0;
+            --ink: #15211a;
+            --ink-2: #4b574f;
+            --rule: #c9d1c6;
+            --forest: #123222;
+            --forest-2: #1c4430;
+            --brass: #a07d34;
+            --on-dark: #eef1ea;
+            --on-dark-2: #b9c6ba;
+            --display: 'Libre Caslon Display', 'Libre Caslon Text', Georgia, serif;
+            --serif: 'Libre Caslon Text', Georgia, serif;
+            --sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+            --grade: saturate(0.66) contrast(1.06) sepia(0.14) brightness(1.02);
+            --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+            color-scheme: light;
         }
-
-        /* Dark mode: the dark palette itself lives in palette.css (shared with
-           the dashboards via the saved "cfmc-theme"); only page tweaks here. */
-        :root[data-bs-theme="dark"] {
-            color-scheme: dark;
-            --shadow-color: #000;
-        }
-        :root[data-bs-theme="dark"] header { background: var(--palette-paper); }
-        :root[data-bs-theme="dark"] .btn-solid { color: var(--palette-paper); }
-        :root[data-bs-theme="dark"] .btn-outline { border-color: color-mix(in srgb, var(--palette-ink) 70%, transparent); color: var(--palette-ink); }
-        :root[data-bs-theme="dark"] .btn-outline:hover { background: color-mix(in srgb, var(--palette-ink) 8%, transparent); }
-        :root[data-bs-theme="dark"] .btn-nav { border-color: var(--palette-field); color: var(--palette-field-light); }
-        :root[data-bs-theme="dark"] .service-card,
-        :root[data-bs-theme="dark"] .checklist { background: linear-gradient(160deg, #1d271e 0%, var(--palette-surface) 100%); }
-        :root[data-bs-theme="dark"] .facts { background: var(--palette-surface); border-color: var(--palette-stone); }
-        :root[data-bs-theme="dark"] .fact + .fact { border-color: var(--palette-stone); }
-        :root[data-bs-theme="dark"] .fact svg { color: var(--palette-field-light); }
-        :root[data-bs-theme="dark"] .trust-card { background: color-mix(in srgb, var(--palette-surface) 92%, transparent); backdrop-filter: blur(8px); }
-        :root[data-bs-theme="dark"] .hero-photo img,
-        :root[data-bs-theme="dark"] .story-media img { filter: brightness(0.92) saturate(0.95); }
-        :root[data-bs-theme="dark"] .cta { background: linear-gradient(120deg, #22301f 0%, #1c2a1c 100%); border: 1px solid var(--palette-sprout-border); }
-        :root[data-bs-theme="dark"] .btn-light { background: var(--palette-field); color: var(--palette-paper); }
-        :root[data-bs-theme="dark"] .btn-light:hover { background: var(--palette-field-hover); }
-
-        /* Theme toggle (sun / moon) */
-        .theme-toggle {
-            display: grid;
-            place-items: center;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 999px;
-            border: 1px solid var(--palette-stone);
-            background: transparent;
-            color: var(--palette-text-secondary);
-            cursor: pointer;
-            transition: background-color 160ms var(--ease), color 160ms var(--ease);
-        }
-        .theme-toggle:hover { background: var(--palette-sprout); color: var(--palette-field); }
-        .theme-toggle svg { width: 1.1rem; height: 1.1rem; }
-        .theme-toggle .icon-sun { display: none; }
-        :root[data-bs-theme="dark"] .theme-toggle .icon-sun { display: block; }
-        :root[data-bs-theme="dark"] .theme-toggle .icon-moon { display: none; }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
-        body {
-            font-family: var(--sans);
-            background-color: var(--palette-paper);
-            color: var(--palette-ink);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-        }
-        a { color: inherit; text-decoration: none; }
-        section[id], footer[id] { scroll-margin-top: 5.5rem; }
-        img { max-width: 100%; display: block; }
-        :focus-visible { outline: 2px solid var(--palette-field); outline-offset: 3px; border-radius: 6px; }
+        body { font-family: var(--sans); font-size: 17px; line-height: 1.6; background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; overflow-x: hidden; overflow-x: clip; }
+        @media (min-width: 960px) { body { font-size: 18px; } }
+        img { display: block; max-width: 100%; }
+        a { color: inherit; }
+        :focus-visible { outline: 2px solid var(--brass); outline-offset: 4px; border-radius: 4px; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-        .container { max-width: 88rem; margin-inline: auto; padding-inline: clamp(1rem, 4vw, 3.5rem); }
+        .wrap { max-width: 1400px; margin-inline: auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+        @media (min-width: 960px) { .wrap { padding-left: max(56px, env(safe-area-inset-left, 0px)); padding-right: max(56px, env(safe-area-inset-right, 0px)); } }
+        @media (min-width: 1800px) { .wrap { max-width: 1560px; } }
 
-        /* ---------- Header ---------- */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: var(--palette-surface);
-            border-bottom: 1px solid var(--palette-stone);
-            transition: box-shadow 220ms var(--ease);
-        }
-        header.is-scrolled { box-shadow: 0 6px 20px -14px color-mix(in srgb, var(--shadow-color) 35%, transparent); }
-        .navbar { display: flex; align-items: center; gap: 2rem; min-height: 5rem; }
-        .brand { display: flex; align-items: center; gap: 0.65rem; }
-        .brand svg { width: 2.25rem; height: 2.25rem; flex-shrink: 0; }
-        .brand-name { font-family: var(--serif); font-weight: 600; font-size: 1.85rem; line-height: 1; color: var(--palette-field); letter-spacing: -0.01em; }
-        .brand-sub { display: block; margin-top: 0.3rem; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--palette-muted); }
-        .nav-links { display: none; gap: 2.25rem; margin-left: auto; font-size: 0.92rem; color: var(--palette-text-secondary); }
-        .nav-links a { padding-block: 0.35rem; border-bottom: 2px solid transparent; transition: color 160ms var(--ease), border-color 160ms var(--ease); }
-        .nav-links a:hover { color: var(--palette-ink); }
-        .nav-links a.is-active { color: var(--palette-ink); font-weight: 600; border-color: var(--palette-field); }
-        .nav-actions { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
-        @media (min-width: 860px) { .nav-links { display: flex; } .nav-actions { margin-left: 1.5rem; } }
-        @media (max-width: 480px) { .brand-sub { display: none; } .brand-name { font-size: 1.55rem; } }
+        /* Type scale */
+        .h-xl { font-family: var(--display); font-weight: 400; font-size: clamp(3rem, 8.6vw, 7.4rem); line-height: 0.96; letter-spacing: -0.025em; text-wrap: balance; }
+        .h-l { font-family: var(--display); font-weight: 400; font-size: clamp(2.2rem, 4.6vw, 3.9rem); line-height: 1.04; letter-spacing: -0.02em; text-wrap: balance; }
+        .h-m { font-family: var(--display); font-weight: 400; font-size: clamp(1.6rem, 2.6vw, 2.2rem); line-height: 1.12; letter-spacing: -0.012em; }
+        .lede { font-family: var(--serif); font-size: clamp(1.1rem, 1.6vw, 1.3rem); line-height: 1.65; color: var(--ink-2); max-width: 36em; }
+        .small { font-size: 0.88rem; color: var(--ink-2); }
+        .caption { font-family: var(--serif); font-style: italic; font-size: 0.9rem; color: var(--ink-2); }
 
-        /* ---------- Buttons ---------- */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            border-radius: 999px;
-            padding: 0.8rem 1.6rem;
-            font-family: inherit;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border: 1.5px solid transparent;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background-color 160ms var(--ease), color 160ms var(--ease), border-color 160ms var(--ease);
-        }
-        .btn svg { width: 1rem; height: 1rem; transition: transform 160ms var(--ease); }
-        .btn:hover svg.arrow { transform: translateX(3px); }
-        .btn-solid { background: var(--palette-field); color: #fff; }
-        .btn-solid:hover { background: var(--palette-field-hover); }
-        .btn-outline { border-color: var(--palette-field); color: var(--palette-field); background: transparent; }
-        .btn-outline:hover { background: var(--palette-sprout); }
-        .btn-nav { border-radius: 0.65rem; padding: 0.55rem 1.2rem; font-size: 0.9rem; }
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0.85rem 1.6rem; border-radius: 10px; font: 600 1rem/1 var(--sans); text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: background-color 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease); }
+        .btn-solid { background: var(--forest); color: var(--on-dark); }
+        .btn-solid:hover { background: var(--forest-2); }
+        .btn-line { border-color: var(--ink); color: var(--ink); background: transparent; }
+        .btn-line:hover { background: var(--ink); color: var(--paper); }
+        .btn-light { background: var(--on-dark); color: var(--forest); }
+        .btn-light:hover { background: #ffffff; }
+        .link { font-weight: 600; text-decoration: underline; text-decoration-color: var(--brass); text-decoration-thickness: 1.5px; text-underline-offset: 5px; transition: text-decoration-color 0.2s var(--ease); }
+        .link:hover { text-decoration-color: currentColor; }
+        form.inline { display: contents; }
 
-        /* ---------- Hero ---------- */
-        .hero { position: relative; padding-block: 4rem 3rem; overflow: hidden; }
-        .hero-grid { display: grid; gap: 3rem; align-items: center; }
-        @media (min-width: 1200px) { .hero-grid { gap: 5rem; } }
-        @media (min-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
-        .eyebrow { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--palette-text-secondary); }
-        .eyebrow i { font-style: normal; color: var(--palette-wheat); }
-        .hero h1 {
-            font-family: var(--serif);
-            font-weight: 600;
-            font-size: clamp(2.5rem, 5vw, 4.5rem);
-            line-height: 1.04;
-            letter-spacing: -0.025em;
-            margin: 1.1rem 0 1.25rem;
-            text-wrap: balance;
-        }
-        .hero h1 em { font-style: italic; font-weight: 500; color: var(--palette-field-light); }
-        .hero .lead { color: var(--palette-text-secondary); font-size: 1.05rem; max-width: 46ch; margin-bottom: 2rem; }
-        .hero-actions { display: flex; flex-wrap: wrap; gap: 0.85rem; }
-        .hero-actions form { display: contents; }
-        .hero-leaf { position: absolute; left: -0.5rem; bottom: 1rem; width: 5rem; opacity: 0.5; pointer-events: none; }
+        /* Header */
+        .hd { position: sticky; top: 0; z-index: 30; background: var(--paper); transition: box-shadow 0.3s var(--ease); }
+        .hd.is-scrolled { box-shadow: 0 1px 0 var(--rule); }
+        .hd-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 76px; }
+        .mark { display: flex; align-items: center; gap: 0.7rem; min-height: 44px; text-decoration: none; min-width: 0; }
+        .mark svg { width: 30px; height: 30px; color: var(--forest); flex-shrink: 0; }
+        .mark b { display: block; font-family: var(--display); font-weight: 400; font-size: 1.5rem; line-height: 1; letter-spacing: -0.01em; }
+        .mark small { display: none; font-size: 0.76rem; color: var(--ink-2); margin-top: 0.2rem; white-space: nowrap; }
+        @media (min-width: 381px) { .mark small { display: block; } }
+        .nav { display: none; gap: 2.2rem; font-size: 0.95rem; font-weight: 500; }
+        .nav a { text-decoration: none; color: var(--ink-2); padding-block: 0.3rem; border-bottom: 1px solid transparent; transition: color 0.2s, border-color 0.2s; }
+        .nav a:hover, .nav a[aria-current="true"] { color: var(--ink); border-color: var(--ink); }
+        .hd .btn { min-height: 44px; padding: 0.6rem 1.25rem; }
+        @media (min-width: 960px) { .nav { display: flex; } }
+        .hd-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
 
-        .hero-photo { position: relative; }
-        .hero-photo img {
-            width: 100%;
-            aspect-ratio: 735 / 479;
-            object-fit: cover;
-            border-radius: 1.25rem;
-            box-shadow: var(--shadow-photo);
-        }
-        .trust-card {
-            position: absolute;
-            right: 1rem;
-            bottom: -1.5rem;
-            display: grid;
-            gap: 0.6rem;
-            min-width: 13.5rem;
-            padding: 0.9rem 1rem;
-            background: var(--palette-surface);
-            border: 1px solid var(--palette-stone);
-            border-radius: 0.9rem;
-            box-shadow: 0 16px 32px -18px color-mix(in srgb, var(--shadow-color) 40%, transparent);
-        }
-        .trust-title { display: flex; align-items: center; gap: 0.65rem; font-weight: 600; font-size: 0.92rem; line-height: 1.25; }
-        .trust-title span { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); flex-shrink: 0; }
-        .trust-title svg { width: 1rem; height: 1rem; }
-        .trust-place { display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem; color: var(--palette-muted); }
-        .trust-place svg { width: 0.9rem; height: 0.9rem; color: var(--palette-field); flex-shrink: 0; }
-        @media (max-width: 520px) { .trust-card { right: 0.75rem; left: 0.75rem; min-width: 0; } }
+        /* Phones and tablets: a menu button opens a full-screen panel */
+        .menu-btn { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--rule); background: transparent; color: var(--ink); cursor: pointer; transition: border-color 0.2s; }
+        .menu-btn:hover { border-color: var(--ink); }
+        .menu-btn svg { width: 20px; height: 20px; }
+        @media (min-width: 960px) { .hd .menu-btn { display: none; } }
+        .menu { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; background: var(--paper);
+            padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); }
+        .menu[hidden] { display: none; }
+        .menu-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 76px; }
+        .menu nav { display: grid; margin-block: auto; padding-block: 2rem; }
+        .menu nav a { display: flex; align-items: center; min-height: 64px; border-bottom: 1px solid var(--rule); font-family: var(--display); font-size: clamp(2rem, 9vw, 2.8rem); line-height: 1.1; text-decoration: none; }
+        .menu nav a:first-child { border-top: 1px solid var(--ink); }
+        .menu .btn { width: 100%; min-height: 56px; }
+        .motion .menu:not([hidden]) { animation: menu-in 0.35s var(--ease); }
+        @keyframes menu-in { from { opacity: 0; transform: translateY(-10px); } }
+        .progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--brass); transform-origin: 0 50%; transform: scaleX(0); }
 
-        /* ---------- Sections ---------- */
-        .section { padding-block: 4.5rem; }
-        .section-head { max-width: 46rem; margin-bottom: 2.5rem; }
-        .section-head .eyebrow { margin-bottom: 0.75rem; }
-        .section-title { font-family: var(--serif); font-weight: 600; font-size: clamp(1.9rem, 3.5vw, 2.5rem); line-height: 1.12; letter-spacing: -0.02em; text-wrap: balance; }
-        .section-sub { margin-top: 0.75rem; color: var(--palette-text-secondary); }
+        /* Hero: copy on the left, a tall rounded photograph on the right. */
+        .hero { padding-block: clamp(1.5rem, 3vw, 2.5rem) clamp(3.5rem, 7vw, 6rem); }
+        /* Desktop: the hero fills exactly the first screen below the header, so
+           the figures row starts below the fold instead of peeking in. */
+        /* Desktop: the hero fills the first screen (capped on very tall screens).
+           Not on tablets: a tall portrait screen would leave empty space around it. */
+        @media (min-width: 720px) { .hero { padding-block: 2.5rem 4rem; } }
+        @media (min-width: 960px) {
+            .hero { display: flex; align-items: center; padding-block: 2.5rem; min-height: min(calc(100vh - 76px), 1080px); min-height: min(calc(100svh - 76px), 1080px); }
+            .hero > .wrap { width: 100%; }
+        }
+        .hero-grid { display: grid; gap: clamp(2.5rem, 5vw, 4rem); align-items: center; }
+        /* Text and photo side by side from tablet width */
+        @media (min-width: 720px) { .hero-grid { grid-template-columns: minmax(0, 11fr) minmax(0, 10fr); gap: clamp(2rem, 5vw, 5rem); } }
+        .hero-copy { min-width: 0; }
+        .hero-title { font-size: clamp(3rem, 8.4vw, 4.4rem); line-height: 0.98; letter-spacing: -0.03em; }
+        @media (min-width: 720px) { .hero-title { font-size: clamp(2.6rem, min(6vw, 11vh), 5.7rem); font-size: clamp(2.6rem, min(6vw, 11svh), 5.7rem); } }
+        @media (min-width: 960px) { .hero-title { font-size: clamp(3.4rem, min(4.75vw, 11vh), 5.7rem); font-size: clamp(3.4rem, min(4.75vw, 11svh), 5.7rem); } }
+        @media (min-width: 1800px) { .hero-title { font-size: clamp(3.4rem, min(4.75vw, 11vh), 6.4rem); font-size: clamp(3.4rem, min(4.75vw, 11svh), 6.4rem); } }
+        .hero .lede { margin-top: clamp(1.4rem, 2.6vw, 2rem); font-size: clamp(1.1rem, 1.5vw, 1.25rem); }
+        .hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.25rem; }
+        .hero-actions .btn, .hero-actions form { flex: 1 1 100%; }
+        .hero-actions form .btn { width: 100%; }
+        @media (min-width: 601px) { .hero-actions .btn, .hero-actions form { flex: 0 0 auto; } .hero-actions form .btn { width: auto; } }
+        .plate { position: relative; min-width: 0; }
+        .plate-img { position: relative; overflow: hidden; border-radius: 28px; aspect-ratio: 4 / 5; width: 100%; max-width: 100%; background: var(--paper-2); box-shadow: 0 40px 70px -40px rgba(21, 33, 26, 0.45); }
+        @media (min-width: 600px) { .plate-img { aspect-ratio: 6 / 5; } }
+        /* Desktop: never taller than the screen, so the whole photo shows in the first view */
+        @media (min-width: 720px) { .plate-img { max-height: max(320px, calc(100vh - 76px - 5rem)); max-height: max(320px, calc(100svh - 76px - 5rem)); } }
+        .plate-img img { width: 100%; height: 100%; object-fit: cover; object-position: 42% 55%; filter: saturate(1.04) contrast(1.03); will-change: transform; }
+        .ln { display: block; overflow: hidden; padding-bottom: 0.06em; }
+        .ln > span { display: block; }
+        .motion .ln > span { transform: translateY(105%); animation: rise 1.1s var(--ease) forwards; }
+        .motion .ln:nth-child(2) > span { animation-delay: 0.1s; }
+        .motion .plate-img { clip-path: inset(100% 0 0 0 round 28px); animation: unveil 1.4s var(--ease) 0.25s forwards; }
+        .motion .plate-img img { transform: scale(1.12); animation: settle 2s var(--ease) 0.25s forwards; }
+        @keyframes rise { to { transform: none; } }
+        @keyframes unveil { to { clip-path: inset(0 0 0 0 round 28px); } }
+        @keyframes settle { to { transform: scale(1); } }
 
-        /* ---------- Services ---------- */
-        .services-grid { display: grid; gap: 1.25rem; }
-        @media (min-width: 860px) { .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-        .service-card {
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            padding: 1.75rem;
-            background: var(--palette-surface);
-            border: 1px solid var(--palette-stone);
-            border-radius: 1rem;
-            box-shadow: var(--shadow-card);
-            transition: border-color 200ms var(--ease);
-        }
-        .service-card:hover { border-color: var(--palette-sprout-border); }
-        .service-card::after {
-            content: "";
-            position: absolute;
-            right: -1.5rem;
-            bottom: -1.5rem;
-            width: 6.5rem;
-            height: 6.5rem;
-            border-radius: 999px;
-            background: var(--sprout-soft);
-            pointer-events: none;
-        }
-        .service-icon { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); }
-        .service-icon svg { width: 1.5rem; height: 1.5rem; }
-        .service-card h3 { font-family: var(--serif); font-weight: 600; font-size: 1.45rem; letter-spacing: -0.01em; margin-top: 0.35rem; }
-        .service-card p { color: var(--palette-text-secondary); font-size: 0.95rem; }
-        .service-link { position: relative; z-index: 1; margin-top: auto; padding-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.92rem; color: var(--palette-field); }
-        .service-link svg { width: 1rem; height: 1rem; transition: transform 160ms var(--ease); }
-        .service-link:hover svg { transform: translateX(3px); }
+        /* Ledger of figures */
+        .ledger { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule); }
+        .ledger-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @media (min-width: 960px) { .ledger-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .fig { min-width: 0; padding: 1.6rem 1.25rem 1.6rem 0; }
+        .fig + .fig { padding-left: 1.25rem; border-left: 1px solid var(--rule); }
+        .fig:nth-child(3) { padding-left: 0; border-left: 0; }
+        .fig:nth-child(n+3) { border-top: 1px solid var(--rule); }
+        @media (min-width: 960px) { .fig:nth-child(3) { padding-left: 1.25rem; border-left: 1px solid var(--rule); } .fig:nth-child(n+3) { border-top: 0; } }
+        .fig dt { font-size: 0.9rem; color: var(--ink-2); }
+        .fig dd { font-family: var(--display); font-size: clamp(2.4rem, 5vw, 3.8rem); line-height: 1; letter-spacing: -0.02em; margin-top: 0.6rem; font-variant-numeric: lining-nums tabular-nums; }
 
-        /* ---------- Facts strip ---------- */
-        .facts {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            background: var(--sprout-soft);
-            border: 1px solid var(--palette-sprout-border);
-            border-radius: 1rem;
-        }
-        @media (min-width: 860px) { .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-        .fact { display: grid; justify-items: center; gap: 0.35rem; padding: 1.6rem 1rem; text-align: center; }
-        .fact + .fact { border-left: 1px solid var(--palette-sprout-border); }
-        @media (max-width: 859px) {
-            .fact:nth-child(3) { border-left: 0; }
-            .fact:nth-child(n+3) { border-top: 1px solid var(--palette-sprout-border); }
-        }
-        .fact svg { width: 1.6rem; height: 1.6rem; color: var(--palette-field); }
-        .fact b { font-size: 1.05rem; font-weight: 600; }
-        .fact span { font-size: 0.85rem; color: var(--palette-text-secondary); }
-        .facts-numbers .fact { padding-block: 1.75rem; }
-        .facts-numbers .fact b { font-size: clamp(1.6rem, 3vw, 2rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+        /* Sections */
+        .sec { padding-block: clamp(4.5rem, 10vw, 8.5rem); }
+        .sec-tight { padding-top: 0; }
+        .sec-head { display: grid; gap: 1.25rem; margin-bottom: clamp(2.5rem, 6vw, 4.5rem); }
+        @media (min-width: 960px) { .sec-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: end; gap: 4rem; } }
+        .sec-head .lede { font-size: 1.1rem; }
 
-        /* ---------- Story rows (photo + text, alternating sides) ---------- */
-        .story-row {
-            display: grid;
-            gap: 2rem;
-            align-items: center;
-            margin-bottom: 5rem;
-        }
-        .story-row:last-child { margin-bottom: 0; }
-        @media (min-width: 860px) {
-            .story-row { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(2.5rem, 5vw, 4.5rem); }
-            .story-row.is-flipped { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
-            .story-row.is-flipped .story-media { order: 2; }
-        }
-        .story-media { position: relative; }
-        .story-media img {
-            width: 100%;
-            aspect-ratio: 4 / 3;
-            object-fit: cover;
-            border-radius: 1.1rem;
-            box-shadow: var(--shadow-photo);
-        }
-        .story-tag {
-            position: absolute;
-            left: 1rem;
-            bottom: 1rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            padding: 0.35rem 0.8rem;
-            border-radius: 999px;
-            background: color-mix(in srgb, var(--palette-surface) 92%, transparent);
-            font-size: 0.78rem;
-            font-weight: 600;
-        }
-        .story-tag::before { content: ""; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--palette-field); }
-        .story-step { font-family: var(--serif); font-style: italic; color: var(--palette-wheat-deep); font-size: 0.95rem; }
-        .story-copy h3 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.6rem, 2.8vw, 2rem); line-height: 1.15; letter-spacing: -0.015em; margin: 0.4rem 0 0.8rem; text-wrap: balance; }
-        .story-copy p { color: var(--palette-text-secondary); max-width: 52ch; }
-        .story-points { list-style: none; display: grid; gap: 0.6rem; margin-top: 1.25rem; }
-        .story-points li { display: flex; gap: 0.65rem; color: var(--palette-text-secondary); font-size: 0.95rem; }
-        .story-points svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; margin-top: 0.2rem; padding: 0.2rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); }
+        /* Services */
+        .svc { position: relative; isolation: isolate; border-top: 1px solid var(--ink); }
+        .svc-row { position: relative; display: grid; gap: 0.75rem 3rem; padding-block: clamp(1.6rem, 3vw, 2.4rem); border-bottom: 1px solid var(--rule); text-decoration: none; }
+        .svc-row::before { content: ""; position: absolute; inset: 0 -1.25rem; z-index: -1; border-radius: 8px; background: var(--paper-2); opacity: 0; transition: opacity 0.35s var(--ease); }
+        .svc-row:hover::before, .svc-row:focus-visible::before { opacity: 1; }
+        @media (min-width: 960px) { .svc-row { grid-template-columns: minmax(0, 5fr) minmax(0, 5fr) minmax(0, 2fr); align-items: baseline; } }
+        .svc-row h3 { transition: transform 0.45s var(--ease); }
+        .svc-row:hover h3, .svc-row:focus-visible h3 { transform: translateX(10px); }
+        .svc-row p { color: var(--ink-2); max-width: 34em; }
+        .svc-row .link { justify-self: start; }
+        @media (min-width: 960px) { .svc-row .link { justify-self: end; } }
+        .svc-peek { display: none; position: fixed; left: 0; top: 0; z-index: 25; width: 300px; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; pointer-events: none; opacity: 0; transform: scale(0.86) rotate(-2deg); transition: opacity 0.3s var(--ease), transform 0.4s var(--ease); box-shadow: 0 30px 60px -30px rgba(21, 33, 26, 0.55); }
+        .svc-peek.on { opacity: 1; transform: none; }
+        .svc-peek img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: var(--grade); opacity: 0; transition: opacity 0.35s var(--ease); }
+        .svc-peek img.on { opacity: 1; }
+        @media (hover: hover) and (min-width: 960px) { .svc-peek { display: block; } }
 
-        /* Photos slide in from their own side; text rises in just after.
-           Gated on .js so the page is fully visible if scripts don't run. */
-        .js .story-row .story-media { opacity: 0; transform: translateX(-2.5rem); transition: opacity 800ms var(--ease), transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1); }
-        .js .story-row.is-flipped .story-media { transform: translateX(2.5rem); }
-        .js .story-row .story-copy { opacity: 0; transform: translateY(1.5rem); transition: opacity 800ms var(--ease) 150ms, transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 150ms; }
-        .js .story-row.in-view .story-media,
-        .js .story-row.in-view .story-copy { opacity: 1; transform: none; }
-        @media (max-width: 859px) {
-            .js .story-row .story-media,
-            .js .story-row.is-flipped .story-media { transform: translateY(1.5rem); }
-        }
+        /* Loan estimator */
+        .est-grid { display: grid; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+        @media (min-width: 960px) { .est-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); } }
+        .est-controls { min-width: 0; display: grid; gap: 2.2rem; }
+        .est-field label, .est-field .lbl { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-weight: 600; font-size: 0.98rem; }
+        .est-field output { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; }
+        .range { --p: 22%; -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin-top: 0.5rem; background: transparent; cursor: pointer; }
+        .range::-webkit-slider-runnable-track { height: 3px; border-radius: 3px; background: linear-gradient(90deg, var(--forest) var(--p), var(--rule) var(--p)); }
+        .range::-moz-range-track { height: 3px; border-radius: 3px; background: var(--rule); }
+        .range::-moz-range-progress { height: 3px; border-radius: 3px; background: var(--forest); }
+        .range::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -11.5px; border-radius: 999px; background: var(--paper); border: 2px solid var(--forest); box-shadow: 0 4px 12px -4px rgba(21, 33, 26, 0.4); transition: transform 0.2s var(--ease); }
+        .range::-moz-range-thumb { width: 22px; height: 22px; border-radius: 999px; background: var(--paper); border: 2px solid var(--forest); }
+        .range:active::-webkit-slider-thumb { transform: scale(1.15); }
+        .range-ends { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--ink-2); margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
+        .terms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-top: 0.9rem; }
+        @media (min-width: 421px) { .terms { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .terms button { min-height: 52px; border-radius: 10px; border: 1px solid var(--rule); background: transparent; font: 600 0.98rem var(--sans); color: var(--ink); cursor: pointer; transition: background-color 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease); }
+        .terms button:hover { border-color: var(--ink); }
+        .terms button[aria-pressed="true"] { background: var(--forest); border-color: var(--forest); color: var(--on-dark); }
+        .est-note { margin-top: -0.6rem; }
+        .slip { min-width: 0; padding: clamp(1.5rem, 3vw, 2.2rem); border-radius: 10px; background: var(--paper); border: 1px solid var(--rule); box-shadow: 0 30px 60px -45px rgba(21, 33, 26, 0.5); }
+        .slip-main dt { font-size: 0.95rem; color: var(--ink-2); }
+        .slip-main dd { font-family: var(--display); font-size: clamp(3rem, 7vw, 4.6rem); line-height: 1; letter-spacing: -0.025em; margin-top: 0.5rem; font-variant-numeric: lining-nums tabular-nums; }
+        .slip-main dd.bump { animation: bump 0.45s var(--ease); }
+        @keyframes bump { 0% { color: var(--brass); } 100% { color: var(--ink); } }
+        .split { display: flex; height: 10px; margin-top: 1.5rem; border-radius: 999px; overflow: hidden; background: var(--rule); }
+        .split span { display: block; height: 100%; transition: flex-basis 0.5s var(--ease); }
+        .split-p { background: var(--forest); flex-basis: 81%; }
+        .split-i { background: var(--brass); flex-basis: 19%; }
+        .split-key { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin-top: 0.7rem; font-size: 0.85rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+        .split-key span { display: inline-flex; align-items: center; gap: 0.45rem; }
+        .split-key i { width: 0.6rem; height: 0.6rem; border-radius: 999px; }
+        .split-key .kp { background: var(--forest); }
+        .split-key .ki { background: var(--brass); }
+        .slip-rows { margin-top: 1.4rem; border-top: 1px solid var(--rule); }
+        .slip-rows div { display: flex; justify-content: space-between; gap: 1rem; padding-block: 0.8rem; border-bottom: 1px dashed var(--rule); font-size: 0.97rem; }
+        .slip-rows dt { color: var(--ink-2); }
+        .slip-rows dd { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .slip .btn { width: 100%; margin-top: 1.6rem; }
+        .slip .small { margin-top: 1rem; }
 
-        /* ---------- Photo banner (parallax) ---------- */
-        .photo-banner {
-            position: relative;
-            overflow: hidden;
-            height: clamp(20rem, 55vh, 32rem);
-            border-radius: 1.4rem;
-        }
-        .photo-banner img {
-            position: absolute;
-            inset: -12% 0;
-            width: 100%;
-            height: 124%;
-            object-fit: cover;
-            will-change: transform;
-        }
-        .photo-banner::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg,
-                color-mix(in srgb, var(--palette-field-deep) 85%, transparent) 0%,
-                color-mix(in srgb, var(--palette-field-deep) 40%, transparent) 55%,
-                transparent 100%);
-        }
-        .photo-banner-copy {
-            position: relative;
-            z-index: 1;
-            height: 100%;
-            max-width: 36rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding-inline: clamp(1.5rem, 5vw, 4rem);
-            color: #fff;
-        }
-        .photo-banner blockquote { font-family: var(--serif); font-weight: 500; font-size: clamp(1.6rem, 3.2vw, 2.4rem); line-height: 1.2; letter-spacing: -0.01em; }
-        .photo-banner blockquote em { color: var(--palette-sprout); }
-        .photo-banner cite { margin-top: 1rem; font-style: normal; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+        /* Stories */
+        .stories { background: var(--paper-2); }
+        .story-feature { display: grid; gap: clamp(1.75rem, 4vw, 3.5rem); align-items: end; }
+        @media (min-width: 960px) { .story-feature { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); } }
+        .story-pair { display: grid; gap: clamp(3rem, 6vw, 3.5rem); margin-top: clamp(3.5rem, 8vw, 6rem); }
+        @media (min-width: 760px) { .story-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(2rem, 4vw, 3.5rem); } }
+        .story figure { min-width: 0; }
+        .story .ph { overflow: hidden; border-radius: 6px; max-width: 100%; background: var(--paper); }
+        .story .ph img { width: 100%; height: 100%; object-fit: cover; filter: var(--grade); transition: transform 1.2s var(--ease); }
+        .story:hover .ph img { transform: scale(1.03); }
+        .story-feature .ph { aspect-ratio: 16 / 10; }
+        .story-pair .ph { aspect-ratio: 4 / 3; }
+        .story figcaption { margin-top: 0.8rem; }
+        .story-body { min-width: 0; }
+        .story-pair .story-body { margin-top: 1.6rem; }
+        .story-body p { margin-top: 0.9rem; color: var(--ink-2); max-width: 32em; }
+        .ticks { list-style: none; display: grid; gap: 0.55rem; margin-top: 1.3rem; }
+        .ticks li { display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.7rem; align-items: baseline; font-size: 0.97rem; }
+        .ticks li::before { content: ""; width: 0.75rem; height: 0.42rem; border-left: 1.5px solid var(--brass); border-bottom: 1.5px solid var(--brass); transform: rotate(-45deg) translate(1px, -3px); }
+        .motion .wipe { clip-path: inset(0 0 100% 0); transition: clip-path 1.3s var(--ease); }
+        .motion .wipe img { transform: scale(1.12); transition: transform 1.8s var(--ease); }
+        .motion .wipe.in { clip-path: inset(0 0 0 0); }
+        .motion .wipe.in img { transform: none; }
+        .motion .story:hover .wipe.in img { transform: scale(1.03); }
 
-        /* ---------- About ---------- */
-        .about-grid { display: grid; gap: 2.5rem; align-items: start; }
-        @media (min-width: 960px) { .about-grid { grid-template-columns: 1.1fr 1fr; gap: 4rem; } }
-        .about-copy p { color: var(--palette-text-secondary); margin-top: 1rem; max-width: 60ch; }
-        .checklist { display: grid; gap: 0.25rem; padding: 0.5rem 1.5rem; background: var(--palette-surface); border: 1px solid var(--palette-stone); border-radius: 1rem; }
-        .check-item { display: flex; gap: 0.9rem; padding-block: 1rem; }
-        .check-item + .check-item { border-top: 1px solid var(--palette-stone); }
-        .check-badge { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); flex-shrink: 0; }
-        .check-badge svg { width: 0.9rem; height: 0.9rem; }
-        .check-item h3 { font-size: 1rem; font-weight: 600; }
-        .check-item p { font-size: 0.9rem; color: var(--palette-text-secondary); }
+        /* Motto band */
+        .motto { position: relative; overflow: hidden; background: var(--forest); color: var(--on-dark); }
+        .motto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.1); opacity: 0.22; mix-blend-mode: luminosity; }
+        .motto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(18, 50, 34, 0.92) 0%, rgba(18, 50, 34, 0.55) 100%); }
+        .motto-in { position: relative; z-index: 1; padding-block: clamp(5rem, 12vw, 10rem); }
+        .motto blockquote { font-family: var(--display); font-size: clamp(2.3rem, 6vw, 5.2rem); line-height: 1.04; letter-spacing: -0.02em; max-width: 14em; text-wrap: balance; }
+        .motto cite { display: block; margin-top: 2rem; font-style: normal; font-size: 0.95rem; color: var(--on-dark-2); }
+        .motto .w { display: inline-block; transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
+        .motion .motto .w { opacity: 0.16; transform: translateY(0.12em); }
+        .motion .motto.in .w { opacity: 1; transform: none; }
 
-        /* ---------- CTA ---------- */
-        .cta {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1.5rem;
-            padding: 2.25rem 2.5rem;
-            background: var(--palette-field);
-            border-radius: 1.25rem;
-            color: #fff;
-        }
-        .cta h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.15; letter-spacing: -0.015em; }
-        .cta p { color: color-mix(in srgb, #fff 80%, transparent); margin-top: 0.4rem; }
-        .cta form { display: contents; }
-        .btn-light { background: var(--palette-surface); color: var(--palette-field); }
-        .btn-light:hover { background: var(--palette-sprout); }
-        @media (max-width: 640px) { .cta { padding: 1.75rem 1.5rem; } }
+        /* About */
+        .about-grid { display: grid; gap: 2rem; }
+        @media (min-width: 960px) { .about-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 5rem; } }
+        .about-copy p { color: var(--ink-2); max-width: 36em; }
+        .about-copy p + p { margin-top: 1.1rem; }
+        .values { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 0 3rem; margin-top: clamp(3rem, 6vw, 4.5rem); border-top: 1px solid var(--ink); }
+        .value { padding-block: 1.5rem; border-bottom: 1px solid var(--rule); }
+        .value dt { font-family: var(--display); font-size: 1.45rem; line-height: 1.2; }
+        .value dd { color: var(--ink-2); margin-top: 0.35rem; font-size: 0.98rem; }
 
-        /* ---------- Footer ---------- */
-        footer { padding-block: 2.25rem 2.5rem; border-top: 1px solid var(--palette-stone); }
-        .footer-band { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.25rem; }
-        .footer-band svg { width: 2.5rem; height: 2.5rem; flex-shrink: 0; }
-        .footer-mid b { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; color: var(--palette-text-secondary); }
-        .footer-mid i { font-size: 0.82rem; color: var(--palette-muted); }
-        .footer-meta { margin-left: auto; text-align: right; font-size: 0.82rem; color: var(--palette-muted); }
-        @media (max-width: 640px) { .footer-meta { margin-left: 0; text-align: left; width: 100%; } }
-        .footer-credit { color: var(--palette-text-secondary); }
-        .footer-credit strong { font-weight: 600; color: var(--palette-ink); }
+        /* Sign-in band */
+        .signin { background: var(--forest); color: var(--on-dark); }
+        .signin-in { display: grid; gap: 2rem; padding-block: clamp(4rem, 9vw, 7rem); align-items: end; }
+        @media (min-width: 960px) { .signin-in { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); } .signin-in > :last-child { justify-self: end; } }
+        .signin p { color: var(--on-dark-2); margin-top: 1.1rem; max-width: 30em; font-size: 1.05rem; }
+        .signin .btn { width: 100%; min-height: 60px; padding-inline: 2.2rem; font-size: 1.05rem; }
+        @media (min-width: 601px) { .signin .btn { width: auto; } }
 
-        .footer-contact {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1rem;
-            padding-bottom: 1.75rem;
-            margin-bottom: 1.75rem;
-            border-bottom: 1px solid var(--palette-stone);
-        }
-        .contact-card {
-            display: flex;
-            gap: 0.9rem;
-            align-items: flex-start;
-            min-width: 0;
-            padding: 1.1rem 1.25rem;
-            border-radius: 1rem;
-            background: var(--palette-surface);
-            border: 1px solid var(--palette-stone);
-        }
-        .contact-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 999px; background: var(--palette-sprout); color: var(--palette-field); flex-shrink: 0; }
-        .contact-icon svg { width: 1.15rem; height: 1.15rem; }
-        .contact-card h3 { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--palette-muted); }
-        .contact-value { display: block; margin-top: 0.3rem; font-family: var(--serif); font-weight: 600; font-size: 1.45rem; letter-spacing: 0.01em; color: var(--palette-ink); font-variant-numeric: tabular-nums; }
-        .contact-value.is-place { font-size: 1.2rem; letter-spacing: 0; }
-        .contact-note { margin-top: 0.3rem; font-size: 0.82rem; color: var(--palette-muted); }
-        .contact-copy {
-            margin-top: 0.6rem;
-            display: inline-flex;
-            align-items: center;
-            padding: 0.35rem 0.75rem;
-            font: inherit;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--palette-field);
-            background: transparent;
-            border: 1px solid var(--palette-sprout-border);
-            border-radius: 999px;
-            cursor: pointer;
-        }
-        .contact-copy:hover { background: var(--palette-sprout); }
-        :root[data-bs-theme="dark"] .contact-icon,
-        :root[data-bs-theme="dark"] .contact-copy { color: var(--palette-field-light); }
+        /* Footer */
+        .ft { padding-block: clamp(3rem, 7vw, 4.5rem) calc(2.5rem + env(safe-area-inset-bottom, 0px)); }
+        .ft-grid { display: grid; gap: 2.5rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--rule); }
+        @media (min-width: 760px) { .ft-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr); } }
+        .ft h2 { font-size: 0.9rem; font-weight: 600; color: var(--ink-2); }
+        .phone { display: flex; align-items: center; width: fit-content; min-height: 44px; margin-top: 0.25rem; font-family: var(--display); font-size: 2.1rem; line-height: 1.1; letter-spacing: 0.01em; text-decoration: none; font-variant-numeric: lining-nums tabular-nums; }
+        .ft .small { margin-top: 0.35rem; }
+        .copy { margin-top: 0.9rem; min-height: 44px; padding: 0.5rem 1.1rem; font: 600 0.92rem var(--sans); color: var(--ink); background: transparent; border: 1px solid var(--rule); border-radius: 10px; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; }
+        .copy:hover { border-color: var(--ink); }
+        .place { display: block; margin-top: 0.5rem; font-family: var(--display); font-size: 1.6rem; line-height: 1.2; }
+        .ft-base { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem 2rem; padding-top: 1.5rem; font-size: 0.88rem; color: var(--ink-2); }
+        .ft-base strong { color: var(--ink); font-weight: 600; }
 
-        /* ---------- Reveal-on-scroll ---------- */
-        .reveal { opacity: 0; transform: translateY(16px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
-        .reveal.in-view { opacity: 1; transform: translateY(0); }
+        /* Fine paper grain */
+        body::after { content: ""; position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0.05; mix-blend-mode: multiply;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.13 0 0 0 0 0.1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
-            .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
-            .btn svg, .service-link svg { transition: none !important; }
-            .js .story-row .story-media, .js .story-row .story-copy { opacity: 1 !important; transform: none !important; transition: none !important; }
-            .photo-banner img { transform: none !important; }
+            .story .ph img, .btn, .svc-row h3, .svc-row::before, .terms button, .split span { transition: none; }
+            .svc-peek { display: none; }
         }
-
-        /* =====================================================================
-           Motion layer — calm, smooth, nothing bouncy.
-           Every hidden state is scoped to html.motion, which JS adds only when
-           motion is allowed, so the page is complete without JS or with
-           reduced motion turned on.
-           ===================================================================== */
-        :root { --out: cubic-bezier(0.16, 1, 0.3, 1); --soft: cubic-bezier(0.33, 1, 0.68, 1); }
-
-        /* Scroll progress line under the header */
-        .scroll-progress {
-            position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
-            background: var(--palette-field); transform: scaleX(0); transform-origin: left; pointer-events: none;
-        }
-
-        /* Sliding underline for the active nav link */
-        .nav-links { position: relative; }
-        .nav-links a.is-active { border-color: transparent; }
-        .nav-indicator {
-            position: absolute; left: 0; bottom: -2px; height: 2px; width: 0;
-            background: var(--palette-field); border-radius: 2px;
-            transition: transform 700ms var(--out), width 700ms var(--out);
-        }
-
-        /* Words that rise out of a mask */
-        .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.06em 0.12em 0; margin: 0 -0.06em -0.12em 0; }
-        .wi { display: inline-block; }
-        html.motion .wi { transform: translateY(110%); transition: transform 1100ms var(--out); transition-delay: calc(var(--i, 0) * 45ms + var(--base, 0ms)); }
-        html.motion .is-in .wi, html.motion .is-in.wi { transform: none; }
-
-        /* ---------- Hero intro ---------- */
-        html.motion header#siteHeader { transform: translateY(-100%); transition: transform 1000ms var(--out); }
-        html.motion.intro-go header#siteHeader { transform: none; }
-        html.motion .hero .eyebrow,
-        html.motion .hero .lead,
-        html.motion .hero .hero-actions { opacity: 0; transform: translateY(18px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
-        html.motion.intro-go .hero .eyebrow { opacity: 1; transform: none; transition-delay: 150ms; }
-        html.motion.intro-go .hero .lead { opacity: 1; transform: none; transition-delay: 650ms; }
-        html.motion.intro-go .hero .hero-actions { opacity: 1; transform: none; transition-delay: 780ms; }
-        html.motion .hero-photo img { clip-path: inset(0 0 0 100% round 1.25rem); transform: scale(1.12); transition: clip-path 1400ms var(--out) 250ms, transform 1800ms var(--out) 250ms; }
-        html.motion.intro-go .hero-photo img { clip-path: inset(0 0 0 0 round 1.25rem); transform: scale(1); }
-        html.motion .trust-card { opacity: 0; transform: translateY(24px); transition: opacity 900ms var(--soft) 1100ms, transform 1100ms var(--out) 1100ms; }
-        html.motion.intro-go .trust-card { opacity: 1; transform: none; }
-        .hero-photo { will-change: transform; }
-
-        /* ---------- Generic reveal: replaces the old simple fade ---------- */
-        html.motion .reveal { opacity: 0; transform: translateY(28px); transition: opacity 1000ms var(--soft), transform 1100ms var(--out); transition-delay: var(--d, 0ms); }
-        html.motion .reveal.in-view { opacity: 1; transform: none; }
-        /* Section heads animate word-by-word instead */
-        html.motion .section-head.reveal { opacity: 1; transform: none; }
-        html.motion .section-head .eyebrow,
-        html.motion .section-head .section-sub { opacity: 0; transform: translateY(14px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
-        html.motion .section-head.in-view .eyebrow { opacity: 1; transform: none; }
-        html.motion .section-head.in-view .section-sub { opacity: 1; transform: none; transition-delay: 350ms; }
-
-        /* ---------- Service cards ---------- */
-        html.motion .service-icon { transform: scale(0.6); opacity: 0; transition: transform 1000ms var(--out), opacity 700ms var(--soft); transition-delay: calc(var(--d, 0ms) + 250ms); }
-        html.motion .service-card.in-view .service-icon { transform: none; opacity: 1; }
-        .service-card { transition: border-color 300ms var(--soft), transform 600ms var(--out), box-shadow 600ms var(--out); }
-        .service-card:hover { transform: translateY(-6px); box-shadow: 0 22px 40px -28px color-mix(in srgb, var(--shadow-color, #1f2a22) 45%, transparent); }
-        .service-card::after { transition: transform 900ms var(--out); }
-        .service-card:hover::after { transform: scale(1.35); }
-        .service-card .service-icon svg { transition: transform 700ms var(--out); }
-        .service-card:hover .service-icon svg { transform: rotate(-8deg) scale(1.06); }
-
-        /* ---------- Numbers ---------- */
-        html.motion .facts .fact + .fact { border-left-color: transparent; position: relative; }
-        .facts .fact + .fact::before { content: ""; position: absolute; left: -1px; top: 18%; bottom: 18%; width: 1px; background: var(--palette-sprout-border); transform: scaleY(0); transition: transform 1000ms var(--out) 300ms; }
-        html:not(.motion) .facts .fact + .fact::before { display: none; }
-        html.motion .facts.in-view .fact + .fact::before { transform: none; }
-        .facts-numbers .fact b { font-variant-numeric: tabular-nums; }
-
-        /* ---------- Story rows: clip-path wipe + settling image ---------- */
-        html.motion .js .story-row .story-media, html.motion .story-row .story-media { opacity: 1 !important; transform: none !important; transition: none; }
-        html.motion .story-row .story-media img { clip-path: inset(0 100% 0 0 round 1.1rem); transform: scale(1.15); transition: clip-path 1400ms var(--out), transform 1900ms var(--out); }
-        html.motion .story-row.is-flipped .story-media img { clip-path: inset(0 0 0 100% round 1.1rem); }
-        html.motion .story-row.in-view .story-media img { clip-path: inset(0 0 0 0 round 1.1rem); transform: scale(1); }
-        html.motion .story-row .story-tag { opacity: 0; transform: translateY(10px); transition: opacity 700ms var(--soft) 900ms, transform 900ms var(--out) 900ms; }
-        html.motion .story-row.in-view .story-tag { opacity: 1; transform: none; }
-        html.motion .js .story-row .story-copy, html.motion .story-row .story-copy { opacity: 1 !important; transform: none !important; }
-        html.motion .story-copy > * { opacity: 0; transform: translateY(20px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
-        html.motion .story-row.in-view .story-copy > * { opacity: 1; transform: none; }
-        html.motion .story-row.in-view .story-copy > :nth-child(1) { transition-delay: 300ms; }
-        html.motion .story-row.in-view .story-copy > :nth-child(2) { transition-delay: 380ms; }
-        html.motion .story-row.in-view .story-copy > :nth-child(3) { transition-delay: 460ms; }
-        html.motion .story-row.in-view .story-copy > :nth-child(4) { transition-delay: 540ms; }
-        .story-media { overflow: hidden; border-radius: 1.1rem; }
-        .story-media img { transition: transform 1200ms var(--out); }
-        .story-row:hover .story-media img { transform: scale(1.03); }
-
-        /* ---------- Photo banner ---------- */
-        html.motion .photo-banner.reveal { transform: scale(0.97); }
-        html.motion .photo-banner.reveal.in-view { transform: none; }
-        html.motion .photo-banner cite { opacity: 0; transition: opacity 900ms var(--soft) 900ms; }
-        html.motion .photo-banner.in-view cite { opacity: 0.85; }
-
-        /* ---------- About checklist ---------- */
-        html.motion .check-item { opacity: 0; transform: translateX(18px); transition: opacity 800ms var(--soft), transform 1000ms var(--out); transition-delay: var(--d, 0ms); }
-        html.motion .checklist.in-view .check-item { opacity: 1; transform: none; }
-        html.motion .check-badge { transform: scale(0); transition: transform 800ms var(--out); transition-delay: calc(var(--d, 0ms) + 200ms); }
-        html.motion .checklist.in-view .check-badge { transform: none; }
-
-        /* ---------- CTA + footer ---------- */
-        html.motion .cta.reveal { transform: translateY(28px) scale(0.98); }
-        html.motion .cta.reveal.in-view { transform: none; }
-        .cta .btn svg.arrow { transition: transform 600ms var(--out); }
-        .cta .btn:hover svg.arrow { transform: translateX(4px); }
-        html.motion .footer-band > * { opacity: 0; transform: translateY(16px); transition: opacity 900ms var(--soft), transform 1000ms var(--out); }
-        html.motion .footer-band.in-view > * { opacity: 1; transform: none; }
-        html.motion .footer-band.in-view > :nth-child(2) { transition-delay: 120ms; }
-        html.motion .footer-band.in-view > :nth-child(3) { transition-delay: 240ms; }
-
-        /* Buttons: a soft press */
-        .btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
-    <!-- Navigation Header -->
-    <header id="siteHeader">
-        <div class="container navbar">
-            <a href="#top" class="brand" aria-label="Centrala Farmers Marketing Cooperative home">
-                <svg viewBox="0 0 24 24" fill="none" stroke="var(--palette-field)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V9"/><path d="M12 14c-4.2 0-7.2-3-7.2-7.2 4.2 0 7.2 3 7.2 7.2Z" fill="var(--palette-sprout)"/><path d="M12 14c4.2 0 7.2-3 7.2-7.2-4.2 0-7.2 3-7.2 7.2Z" fill="var(--palette-sprout)"/><path d="M12 9c0-3 1.4-5.2 3-6.6.9 2.6-.1 5.2-3 6.6Z"/></svg>
-                <span>
-                    <span class="brand-name">Centrala</span>
-                    <span class="brand-sub">Farmers Marketing Cooperative</span>
-                </span>
-            </a>
+@php
+    $loginUrl = Route::has('login') ? route('login') : '#';
 
-            <nav class="nav-links" aria-label="Main">
-                <a href="#top" class="is-active">Home</a>
-                <a href="#about">About</a>
-                <a href="#services">Services</a>
-                <a href="#contact">Contact</a>
-            </nav>
+    // Count-up targets for the live figures: ₱4.8M, ₱350K or ₱9,500.
+    if (!empty($stats)) {
+        $loaned = (float) $stats['loaned'];
+        if ($loaned >= 1000000) {
+            $loanedCount = round($loaned / 1000000, 1); $loanedSuffix = 'M'; $loanedDecimals = 1;
+        } elseif ($loaned >= 1000) {
+            $loanedCount = round($loaned / 1000, 1); $loanedSuffix = 'K'; $loanedDecimals = 1;
+        } else {
+            $loanedCount = round($loaned); $loanedSuffix = ''; $loanedDecimals = 0;
+        }
+        $loanedLabel = '₱' . rtrim(rtrim(number_format($loanedCount, $loanedDecimals), '0'), '.') . $loanedSuffix;
+        if ($loanedDecimals && fmod($loanedCount, 1.0) == 0.0) { $loanedDecimals = 0; }
+    }
+@endphp
 
-            <div class="nav-actions">
-                <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode" title="Toggle dark mode">
-                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-                </button>
-                @if (Route::has('login'))
-                    @auth
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="btn btn-outline btn-nav">Login</button>
-                        </form>
-                    @else
-                        <a href="{{ route('login') }}" class="btn btn-outline btn-nav">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
-                            Login
-                        </a>
-                    @endauth
-                @endif
-            </div>
+<header class="hd" id="hd">
+    <div class="wrap hd-row">
+        <a href="#top" class="mark" aria-label="Centrala Farmers Marketing Cooperative home">
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M16 29V10"/><path d="M16 15c-3.2-.4-5.6-2.6-6.2-6 3.2.4 5.6 2.6 6.2 6Z"/><path d="M16 19c3.2-.4 5.6-2.6 6.2-6-3.2.4-5.6 2.6-6.2 6Z"/><path d="M16 23c-3.2-.4-5.6-2.6-6.2-6 3.2.4 5.6 2.6 6.2 6Z"/><path d="M16 10c-.9-2.2-.5-4.6 1.2-6.6"/></svg>
+            <span><b>Centrala</b><small>Farmers Marketing Cooperative</small></span>
+        </a>
+        <nav class="nav" aria-label="Main">
+            <a href="#top" aria-current="true">Home</a>
+            <a href="#about">About</a>
+            <a href="#services">Services</a>
+            <a href="#contact">Contact</a>
+        </nav>
+        <div class="hd-actions">
+            @auth
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="btn btn-solid">Login</button>
+                </form>
+            @else
+                <a href="{{ $loginUrl }}" class="btn btn-solid">Login</a>
+            @endauth
+            <button type="button" class="menu-btn" id="menuOpen" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg>
+            </button>
         </div>
-    </header>
+    </div>
+    <span class="progress" id="progress" aria-hidden="true"></span>
+</header>
 
-    <main>
-        <!-- Hero Section -->
-        <section class="hero" id="top">
-            <svg class="hero-leaf" viewBox="0 0 70 120" aria-hidden="true"><path d="M10 110C10 60 30 30 60 10 55 50 40 85 10 110Z" fill="var(--palette-sprout-border)"/><path d="M5 115C20 85 25 70 22 40" stroke="var(--palette-sprout-border)" stroke-width="2" fill="none"/></svg>
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
+    <div class="menu-top">
+        <a href="#top" class="mark" data-close>
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M16 29V10"/><path d="M16 15c-3.2-.4-5.6-2.6-6.2-6 3.2.4 5.6 2.6 6.2 6Z"/><path d="M16 19c3.2-.4 5.6-2.6 6.2-6-3.2.4-5.6 2.6-6.2 6Z"/><path d="M16 23c-3.2-.4-5.6-2.6-6.2-6 3.2.4 5.6 2.6 6.2 6Z"/><path d="M16 10c-.9-2.2-.5-4.6 1.2-6.6"/></svg>
+            <span><b>Centrala</b><small>Farmers Marketing Cooperative</small></span>
+        </a>
+        <button type="button" class="menu-btn" id="menuClose" aria-label="Close menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+    </div>
+    <nav aria-label="Mobile">
+        <a href="#top" data-close>Home</a>
+        <a href="#about" data-close>About</a>
+        <a href="#services" data-close>Services</a>
+        <a href="#contact" data-close>Contact</a>
+    </nav>
+    @auth
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="btn btn-solid">Login</button>
+        </form>
+    @else
+        <a href="{{ $loginUrl }}" class="btn btn-solid">Login</a>
+    @endauth
+</div>
 
-            <div class="container hero-grid">
-                <div>
-                    <div class="eyebrow">Together <i>&bull;</i> Farmers <i>&bull;</i> Stronger <i>&bull;</i> Tomorrow</div>
-                    <h1>Growing <em>together,</em><br>managing better.</h1>
-                    <p class="lead">
-                        The unified cooperative management system for Centrala farmers. Apply for loans,
-                        track your CBU, book machinery and keep your membership up to date, all in one place.
-                    </p>
-
+<main>
+    <section class="hero" id="top">
+        <div class="wrap">
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <h1 class="h-xl hero-title">
+                        <span class="ln"><span>Growing together,</span></span>
+                        <span class="ln"><span>managing better.</span></span>
+                    </h1>
+                    <p class="lede">The unified cooperative management system for Centrala farmers. Apply for loans, track your CBU, book machinery and keep your membership up to date, all in one place.</p>
                     <div class="hero-actions">
-                        @if (Route::has('login'))
-                            @auth
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn-solid">Get Started</button>
-                                </form>
-                            @else
-                                <a href="{{ route('login') }}" class="btn btn-solid">
-                                    Get Started
-                                    <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                                </a>
-                            @endauth
-                        @endif
-                        <a href="#services" class="btn btn-outline">Learn More</a>
-                    </div>
-                </div>
-
-                <div class="hero-photo">
-                    <img src="{{ asset('images/hero-harvest.jpg') }}" width="735" height="479"
-                         alt="Cooperative farmers loading sacks of harvested rice onto a combine harvester in a Centrala rice field">
-                    <div class="trust-card">
-                        <div class="trust-title">
-                            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 16-9 17Z"/><path d="M4 21c4-6 8-9 12-11"/></svg></span>
-                            Trusted by<br>local farmers
-                        </div>
-                        <div class="trust-place">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                            Centrala, Surallah, South Cotabato
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Services Section -->
-        <section id="services" class="section">
-            <div class="container">
-                <div class="section-head reveal">
-                    <div class="eyebrow">Services</div>
-                    <h2 class="section-title">Everything a member needs, in one system</h2>
-                </div>
-
-                <div class="services-grid">
-                    <article class="service-card reveal">
-                        <div class="service-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3"/><circle cx="5" cy="10" r="2.2"/><circle cx="19" cy="10" r="2.2"/><path d="M7 19c0-3 2.2-5 5-5s5 2 5 5"/><path d="M1.5 18c0-2 1.5-3.5 3.5-3.5"/><path d="M22.5 18c0-2-1.5-3.5-3.5-3.5"/></svg>
-                        </div>
-                        <h3>Member Registration</h3>
-                        <p>Register as a cooperative member and keep your farmer profile and records organized and secure.</p>
-                        @if (Route::has('login'))
-                            <a href="{{ route('login') }}" class="service-link">Learn more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
-                        @endif
-                    </article>
-
-                    <article class="service-card reveal">
-                        <div class="service-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M12 5v4"/><path d="M2 17h4l4 2h5a2 2 0 0 0 0-4h-3"/><path d="M6 14l3-1.5h3"/><path d="M15 15l5-2a1.6 1.6 0 0 1 1.5 2.6L16 20"/></svg>
-                        </div>
-                        <h3>Farmer Loans</h3>
-                        <p>Apply for loans, follow your repayment schedule, view your CBU and pay on time, all from one place.</p>
-                        @if (Route::has('login'))
-                            <a href="{{ route('login') }}" class="service-link">Learn more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
-                        @endif
-                    </article>
-
-                    <article class="service-card reveal">
-                        <div class="service-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="18" cy="18" r="2"/><path d="M4 14V8h7l2 5h5a2 2 0 0 1 2 2v3"/><path d="M10 17h6"/><path d="M7 8V5h3"/></svg>
-                        </div>
-                        <h3>Machine Rental</h3>
-                        <p>Check tractor and harvester availability, request a schedule, and see your bookings on the calendar.</p>
-                        @if (Route::has('login'))
-                            <a href="{{ route('login') }}" class="service-link">Learn more <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
-                        @endif
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <!-- Facts Strip -->
-        <section aria-label="Cooperative at a glance">
-            <div class="container">
-                @if (!empty($stats))
-                    @php
-                        // Compact peso amount: ₱4.8M, ₱350K, ₱9,500.
-                        $loaned = $stats['loaned'];
-                        $loanedLabel = $loaned >= 1000000
-                            ? '₱' . rtrim(rtrim(number_format($loaned / 1000000, 1), '0'), '.') . 'M'
-                            : ($loaned >= 1000
-                                ? '₱' . rtrim(rtrim(number_format($loaned / 1000, 1), '0'), '.') . 'K'
-                                : '₱' . number_format($loaned));
-                    @endphp
-                    <div class="facts facts-numbers reveal">
-                        <div class="fact">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 16-9 17Z"/><path d="M4 21c4-6 8-9 12-11"/></svg>
-                            <b>{{ number_format($stats['farmers']) }}</b>
-                            <span>Registered Farmers</span>
-                        </div>
-                        <div class="fact">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3"/><circle cx="5" cy="10" r="2.2"/><circle cx="19" cy="10" r="2.2"/><path d="M7 19c0-3 2.2-5 5-5s5 2 5 5"/><path d="M1.5 18c0-2 1.5-3.5 3.5-3.5"/><path d="M22.5 18c0-2-1.5-3.5-3.5-3.5"/></svg>
-                            <b>{{ number_format($stats['members']) }}</b>
-                            <span>Active Members</span>
-                        </div>
-                        <div class="fact">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="18" cy="18" r="2"/><path d="M4 14V8h7l2 5h5a2 2 0 0 1 2 2v3"/><path d="M10 17h6"/><path d="M7 8V5h3"/></svg>
-                            <b>{{ number_format($stats['machines']) }}</b>
-                            <span>Available Machines</span>
-                        </div>
-                        <div class="fact">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 12h7"/><path d="M9 16h5"/></svg>
-                            <b>{{ $loanedLabel }}</b>
-                            <span>Total Loaned Amount</span>
-                        </div>
-                    </div>
-                @else
-                <div class="facts reveal">
-                    <div class="fact">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 16-9 17Z"/><path d="M4 21c4-6 8-9 12-11"/></svg>
-                        <b>Member-owned</b>
-                        <span>Run by and for local farmers</span>
-                    </div>
-                    <div class="fact">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
-                        <b>Loans &amp; CBU</b>
-                        <span>Track balances and payments</span>
-                    </div>
-                    <div class="fact">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="18" cy="18" r="2"/><path d="M4 14V8h7l2 5h5a2 2 0 0 1 2 2v3"/><path d="M10 17h6"/></svg>
-                        <b>Shared machinery</b>
-                        <span>Book tractors and harvesters</span>
-                    </div>
-                    <div class="fact">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></svg>
-                        <b>Open anytime</b>
-                        <span>On your phone or computer</span>
-                    </div>
-                </div>
-                @endif
-            </div>
-        </section>
-
-        <!-- Story Section: the cooperative in action -->
-        <section id="stories" class="section">
-            <div class="container">
-                <div class="section-head reveal">
-                    <div class="eyebrow">Our cooperative in action</div>
-                    <h2 class="section-title" style="margin-top: 0.75rem;">From the field <em style="font-style: italic; font-weight: 500; color: var(--palette-field-light);">to the market,</em> together.</h2>
-                    <p class="section-sub">A look at what Centrala members do every season, and how the cooperative helps along the way.</p>
-                </div>
-
-                <article class="story-row">
-                    <div class="story-media">
-                        <img src="{{ asset('images/harvest-hauling.jpg') }}" width="1200" height="900" loading="lazy" decoding="async"
-                             alt="Farmers loading sacks of harvested palay onto the cooperative truck while a carabao cart brings more from the field">
-                        <span class="story-tag">Harvest season</span>
-                    </div>
-                    <div class="story-copy">
-                        <span class="story-step">01 &middot; Marketing</span>
-                        <h3>From field to market</h3>
-                        <p>When the harvest comes in, members bring their palay straight from the field to the cooperative truck, by hand and by carabao cart, to be sold together at a fair price.</p>
-                        <ul class="story-points">
-                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Harvest payments recorded for every member</li>
-                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Fair pricing through collective marketing</li>
-                        </ul>
-                    </div>
-                </article>
-
-                <article class="story-row is-flipped">
-                    <div class="story-media">
-                        <img src="{{ asset('images/member-seminar.jpg') }}" width="960" height="720" loading="lazy" decoding="async"
-                             alt="Cooperative members attending a seminar on cooperativism beside a Kubota combine harvester">
-                        <span class="story-tag">Member seminar</span>
-                    </div>
-                    <div class="story-copy">
-                        <span class="story-step">02 &middot; Membership</span>
-                        <h3>Learning and growing together</h3>
-                        <p>Members meet regularly for seminars on cooperativism, farm practices and how to use the cooperative's services, including this system.</p>
-                        <ul class="story-points">
-                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Membership registration and approval online</li>
-                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Announcements sent to every member</li>
-                        </ul>
-                    </div>
-                </article>
-
-                <article class="story-row">
-                    <div class="story-media">
-                        <img src="{{ asset('images/rcef-harvester.jpg') }}" width="1200" height="675" loading="lazy" decoding="async"
-                             alt="A new Yanmar AW70V combine harvester on a trailer pulled by a tractor, from the RCEF Mechanization Program">
-                        <span class="story-tag">RCEF Mechanization Program</span>
-                    </div>
-                    <div class="story-copy">
-                        <span class="story-step">03 &middot; Machinery</span>
-                        <h3>Modern machines for every member</h3>
-                        <p>Through the RCEF Mechanization Program, the cooperative now has combine harvesters and tractors that members can book for their own fields.</p>
-                        <ul class="story-points">
-                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>See which machines are available</li>
-                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg>Request a schedule and track it on the calendar</li>
-                        </ul>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        <!-- Photo Banner -->
-        <section aria-label="Cooperative motto">
-            <div class="container">
-                <div class="photo-banner reveal">
-                    <img id="bannerPhoto" src="{{ asset('images/harvest-hauling.jpg') }}" alt="" loading="lazy" decoding="async">
-                    <div class="photo-banner-copy">
-                        <blockquote>&ldquo;Stronger <em>together</em> than any one of us alone.&rdquo;</blockquote>
-                        <cite>Centrala Farmers Marketing Cooperative</cite>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- About Section -->
-        <section id="about" class="section">
-            <div class="container about-grid">
-                <div class="about-copy reveal">
-                    <div class="eyebrow">About CFMC</div>
-                    <h2 class="section-title" style="margin-top: 0.75rem;">A cooperative that grows with its farmers</h2>
-                    <p>Centrala Farmers Marketing Cooperative brings farmers in Centrala, Surallah together to share resources, access fair financing and market their harvest.</p>
-                    <p>This system puts the cooperative's everyday work online: membership records, loan applications and payments, capital build-up, machinery schedules and announcements, so members and staff spend less time on paperwork.</p>
-                </div>
-                <div class="checklist reveal">
-                    <div class="check-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
-                        <div>
-                            <h3>Easy to use</h3>
-                            <p>Simple screens designed for every member</p>
-                        </div>
-                    </div>
-                    <div class="check-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
-                        <div>
-                            <h3>Transparent</h3>
-                            <p>See your loans, payments and CBU anytime</p>
-                        </div>
-                    </div>
-                    <div class="check-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
-                        <div>
-                            <h3>Community focused</h3>
-                            <p>Built around cooperative values</p>
-                        </div>
-                    </div>
-                    <div class="check-item">
-                        <span class="check-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
-                        <div>
-                            <h3>Secure</h3>
-                            <p>Your records are protected and private</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- CTA Section -->
-        <section class="section" style="padding-top: 0;">
-            <div class="container">
-                <div class="cta reveal">
-                    <div>
-                        <h2>Ready to get started?</h2>
-                        <p>Sign in to manage your membership, loans and machine schedules.</p>
-                    </div>
-                    @if (Route::has('login'))
                         @auth
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="btn btn-light">Sign in</button>
+                                <button type="submit" class="btn btn-solid">Get started</button>
                             </form>
                         @else
-                            <a href="{{ route('login') }}" class="btn btn-light">
-                                Sign In
-                                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                            </a>
+                            <a href="{{ $loginUrl }}" class="btn btn-solid">Get started</a>
                         @endauth
-                    @endif
+                        <a href="#services" class="btn btn-line">Learn more</a>
+                    </div>
                 </div>
+                <figure class="plate">
+                    <div class="plate-img">
+                        <img src="{{ asset('images/landing/hero-harvest.jpg') }}" width="1600" height="1042" fetchpriority="high"
+                             alt="Cooperative farmers loading sacks of harvested rice onto a combine harvester in a Centrala rice field">
+                    </div>
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    @if (!empty($stats))
+        <section aria-label="Cooperative at a glance">
+            <div class="wrap">
+                <dl class="ledger">
+                    <div class="ledger-grid">
+                        <div class="fig"><dt>Registered farmers</dt><dd data-count="{{ $stats['farmers'] }}">{{ number_format($stats['farmers']) }}</dd></div>
+                        <div class="fig"><dt>Active members</dt><dd data-count="{{ $stats['members'] }}">{{ number_format($stats['members']) }}</dd></div>
+                        <div class="fig"><dt>Available machines</dt><dd data-count="{{ $stats['machines'] }}">{{ number_format($stats['machines']) }}</dd></div>
+                        <div class="fig"><dt>Total loaned</dt><dd data-count="{{ $loanedCount }}" data-decimals="{{ $loanedDecimals }}" data-prefix="₱" data-suffix="{{ $loanedSuffix }}">{{ $loanedLabel }}</dd></div>
+                    </div>
+                </dl>
             </div>
         </section>
-    </main>
+    @endif
 
-    <!-- Footer -->
-    <footer id="contact">
-        <div class="container">
-            <div class="footer-contact">
-                <div class="contact-card">
-                    <span class="contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg></span>
-                    <div>
-                        <h3>Contact us</h3>
-                        <span class="contact-value" id="contactPhone">0948 314 1215</span>
-                        <p class="contact-note">For inquiries only.</p>
-                        <button type="button" class="contact-copy" id="copyContactPhone" data-phone="09483141215">Copy number</button>
-                    </div>
-                </div>
-                <div class="contact-card">
-                    <span class="contact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
-                    <div>
-                        <h3>Visit us</h3>
-                        <span class="contact-value is-place">Centrala, Surallah</span>
-                        <p class="contact-note">South Cotabato</p>
-                    </div>
-                </div>
+    <section class="sec" id="services">
+        <div class="wrap">
+            <div class="sec-head">
+                <h2 class="h-l">Everything a member needs, in one system</h2>
+                <p class="lede">Three services, one login. Everything you do with the cooperative is recorded and easy to look up.</p>
             </div>
-
-            <div class="footer-band">
-                <svg viewBox="0 0 44 44" aria-hidden="true"><path d="M8 40C14 26 22 18 36 12" stroke="var(--palette-sprout-border)" stroke-width="1.5" fill="none"/><path d="M18 26c-6-1-9-6-8-11 6 1 9 6 8 11Z" fill="var(--palette-sprout-border)"/><path d="M26 20c1-6 6-9 11-8-1 6-6 9-11 8Z" fill="var(--palette-sprout-border)"/></svg>
-                <div class="footer-mid">
-                    <b>CENTRALA FARMERS MARKETING COOPERATIVE</b>
-                    <i>Supporting our farmers. Building a stronger tomorrow.</i>
+            <div class="svc" id="svc">
+                <div class="svc-peek" id="svcPeek" aria-hidden="true">
+                    <img src="{{ asset('images/landing/member-seminar.jpg') }}" alt="" loading="lazy" decoding="async">
+                    <img src="{{ asset('images/landing/harvest-hauling.jpg') }}" alt="" loading="lazy" decoding="async">
+                    <img src="{{ asset('images/landing/rcef-harvester.jpg') }}" alt="" loading="lazy" decoding="async">
                 </div>
-                <div class="footer-meta">
-                    <p>&copy; {{ date('Y') }} CFMC. All rights reserved.</p>
-                    <p class="footer-credit">System developed by <strong>Neil Delfin Apsay</strong></p>
+                <a href="{{ $loginUrl }}" class="svc-row">
+                    <h3 class="h-m">Member registration</h3>
+                    <p>Register as a cooperative member and keep your farmer profile and records organized and secure.</p>
+                    <span class="link">Register</span>
+                </a>
+                <a href="{{ $loginUrl }}" class="svc-row">
+                    <h3 class="h-m">Farmer loans</h3>
+                    <p>Apply for loans, follow your repayment schedule, view your CBU and pay on time, all from one place.</p>
+                    <span class="link">Apply for a loan</span>
+                </a>
+                <a href="{{ $loginUrl }}" class="svc-row">
+                    <h3 class="h-m">Machine rental</h3>
+                    <p>Check tractor and harvester availability, request a schedule, and see your bookings on the calendar.</p>
+                    <span class="link">Book a machine</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="sec sec-tight" id="estimate" aria-labelledby="estTitle">
+        <div class="wrap">
+            <div class="sec-head">
+                <h2 class="h-l" id="estTitle">See what a loan would cost you</h2>
+                <p class="lede">Move the slider and pick a term. The estimate uses the cooperative's usual 2% monthly rate.</p>
+            </div>
+            <div class="est-grid">
+                <div class="est-controls">
+                    <div class="est-field">
+                        <label for="estAmount">Loan amount <output id="estAmountOut" for="estAmount">₱15,000</output></label>
+                        <input class="range" type="range" id="estAmount" min="5000" max="50000" step="1000" value="15000">
+                        <div class="range-ends"><span>₱5,000</span><span>₱50,000</span></div>
+                    </div>
+                    <div class="est-field">
+                        <span class="lbl" id="termLabel">Repayment term</span>
+                        <div class="terms" role="group" aria-labelledby="termLabel">
+                            <button type="button" data-term="6" aria-pressed="false">6 months</button>
+                            <button type="button" data-term="12" aria-pressed="true">12 months</button>
+                            <button type="button" data-term="18" aria-pressed="false">18 months</button>
+                            <button type="button" data-term="24" aria-pressed="false">24 months</button>
+                        </div>
+                    </div>
+                    <p class="small est-note">How much you can borrow depends on your CBU balance.</p>
+                </div>
+                <div class="slip" aria-live="polite">
+                    <dl class="slip-main"><dt>Monthly payment</dt><dd id="estMonthly">₱1,550.00</dd></dl>
+                    <div class="split" aria-hidden="true"><span class="split-p" id="splitP"></span><span class="split-i" id="splitI"></span></div>
+                    <p class="split-key"><span><i class="kp"></i>Principal <b id="keyP">81%</b></span><span><i class="ki"></i>Interest <b id="keyI">19%</b></span></p>
+                    <dl class="slip-rows">
+                        <div><dt>Principal per month</dt><dd id="estPrincipal">₱1,250.00</dd></div>
+                        <div><dt>Interest per month (2%)</dt><dd id="estInterest">₱300.00</dd></div>
+                        <div><dt>Total to repay</dt><dd id="estTotal">₱18,600.00</dd></div>
+                    </dl>
+                    <a href="{{ $loginUrl }}" class="btn btn-solid">Sign in to apply</a>
+                    <p class="small">This is an estimate. Your final terms are set when your loan is approved.</p>
                 </div>
             </div>
         </div>
-    </footer>
+    </section>
 
-    <script>
-        // Copy the inquiry number; if the browser refuses clipboard access,
-        // select the number on screen so it can be copied by hand.
-        (function () {
-            var btn = document.getElementById('copyContactPhone');
-            if (!btn) return;
-            btn.addEventListener('click', function () {
-                function selectNumber() {
-                    var range = document.createRange();
-                    range.selectNodeContents(document.getElementById('contactPhone'));
-                    var selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                }
-                if (!navigator.clipboard) { selectNumber(); return; }
-                navigator.clipboard.writeText(btn.dataset.phone).then(function () {
-                    btn.textContent = 'Copied';
-                    setTimeout(function () { btn.textContent = 'Copy number'; }, 1600);
-                }, selectNumber);
+    <section class="sec stories" id="stories" aria-labelledby="storiesTitle">
+        <div class="wrap">
+            <div class="sec-head">
+                <h2 class="h-l" id="storiesTitle">From the field to the market, together.</h2>
+                <p class="lede">A look at what Centrala members do every season, and how the cooperative helps along the way.</p>
+            </div>
+
+            <article class="story story-feature">
+                <figure>
+                    <div class="ph wipe"><img src="{{ asset('images/landing/harvest-hauling.jpg') }}" width="1400" height="1050" loading="lazy" decoding="async"
+                         alt="Farmers loading sacks of harvested palay onto the cooperative truck while a carabao cart brings more from the field"></div>
+                    <figcaption class="caption">Harvest season. Palay arrives by hand and by carabao cart.</figcaption>
+                </figure>
+                <div class="story-body">
+                    <h3 class="h-m">From field to market</h3>
+                    <p>When the harvest comes in, members bring their palay straight from the field to the cooperative truck, by hand and by carabao cart, to be sold together at a fair price.</p>
+                    <ul class="ticks">
+                        <li>Harvest payments recorded for every member</li>
+                        <li>Fair pricing through collective marketing</li>
+                    </ul>
+                </div>
+            </article>
+
+            <div class="story-pair">
+                <article class="story">
+                    <figure>
+                        <div class="ph wipe"><img src="{{ asset('images/landing/member-seminar.jpg') }}" width="1200" height="900" loading="lazy" decoding="async"
+                             alt="Cooperative members attending a seminar on cooperativism beside a Kubota combine harvester"></div>
+                        <figcaption class="caption">Member seminar on cooperativism.</figcaption>
+                    </figure>
+                    <div class="story-body">
+                        <h3 class="h-m">Learning and growing together</h3>
+                        <p>Members meet regularly for seminars on cooperativism, farm practices and how to use the cooperative's services, including this system.</p>
+                        <ul class="ticks">
+                            <li>Membership registration and approval online</li>
+                            <li>Announcements sent to every member</li>
+                        </ul>
+                    </div>
+                </article>
+                <article class="story">
+                    <figure>
+                        <div class="ph wipe"><img src="{{ asset('images/landing/rcef-harvester.jpg') }}" width="1200" height="675" loading="lazy" decoding="async"
+                             alt="A new Yanmar AW70V combine harvester on a trailer pulled by a tractor, from the RCEF Mechanization Program"></div>
+                        <figcaption class="caption">A new combine harvester from the RCEF Mechanization Program.</figcaption>
+                    </figure>
+                    <div class="story-body">
+                        <h3 class="h-m">Modern machines for every member</h3>
+                        <p>Through the RCEF Mechanization Program, the cooperative now has combine harvesters and tractors that members can book for their own fields.</p>
+                        <ul class="ticks">
+                            <li>See which machines are available</li>
+                            <li>Request a schedule and track it on the calendar</li>
+                        </ul>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="motto" id="motto" aria-label="Cooperative motto">
+        <img src="{{ asset('images/landing/harvest-hauling.jpg') }}" alt="" loading="lazy" decoding="async">
+        <div class="wrap motto-in">
+            <blockquote>&ldquo;Stronger together than any one of us alone.&rdquo;</blockquote>
+            <cite>Centrala Farmers Marketing Cooperative</cite>
+        </div>
+    </section>
+
+    <section class="sec" id="about">
+        <div class="wrap">
+            <div class="about-grid">
+                <h2 class="h-l">A cooperative that grows with its farmers</h2>
+                <div class="about-copy">
+                    <p class="lede">Centrala Farmers Marketing Cooperative brings farmers in Centrala, Surallah together to share resources, access fair financing and market their harvest.</p>
+                    <p>This system puts the cooperative's everyday work online: membership records, loan applications and payments, capital build-up, machinery schedules and announcements, so members and staff spend less time on paperwork.</p>
+                </div>
+            </div>
+            <dl class="values">
+                <div class="value"><dt>Easy to use</dt><dd>Simple screens designed for every member</dd></div>
+                <div class="value"><dt>Transparent</dt><dd>See your loans, payments and CBU anytime</dd></div>
+                <div class="value"><dt>Community focused</dt><dd>Built around cooperative values</dd></div>
+                <div class="value"><dt>Secure</dt><dd>Your records are protected and private</dd></div>
+            </dl>
+        </div>
+    </section>
+
+    <section class="signin" aria-labelledby="signinTitle">
+        <div class="wrap signin-in">
+            <div>
+                <h2 class="h-l" id="signinTitle">Ready to get started?</h2>
+                <p>Sign in to manage your membership, loans and machine schedules.</p>
+            </div>
+            @auth
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-light">Sign in</button>
+                </form>
+            @else
+                <a href="{{ $loginUrl }}" class="btn btn-light">Sign in</a>
+            @endauth
+        </div>
+    </section>
+</main>
+
+<footer class="ft" id="contact">
+    <div class="wrap">
+        <div class="ft-grid">
+            <div>
+                <h2>Contact us</h2>
+                <a class="phone" id="contactPhone" href="tel:+639483141215">0948 314 1215</a>
+                <p class="small">For inquiries only.</p>
+                <button type="button" class="copy" id="copyContactPhone" data-phone="09483141215">Copy number</button>
+            </div>
+            <div>
+                <h2>Visit us</h2>
+                <span class="place">Centrala, Surallah</span>
+                <p class="small">South Cotabato</p>
+            </div>
+            <div>
+                <h2>Centrala Farmers Marketing Cooperative</h2>
+                <p class="small">Supporting our farmers. Building a stronger tomorrow.</p>
+            </div>
+        </div>
+        <div class="ft-base">
+            <span>&copy; {{ date('Y') }} CFMC. All rights reserved.</span>
+            <span>System developed by <strong>Neil Delfin Apsay</strong></span>
+        </div>
+    </div>
+</footer>
+
+<script>
+(function () {
+    var root = document.documentElement;
+    var reduce = !root.classList.contains('motion');
+    var hasIO = 'IntersectionObserver' in window;
+    var fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    var peso = function (n, d) { return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: d, maximumFractionDigits: d }); };
+
+    // Header shadow + reading progress
+    var hd = document.getElementById('hd'), bar = document.getElementById('progress'), ticking = false;
+    function onScroll() {
+        ticking = false;
+        var y = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight;
+        hd.classList.toggle('is-scrolled', y > 8);
+        bar.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, y / max) : 0).toFixed(4) + ')';
+    }
+    window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+    onScroll();
+
+    // Mobile menu: full-screen panel with focus handling, Escape to close,
+    // and the page underneath locked so it doesn't scroll behind the panel.
+    var menu = document.getElementById('menu'), menuOpen = document.getElementById('menuOpen'), menuClose = document.getElementById('menuClose');
+    function setMenu(open) {
+        menu.hidden = !open;
+        menuOpen.setAttribute('aria-expanded', String(open));
+        document.body.style.overflow = open ? 'hidden' : '';
+        (open ? menuClose : menuOpen).focus();
+    }
+    menuOpen.addEventListener('click', function () { setMenu(true); });
+    menuClose.addEventListener('click', function () { setMenu(false); });
+    menu.querySelectorAll('[data-close]').forEach(function (a) { a.addEventListener('click', function () { setMenu(false); }); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !menu.hidden) setMenu(false); });
+    window.matchMedia('(min-width: 960px)').addEventListener('change', function (mq) { if (mq.matches && !menu.hidden) setMenu(false); });
+
+    // Active nav link
+    if (hasIO) {
+        var links = [].slice.call(document.querySelectorAll('.nav a'));
+        var nio = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+                if (!en.isIntersecting) return;
+                links.forEach(function (a) {
+                    if (a.getAttribute('href') === '#' + en.target.id) a.setAttribute('aria-current', 'true');
+                    else a.removeAttribute('aria-current');
+                });
             });
-        })();
+        }, { rootMargin: '-45% 0px -50% 0px' });
+        ['top', 'services', 'about', 'contact'].forEach(function (id) { var el = document.getElementById(id); if (el) nio.observe(el); });
+    }
 
-        (function () {
-            var header = document.getElementById('siteHeader');
-            function onScroll() {
-                header.classList.toggle('is-scrolled', window.scrollY > 8);
-            }
-            onScroll();
-            window.addEventListener('scroll', onScroll, { passive: true });
+    // Hero photo drifts gently with the pointer (after the opening animation)
+    var heroImg = document.querySelector('.plate-img img'), hero = document.querySelector('.hero');
+    if (!reduce && fine && heroImg) {
+        setTimeout(function () {
+            heroImg.style.animation = 'none';
+            heroImg.style.transform = 'scale(1.06)';
+            heroImg.style.transition = 'transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1)';
+            hero.addEventListener('pointermove', function (e) {
+                var r = hero.getBoundingClientRect();
+                var dx = (e.clientX - r.left) / r.width - 0.5, dy = (e.clientY - r.top) / r.height - 0.5;
+                heroImg.style.transform = 'scale(1.06) translate3d(' + (dx * -16).toFixed(1) + 'px,' + (dy * -12).toFixed(1) + 'px,0)';
+            });
+            hero.addEventListener('pointerleave', function () { heroImg.style.transform = 'scale(1.06)'; });
+        }, 2300);
+    }
 
-            var revealEls = document.querySelectorAll('.reveal');
-            if ('IntersectionObserver' in window && revealEls.length) {
-                var observer = new IntersectionObserver(function (entries) {
-                    entries.forEach(function (entry) {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('in-view');
-                            observer.unobserve(entry.target);
-                        }
-                    });
-                }, { threshold: 0.15 });
-                revealEls.forEach(function (el) { observer.observe(el); });
-            } else {
-                revealEls.forEach(function (el) { el.classList.add('in-view'); });
-            }
+    // Service rows: a photo preview follows the cursor
+    var peek = document.getElementById('svcPeek');
+    if (!reduce && fine && peek) {
+        var rows = [].slice.call(document.querySelectorAll('.svc-row')), imgs = [].slice.call(peek.querySelectorAll('img'));
+        var px = 0, py = 0, tx = 0, ty = 0, raf = null;
+        function follow() {
+            px += (tx - px) * 0.18; py += (ty - py) * 0.18;
+            peek.style.left = px.toFixed(1) + 'px'; peek.style.top = py.toFixed(1) + 'px';
+            raf = (Math.abs(tx - px) > 0.5 || Math.abs(ty - py) > 0.5) ? requestAnimationFrame(follow) : null;
+        }
+        rows.forEach(function (row, i) {
+            row.addEventListener('pointerenter', function (e) {
+                imgs.forEach(function (im, j) { im.classList.toggle('on', j === i); });
+                if (!peek.classList.contains('on')) { px = tx = e.clientX + 28; py = ty = e.clientY - 120; }
+                peek.classList.add('on');
+            });
+            row.addEventListener('pointermove', function (e) {
+                tx = e.clientX + 28; ty = e.clientY - 120;
+                if (!raf) raf = requestAnimationFrame(follow);
+            });
+        });
+        document.getElementById('svc').addEventListener('pointerleave', function () { peek.classList.remove('on'); });
+    }
 
-            // Story rows: photo slides in from its side, text follows.
-            var storyRows = document.querySelectorAll('.story-row');
-            if ('IntersectionObserver' in window && storyRows.length) {
-                var storyObserver = new IntersectionObserver(function (entries) {
-                    entries.forEach(function (entry) {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('in-view');
-                            storyObserver.unobserve(entry.target);
-                        }
-                    });
-                }, { threshold: 0.2 });
-                storyRows.forEach(function (el) { storyObserver.observe(el); });
-            } else {
-                storyRows.forEach(function (el) { el.classList.add('in-view'); });
-            }
-
-            // Banner photo drifts slightly slower than the page (parallax).
-            var bannerPhoto = document.getElementById('bannerPhoto');
-            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (bannerPhoto && !reduceMotion) {
-                var banner = bannerPhoto.parentElement;
-                var ticking = false;
-                function moveBanner() {
-                    var rect = banner.getBoundingClientRect();
-                    var progress = (rect.top + rect.height / 2 - window.innerHeight / 2) / window.innerHeight;
-                    bannerPhoto.style.transform = 'translateY(' + (progress * -40) + 'px)';
-                    ticking = false;
-                }
-                window.addEventListener('scroll', function () {
-                    if (!ticking) { ticking = true; window.requestAnimationFrame(moveBanner); }
-                }, { passive: true });
-                moveBanner();
-            }
-
-            // Light / dark toggle, saved under the same key the dashboards use.
-            var themeToggle = document.getElementById('themeToggle');
-            function syncToggleLabel() {
-                var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-                themeToggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
-            }
-            if (themeToggle) {
-                syncToggleLabel();
-                themeToggle.addEventListener('click', function () {
-                    var next = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-                    document.documentElement.setAttribute('data-bs-theme', next);
-                    try { localStorage.setItem('cfmc-theme', next); } catch (e) {}
-                    syncToggleLabel();
+    // Live figures count up once
+    var ledger = document.querySelector('.ledger');
+    if (!reduce && hasIO && ledger) {
+        var nums = [].slice.call(ledger.querySelectorAll('[data-count]'));
+        var show = function (el, v) {
+            var d = parseInt(el.dataset.decimals || '0', 10);
+            el.textContent = (el.dataset.prefix || '') + (d ? v.toFixed(d) : Math.round(v).toLocaleString('en-US')) + (el.dataset.suffix || '');
+        };
+        var lio = new IntersectionObserver(function (entries) {
+            if (!entries[0].isIntersecting) return;
+            lio.disconnect();
+            nums.forEach(function (el) {
+                var end = parseFloat(el.dataset.count), t0 = null;
+                requestAnimationFrame(function step(t) {
+                    if (!t0) t0 = t;
+                    var p = Math.min((t - t0) / 1600, 1);
+                    show(el, end * (1 - Math.pow(1 - p, 4)));
+                    if (p < 1) requestAnimationFrame(step);
                 });
-            }
+            });
+        }, { threshold: 0.5 });
+        lio.observe(ledger);
+    }
 
-            // Highlight the nav link for the section in view.
-            var navLinks = document.querySelectorAll('.nav-links a');
-            var sections = ['top', 'about', 'services', 'contact']
-                .map(function (id) { return document.getElementById(id); })
-                .filter(Boolean);
-            function setActive(id) {
-                navLinks.forEach(function (link) {
-                    link.classList.toggle('is-active', link.getAttribute('href') === '#' + id);
-                });
-            }
-            if ('IntersectionObserver' in window && sections.length) {
-                var navObserver = new IntersectionObserver(function (entries) {
-                    entries.forEach(function (entry) {
-                        if (entry.isIntersecting) setActive(entry.target.id);
-                    });
-                }, { rootMargin: '-45% 0px -50% 0px' });
-                sections.forEach(function (el) { navObserver.observe(el); });
+    // Story photos unveil; the motto lights up word by word
+    var motto = document.getElementById('motto'), quote = motto.querySelector('blockquote');
+    quote.innerHTML = quote.textContent.trim().split(/\s+/).map(function (w, i) {
+        return '<span class="w" style="transition-delay:' + (i * 70) + 'ms">' + w + '</span>';
+    }).join(' ');
+    if (!reduce && hasIO) {
+        var sio = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+                if (!en.isIntersecting) return;
+                (en.target.querySelector('.wipe') || en.target).classList.add('in');
+                sio.unobserve(en.target);
+            });
+        }, { threshold: 0.2 });
+        // Watch each photo's unclipped frame: Chrome counts a fully clipped
+        // element as never visible, so watching the photo itself never fires.
+        document.querySelectorAll('.wipe').forEach(function (el) { sio.observe(el.parentElement); });
+        sio.observe(motto);
+    } else {
+        root.classList.remove('motion');
+        motto.classList.add('in');
+    }
 
-                // The footer is too short to reach the middle of the screen,
-                // so mark Contact active once the page is scrolled to the end.
-                window.addEventListener('scroll', function () {
-                    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) setActive('contact');
-                }, { passive: true });
-            }
-        })();
-    </script>
-    <script>
-        // Motion layer: hero intro, word reveals, staggered cards, count-up numbers,
-        // story-row wipes, scroll progress and the sliding nav underline.
-        (function () {
-            var root = document.documentElement;
-            if (!root.classList.contains('motion')) return; // reduced motion: page stays static
+    // Loan estimator: monthly = principal x 2% + principal / term (the cooperative's formula)
+    var amt = document.getElementById('estAmount'), amtOut = document.getElementById('estAmountOut');
+    var outM = document.getElementById('estMonthly'), outP = document.getElementById('estPrincipal');
+    var outI = document.getElementById('estInterest'), outT = document.getElementById('estTotal');
+    var termBtns = [].slice.call(document.querySelectorAll('.terms button'));
+    var term = 12, shown = 1550, tween = null;
+    function calc(bump) {
+        var p = parseInt(amt.value, 10);
+        amt.style.setProperty('--p', ((p - amt.min) / (amt.max - amt.min) * 100) + '%');
+        amtOut.textContent = peso(p, 0);
+        var interest = Math.round(p * 0.02 * 100) / 100;
+        var principal = Math.round(p / term * 100) / 100;
+        var monthly = Math.round((interest + principal) * 100) / 100;
+        var total = Math.round(monthly * term * 100) / 100;
+        outP.textContent = peso(principal, 2);
+        outI.textContent = peso(interest, 2);
+        outT.textContent = peso(total, 2);
+        var pp = Math.round(p / total * 100);
+        document.getElementById('splitP').style.flexBasis = pp + '%';
+        document.getElementById('splitI').style.flexBasis = (100 - pp) + '%';
+        document.getElementById('keyP').textContent = pp + '%';
+        document.getElementById('keyI').textContent = (100 - pp) + '%';
+        if (reduce) { outM.textContent = peso(monthly, 2); shown = monthly; return; }
+        var from = shown, t0 = null;
+        cancelAnimationFrame(tween);
+        tween = requestAnimationFrame(function step(t) {
+            if (!t0) t0 = t;
+            var k = Math.min((t - t0) / 380, 1), e = 1 - Math.pow(1 - k, 3);
+            shown = from + (monthly - from) * e;
+            outM.textContent = peso(shown, 2);
+            if (k < 1) tween = requestAnimationFrame(step); else shown = monthly;
+        });
+        if (bump) { outM.classList.remove('bump'); void outM.offsetWidth; outM.classList.add('bump'); }
+    }
+    amt.addEventListener('input', function () { calc(false); });
+    termBtns.forEach(function (b) {
+        b.addEventListener('click', function () {
+            term = parseInt(b.dataset.term, 10);
+            termBtns.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+            calc(true);
+        });
+    });
+    calc(false);
 
-            /* Split text into masked words, keeping inline tags like <em> */
-            function splitWords(el, baseMs) {
-                var i = 0;
-                (function walk(node) {
-                    Array.prototype.slice.call(node.childNodes).forEach(function (ch) {
-                        if (ch.nodeType === 3) {
-                            var frag = document.createDocumentFragment();
-                            ch.textContent.split(/(\s+)/).forEach(function (part) {
-                                if (!part) return;
-                                if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
-                                var w = document.createElement('span'); w.className = 'w';
-                                var wi = document.createElement('span'); wi.className = 'wi'; wi.textContent = part;
-                                wi.style.setProperty('--i', i++);
-                                if (baseMs) wi.style.setProperty('--base', baseMs + 'ms');
-                                w.appendChild(wi); frag.appendChild(w);
-                            });
-                            ch.replaceWith(frag);
-                        } else if (ch.nodeType === 1 && ch.tagName !== 'BR') {
-                            walk(ch);
-                        }
-                    });
-                })(el);
-                el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
-            }
-
-            /* ---------- Hero intro ---------- */
-            var heroTitle = document.querySelector('.hero h1');
-            if (heroTitle) splitWords(heroTitle, 300);
-            function startIntro() {
-                root.classList.add('intro-go');
-                if (heroTitle) heroTitle.classList.add('is-in');
-            }
-            requestAnimationFrame(function () { setTimeout(startIntro, 80); });
-
-            /* ---------- Word reveals for section titles and the banner quote ---------- */
-            document.querySelectorAll('.section-title, .photo-banner blockquote, .cta h2').forEach(function (el) { splitWords(el, 0); });
-
-            /* ---------- Stagger delays ---------- */
-            document.querySelectorAll('.services-grid .service-card').forEach(function (c, i) { c.style.setProperty('--d', (i * 110) + 'ms'); });
-            document.querySelectorAll('.checklist .check-item').forEach(function (c, i) { c.style.setProperty('--d', (i * 90) + 'ms'); });
-
-            /* ---------- One observer for everything that reveals on scroll ---------- */
-            var countDone = false;
-            var io = new IntersectionObserver(function (entries) {
-                entries.forEach(function (e) {
-                    if (!e.isIntersecting) return;
-                    var el = e.target;
-                    el.classList.add('in-view');
-                    el.querySelectorAll('.section-title, blockquote, h2').forEach(function (t) { t.classList.add('is-in'); });
-                    if (el.classList.contains('facts-numbers') && !countDone) { countDone = true; countUp(el); }
-                    io.unobserve(el);
-                });
-            }, { threshold: 0.18, rootMargin: '0px 0px -6% 0px' });
-            document.querySelectorAll('.reveal, .story-row, .footer-band, .checklist').forEach(function (el) { io.observe(el); });
-
-            /* ---------- Numbers count up (keeps ₱ and K/M) ---------- */
-            function countUp(strip) {
-                strip.querySelectorAll('.fact b').forEach(function (b, idx) {
-                    var m = b.textContent.trim().match(/^([^\d]*)([\d,.]+)(.*)$/);
-                    if (!m) return;
-                    var pre = m[1], raw = m[2], suf = m[3];
-                    var target = parseFloat(raw.replace(/,/g, '')), decimals = (raw.split('.')[1] || '').length;
-                    var start = null, dur = 1600, delay = idx * 120;
-                    b.textContent = pre + (0).toFixed(decimals) + suf;
-                    function frame(t) {
-                        if (start === null) start = t + delay;
-                        var p = Math.min(1, Math.max(0, (t - start) / dur));
-                        var eased = 1 - Math.pow(1 - p, 4);
-                        var v = target * eased;
-                        b.textContent = pre + (decimals ? v.toFixed(decimals) : Math.round(v).toLocaleString('en-US')) + suf;
-                        if (p < 1) requestAnimationFrame(frame);
-                    }
-                    requestAnimationFrame(frame);
-                });
-            }
-
-            /* ---------- Scroll-linked: progress line + hero parallax ---------- */
-            var header = document.getElementById('siteHeader');
-            var bar = document.createElement('div'); bar.className = 'scroll-progress';
-            if (header) header.appendChild(bar);
-            var heroPhoto = document.querySelector('.hero-photo');
-            var heroText = document.querySelector('.hero-grid > div:first-child');
-            var ticking = false;
-            function onScroll() {
-                var max = document.documentElement.scrollHeight - window.innerHeight;
-                bar.style.transform = 'scaleX(' + (max > 0 ? window.scrollY / max : 0) + ')';
-                var y = Math.min(window.scrollY, window.innerHeight);
-                if (heroPhoto) heroPhoto.style.transform = 'translateY(' + (y * 0.12) + 'px)';
-                if (heroText) { heroText.style.transform = 'translateY(' + (y * 0.05) + 'px)'; heroText.style.opacity = String(Math.max(0, 1 - y / (window.innerHeight * 0.9))); }
-                ticking = false;
-            }
-            window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
-            onScroll();
-
-            /* ---------- Sliding underline under the active nav link ---------- */
-            var nav = document.querySelector('.nav-links');
-            if (nav) {
-                var ind = document.createElement('span'); ind.className = 'nav-indicator'; nav.appendChild(ind);
-                function moveIndicator() {
-                    var a = nav.querySelector('a.is-active');
-                    if (!a) { ind.style.width = '0'; return; }
-                    ind.style.width = a.offsetWidth + 'px';
-                    ind.style.transform = 'translateX(' + a.offsetLeft + 'px)';
-                }
-                new MutationObserver(moveIndicator).observe(nav, { attributes: true, subtree: true, attributeFilter: ['class'] });
-                window.addEventListener('resize', moveIndicator);
-                (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(moveIndicator);
-            }
-        })();
-    </script>
+    // Copy the inquiry number; if the browser refuses, select it for copying by hand
+    var copyBtn = document.getElementById('copyContactPhone');
+    copyBtn.addEventListener('click', function () {
+        function pick() {
+            var r = document.createRange(); r.selectNodeContents(document.getElementById('contactPhone'));
+            var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        }
+        if (!navigator.clipboard) { pick(); return; }
+        navigator.clipboard.writeText(copyBtn.dataset.phone).then(function () {
+            copyBtn.textContent = 'Copied';
+            setTimeout(function () { copyBtn.textContent = 'Copy number'; }, 1600);
+        }, pick);
+    });
+})();
+</script>
 </body>
 </html>
