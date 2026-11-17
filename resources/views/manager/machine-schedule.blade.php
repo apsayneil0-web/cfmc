@@ -45,6 +45,7 @@
     $statusDots = ['approved' => 'bg-success', 'pending' => 'bg-warning', 'completed' => 'bg-info', 'denied' => 'bg-danger'];
     $machineStatusLabels = ['available' => 'Available', 'in_use' => 'In Use', 'maintenance' => 'Maintenance'];
     $today = now()->startOfDay();
+    $earliestAllowedDate = \App\Models\ScheduleRequest::earliestAllowedDate();
 @endphp
 
 <!-- Page actions -->
@@ -161,6 +162,7 @@
                             $cellBookings = $bookingsByDay->get($day, collect());
                             $movable = $movableByDay->get($day, 0);
                             $isSelectedDay = $cellDate->isSameDay($selectedDay);
+                            $canAddOnDay = ! $showArchived && $cellDate->gte($earliestAllowedDate);
                         @endphp
                         <div class="calendar-cell schedule-day {{ $cellBookings->isNotEmpty() ? 'has-bookings' : '' }} {{ $isSelectedDay ? 'is-focused' : '' }}"
                             data-day-url="{{ $scheduleUrl(['day' => $cellDate->format('Y-m-d')]) }}" role="link" tabindex="0"
@@ -169,6 +171,12 @@
                             <label class="calendar-cell-select" title="Select {{ $cellDate->format('M d, Y') }} to move">
                                 <input type="checkbox" class="calendar-select-checkbox" value="{{ $cellDate->format('Y-m-d') }}" data-count="{{ $movable }}">
                             </label>
+                            @endif
+                            @if($canAddOnDay)
+                            <button type="button" class="calendar-cell-add" data-add-date="{{ $cellDate->format('Y-m-d') }}"
+                                title="Add a schedule on {{ $cellDate->format('M d, Y') }}" aria-label="Add a schedule on {{ $cellDate->format('F j, Y') }}">
+                                <i class="fas fa-plus" aria-hidden="true"></i>
+                            </button>
                             @endif
                             <p class="calendar-cell-date {{ $cellDate->isSameDay($today) ? 'is-today' : '' }}">{{ $day }}</p>
                             @foreach($cellBookings->take(2) as $booking)
@@ -256,6 +264,15 @@
             <p class="text-xs fw-semibold text-gray-500 text-uppercase mb-0" style="letter-spacing: 0.08em;">{{ $selectedDay->format('l') }}</p>
             <h3 class="text-2xl font-bold text-gray-900 mb-0">{{ $selectedDay->format('F j') }}</h3>
             <p class="text-sm text-gray-500 mb-0">{{ $dayBookings->count() }} {{ Str::plural('booking', $dayBookings->count()) }}</p>
+            @unless($showArchived)
+            @if($selectedDay->gte($earliestAllowedDate))
+            <button type="button" class="btn btn-outline-primary w-100 mt-3 day-panel-add" data-add-date="{{ $selectedDay->format('Y-m-d') }}">
+                <i class="fas fa-plus me-1"></i>Add schedule for this day
+            </button>
+            @else
+            <p class="text-xs text-gray-500 bg-light border rounded-3 p-2 mt-3 mb-0">Too soon to add: schedules need at least {{ \App\Models\ScheduleRequest::MIN_LEAD_DAYS }} days of lead time.</p>
+            @endif
+            @endunless
         </div>
         <div class="p-3 p-md-4 d-flex flex-column gap-3">
             @forelse($dayBookings as $booking)
@@ -403,6 +420,7 @@
             <form action="{{ route('manager.machine-schedule.store') }}" method="POST">
                 @csrf
                 <div class="modal-body">
+                    <p class="alert alert-success py-2 small d-none" id="createSelectedDateHint"></p>
                     @include('manager.partials.schedule-form-fields', ['prefix' => 'create', 'schedule' => null])
                 </div>
                 <div class="modal-footer bg-light">
@@ -413,6 +431,35 @@
         </div>
     </div>
 </div>
+
+<style>
+    .calendar-cell-add {
+        position: absolute;
+        top: 0.3rem;
+        right: 0.3rem;
+        z-index: 1;
+        width: 1.6rem;
+        height: 1.6rem;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: var(--brand-primary, #2f5d3a);
+        color: #fff;
+        font-size: 0.7rem;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 120ms ease;
+    }
+    .schedule-day:hover .calendar-cell-add,
+    .schedule-day:focus-within .calendar-cell-add,
+    .calendar-cell-add:focus-visible { opacity: 1; }
+    @media (hover: none) { .calendar-cell-add { opacity: 1; } }
+    /* Move One Day uses the same corner for its checkbox. */
+    .calendar-grid.is-selecting .calendar-cell-add { display: none; }
+</style>
 
 <script>
     var SCHEDULE_HOURS_PER_HECTARE = {{ \App\Models\ScheduleRequest::HOURS_PER_HECTARE }};
@@ -580,11 +627,51 @@
         applyPurpose();
     });
 
+    // "+" on a day (or the day panel's button) opens Add Schedule with that
+    // date filled in. The date stays editable; closing the modal drops the
+    // preset so the plain Add Schedule button opens a blank form again.
+    (function () {
+        var modalEl = document.getElementById('createModal');
+        if (!modalEl) { return; }
+
+        var dateInput = modalEl.querySelector('input[name="scheduled_date"]');
+        var hint = document.getElementById('createSelectedDateHint');
+        var presetDate = null;
+
+        function openForDate(date) {
+            presetDate = date;
+            dateInput.value = date;
+            dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+            hint.textContent = 'Selected date: ' + new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            hint.classList.remove('d-none');
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+
+        document.querySelectorAll('[data-add-date]').forEach(function (button) {
+            button.addEventListener('click', function (e) {
+                e.stopPropagation();
+                openForDate(button.dataset.addDate);
+            });
+            button.addEventListener('keydown', function (e) {
+                // Keep Enter/Space on the "+" from also activating the day cell.
+                e.stopPropagation();
+            });
+        });
+
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            if (presetDate !== null && dateInput.value === presetDate) {
+                dateInput.value = '';
+            }
+            presetDate = null;
+            hint.classList.add('d-none');
+        });
+    })();
+
     // Clicking a day focuses it in the side panel; while picking days for
     // Move One Day the click toggles that day's checkbox instead.
     document.querySelectorAll('.schedule-day[data-day-url]').forEach(function (cell) {
         function activate(e) {
-            if (e.target.closest('.calendar-cell-select')) {
+            if (e.target.closest('.calendar-cell-select') || e.target.closest('.calendar-cell-add')) {
                 return;
             }
             if (cell.closest('.calendar-grid').classList.contains('is-selecting')) {
