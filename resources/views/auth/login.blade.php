@@ -6,229 +6,268 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - CFMC</title>
     @include('partials.fonts')
+    <link href="https://fonts.bunny.net/css?family=libre-caslon-display:400&family=libre-caslon-text:400&family=hanken-grotesk:400,500,600&display=swap" rel="stylesheet">
     @vite('resources/css/palette.css')
     @include('partials.auth-motion')
     <style>
+        /* Premium look (UI only): same layout and markup as before, restyled to
+           match the landing page. Light mode only. */
         :root {
-            --brand-success: var(--palette-field);
-            --brand-success-dark: var(--palette-field-deep);
+            --brand-success: #123222;
+            --brand-success-dark: #123222;
             --brand-success-light: var(--palette-sprout);
             --brand-primary: var(--palette-field-light);
             --brand-danger: var(--palette-clay);
-            --text-primary: var(--palette-ink);
-            --text-secondary: var(--palette-text-secondary);
-            --text-muted: var(--palette-muted);
-            --border: var(--palette-stone);
-            --ease: cubic-bezier(0.4, 0, 0.2, 1);
+            --text-primary: #15211a;
+            --text-secondary: #4b574f;
+            --text-muted: #4b574f;
+            --border: #c9d1c6;
+            --brass: #a07d34;
+            --card-bg: rgba(244, 247, 241, 0.9);
+            --display: 'Libre Caslon Display', 'Libre Caslon Text', Georgia, serif;
+            --serif: 'Libre Caslon Text', Georgia, serif;
+            --sans: 'Hanken Grotesk', 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+            --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-            background: var(--palette-field-deep);
+            font-family: var(--sans);
+            background: #1d3b25;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            min-height: 100svh;
             color: var(--text-primary);
-            padding: 1.5rem;
+            padding: clamp(1rem, 4vh, 2.5rem) max(16px, env(safe-area-inset-right, 0px)) clamp(1rem, 4vh, 2.5rem) max(16px, env(safe-area-inset-left, 0px));
             -webkit-font-smoothing: antialiased;
-            overflow: hidden;
+            overflow-x: hidden;
         }
-        h1, h2 { font-family: 'Bitter', Georgia, 'Times New Roman', serif; letter-spacing: -0.02em; }
+        h1, h2 { font-family: var(--display); font-weight: 400; letter-spacing: -0.025em; }
 
-        /* Rice-field photo behind the card, softened with a slight blur and a
-           forest-green wash (darker toward the bottom) so the card stays readable.
-           The login page is light mode only. */
+        /* The same rice-field photo, sharper and lightly blurred, with a soft
+           vignette so the eye lands on the card. */
         .bg-photo {
             position: fixed;
             inset: -12px;
-            background: url('{{ asset('images/login-rice-field.jpg') }}') center / cover no-repeat;
-            filter: blur(2px) saturate(110%);
-            transform: scale(1.03);
+            background: url('{{ asset('images/login-rice-field-hd.jpg') }}') 50% 45% / cover no-repeat;
+            filter: blur(1.5px) saturate(0.95);
+            transform: scale(1.04);
             pointer-events: none;
             z-index: 0;
+            animation: bg-settle 2.2s var(--ease) both;
         }
+        @keyframes bg-settle { from { transform: scale(1.12); } to { transform: scale(1.04); } }
         .bg-wash {
             position: fixed;
             inset: 0;
-            background: linear-gradient(180deg, rgba(29, 59, 37, 0.35) 0%, rgba(29, 59, 37, 0.72) 100%);
+            background: radial-gradient(ellipse 60% 70% at 50% 50%, rgba(18, 40, 26, 0.18) 0%, rgba(18, 40, 26, 0.55) 70%, rgba(12, 26, 17, 0.75) 100%);
             pointer-events: none;
             z-index: 0;
         }
 
-        .container { max-width: 440px; width: 100%; position: relative; z-index: 1; }
+        .container { max-width: 30rem; width: 100%; position: relative; z-index: 1; }
         .card {
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(20px) saturate(160%);
-            -webkit-backdrop-filter: blur(20px) saturate(160%);
-            border-radius: 1.5rem;
-            box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            padding: 2.75rem 2.5rem;
-            animation: card-in 460ms var(--ease);
+            background: var(--card-bg);
+            backdrop-filter: blur(18px) saturate(1.2);
+            -webkit-backdrop-filter: blur(18px) saturate(1.2);
+            border-radius: 28px;
+            border: 0;
+            box-shadow: 0 50px 100px -40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 0 0 1px rgba(18, 50, 34, 0.08);
+            padding: clamp(1.6rem, 4vw, 2.75rem) clamp(1.4rem, 4vw, 3rem) clamp(1.6rem, 3.5vw, 2.4rem);
+            animation: card-in 0.9s var(--ease) 0.1s both;
         }
         @keyframes card-in {
-            from { opacity: 0; transform: translateY(14px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: 0; transform: translateY(20px) scale(0.985); }
+            to { opacity: 1; transform: none; }
         }
-        @media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .card, .bg-photo { animation: none; } }
 
         .back-link {
             display: inline-flex;
             align-items: center;
             gap: 0.6rem;
-            margin-bottom: 1.75rem;
-            color: var(--text-muted);
+            min-height: 44px;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             font-weight: 500;
             transition: color 200ms var(--ease);
         }
         .back-link-icon {
             display: grid;
             place-items: center;
-            width: 2rem;
-            height: 2rem;
+            width: 36px;
+            height: 36px;
             border-radius: 999px;
-            border: 1px solid var(--border);
-            background: var(--palette-surface);
+            border: 0;
+            background: #fff;
             color: var(--text-primary);
-            transition: background-color 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease);
+            box-shadow: 0 2px 8px -3px rgba(18, 50, 34, 0.3);
+            transition: transform 200ms var(--ease);
         }
-        .back-link svg { width: 0.95rem; height: 0.95rem; transition: transform 200ms var(--ease); }
+        .back-link svg { width: 16px; height: 16px; }
         .back-link:hover { color: var(--text-primary); }
-        .back-link:hover .back-link-icon {
-            background: var(--palette-sprout);
-            border-color: var(--palette-sprout-border);
-            color: var(--brand-success);
-        }
-        .back-link:hover svg { transform: translateX(-2px); }
+        .back-link:hover .back-link-icon { transform: translateX(-2px); }
         .back-link:focus-visible { outline: none; }
-        .back-link:focus-visible .back-link-icon { box-shadow: 0 0 0 3px var(--palette-sprout-border); }
+        .back-link:focus-visible .back-link-icon { box-shadow: 0 0 0 3px rgba(160, 125, 52, 0.55); }
 
-        .header { text-align: center; margin-bottom: 2rem; }
+        .header { display: grid; justify-items: center; text-align: center; margin-top: clamp(0.5rem, 2vh, 1.25rem); margin-bottom: clamp(1.5rem, 3.5vh, 2rem); }
         .brand-mark {
             display: grid;
             place-items: center;
-            width: 4rem;
-            height: 4rem;
-            margin: 0 auto 1rem;
-            color: var(--palette-field);
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.1rem;
+            border-radius: 999px;
+            background: #fff;
+            color: var(--brand-success);
+            box-shadow: 0 8px 20px -10px rgba(18, 50, 34, 0.45), 0 0 0 6px rgba(255, 255, 255, 0.5);
         }
-        .brand-mark svg { width: 3.25rem; height: 3.25rem; }
-        .title { font-size: 2rem; font-weight: 600; line-height: 1.1; color: var(--text-primary); margin-bottom: 0.5rem; }
-        .subtitle { color: var(--text-secondary); font-size: 0.95rem; }
+        .brand-mark svg { width: 30px; height: 30px; }
+        .title { font-size: clamp(2.3rem, 7vw, 2.9rem); font-weight: 400; line-height: 1; color: var(--text-primary); margin-bottom: 0.6rem; }
+        .subtitle { color: var(--text-secondary); font-family: var(--serif); font-size: 1.02rem; }
 
-        .form-group { margin-bottom: 1.4rem; }
+        .form-group { margin-bottom: 1.15rem; }
         label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.45rem;
             font-weight: 600;
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 0.93rem;
         }
 
         .input-wrap { position: relative; }
         .input-wrap > svg {
             position: absolute;
-            left: 0.9rem;
+            left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            width: 1.1rem;
-            height: 1.1rem;
+            width: 18px;
+            height: 18px;
             color: var(--text-muted);
             pointer-events: none;
-            transition: color 150ms var(--ease);
+            transition: color 0.2s var(--ease);
         }
         input[type="text"],
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 0.8rem 0.9rem 0.8rem 2.6rem;
-            border: 1.5px solid var(--border);
-            border-radius: 0.75rem;
-            font-size: 0.95rem;
+            min-height: 54px;
+            padding: 0.8rem 1rem 0.8rem 2.85rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: max(16px, 1rem);
             font-family: inherit;
-            background-color: var(--palette-surface-muted);
-            transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease), background-color 150ms var(--ease);
+            color: var(--text-primary);
+            background-color: #fff;
+            transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
         }
-        input[type="text"]:hover, input[type="password"]:hover { border-color: var(--palette-input-border-hover); }
+        #password { padding-right: 3.4rem !important; }
+        input::placeholder { color: #8b958d; }
+        input[type="text"]:hover, input[type="password"]:hover { border-color: #aab5ab; }
         input[type="text"]:focus, input[type="password"]:focus {
             outline: none;
             border-color: var(--brand-success);
-            background-color: var(--palette-surface);
-            box-shadow: 0 0 0 4px color-mix(in srgb, var(--palette-field) 12%, transparent);
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(18, 50, 34, 0.12);
         }
         input[type="text"]:focus ~ svg, input[type="password"]:focus ~ svg { color: var(--brand-success); }
 
         .toggle-password {
             position: absolute;
-            right: 0.6rem;
+            right: 5px;
             top: 50%;
             transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
             background: none;
             border: none;
             cursor: pointer;
             color: var(--text-muted);
-            padding: 0.4rem;
+            padding: 0;
             display: grid;
             place-items: center;
-            border-radius: 0.5rem;
-            transition: color 150ms var(--ease), background-color 150ms var(--ease);
+            border-radius: 9px;
+            transition: color 0.2s var(--ease), background-color 0.2s var(--ease);
         }
-        .toggle-password:hover { color: var(--text-primary); background: color-mix(in srgb, var(--palette-ink) 5%, transparent); }
-        .toggle-password svg { width: 1.1rem; height: 1.1rem; }
+        .toggle-password:hover { color: var(--text-primary); background: #eef1ea; }
+        .toggle-password svg { width: 19px; height: 19px; }
 
-        .error { color: var(--brand-danger); font-size: 0.85rem; margin-top: 0.4rem; }
+        .error { color: var(--brand-danger); font-size: 0.86rem; margin-top: 0.4rem; }
 
-        .checkbox-group { display: flex; align-items: center; gap: 0.55rem; font-size: 0.92rem; cursor: pointer; color: var(--text-secondary); font-weight: 500; }
-        input[type="checkbox"] { width: 1.05rem; height: 1.05rem; cursor: pointer; accent-color: var(--brand-success); }
+        .checkbox-group { display: inline-flex; align-items: center; gap: 0.6rem; min-height: 44px; margin-bottom: 0; font-size: 0.96rem; font-weight: 400; color: var(--text-primary); cursor: pointer; }
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            border-radius: 6px;
+            border: 1.5px solid #9aa59c;
+            background: #fff;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        input[type="checkbox"]::after { content: ""; width: 10px; height: 6px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+        input[type="checkbox"]:checked { background: var(--brand-success); border-color: var(--brand-success); }
+        input[type="checkbox"]:checked::after { opacity: 1; }
+        input[type="checkbox"]:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
-        .forgot-password { text-align: right; margin-top: 1rem; margin-bottom: 1.75rem; }
+        .forgot-password { text-align: right; margin-top: 1rem; margin-bottom: 0; }
         .forgot-password a {
-            color: var(--brand-success-dark);
-            text-decoration: none;
-            font-size: 0.92rem;
+            color: var(--text-primary);
+            text-decoration: underline;
+            text-decoration-color: var(--brass);
+            text-decoration-thickness: 1.5px;
+            text-underline-offset: 4px;
+            font-size: 0.93rem;
             font-weight: 600;
-            transition: color 150ms var(--ease);
+            transition: text-decoration-color 0.2s var(--ease);
         }
-        .forgot-password a:hover { color: var(--brand-success); text-decoration: underline; }
-        .forgot-password .description { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; font-weight: 400; }
+        .forgot-password a:hover { color: var(--text-primary); text-decoration-color: currentColor; }
+        .forgot-password .description { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; font-weight: 400; }
 
         .btn {
             width: 100%;
-            padding: 0.9rem;
+            min-height: 56px;
+            padding: 0.9rem 1.5rem;
             border: none;
-            border-radius: 0.75rem;
-            font-size: 0.98rem;
-            font-weight: 700;
+            border-radius: 12px;
+            font-size: 1.02rem;
+            font-weight: 600;
             cursor: pointer;
             font-family: inherit;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            transition: transform 180ms var(--ease), box-shadow 180ms var(--ease), filter 180ms var(--ease);
+            gap: 0.6rem;
+            transition: transform 0.15s var(--ease), box-shadow 0.25s var(--ease), filter 0.25s var(--ease);
         }
         .btn-primary {
-            background: linear-gradient(135deg, var(--brand-success), var(--brand-success-dark));
-            color: white;
-            box-shadow: 0 12px 24px -8px color-mix(in srgb, var(--palette-field) 50%, transparent);
+            background: linear-gradient(180deg, #1c4430 0%, #123222 100%);
+            color: #eef1ea;
+            box-shadow: 0 14px 28px -16px rgba(18, 50, 34, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
         }
-        .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.04); }
-        .btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 4px color-mix(in srgb, var(--palette-field) 30%, transparent); }
-        .btn-primary:active { transform: translateY(0) scale(0.98); }
+        .btn-primary svg { transition: transform 0.25s var(--ease); }
+        .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 18px 32px -16px rgba(18, 50, 34, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+        .btn-primary:hover svg { transform: translateX(3px); }
+        .btn-primary:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+        .btn-primary:active { transform: translateY(1px); }
 
         .alert {
             display: flex;
             align-items: flex-start;
             gap: 0.65rem;
-            padding: 0.9rem 1rem;
-            border-radius: 0.75rem;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            font-size: 0.92rem;
             background-color: var(--palette-clay-tint);
             color: var(--palette-clay-text);
             border: 1px solid var(--palette-clay-border);
@@ -236,6 +275,19 @@
         }
         .alert svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; margin-top: 0.1rem; color: var(--brand-danger); }
         .alert ul { margin-top: 0.35rem; margin-left: 1.1rem; }
+
+        /* Short screens (laptops, Windows display scaling): tighter spacing so
+           the whole card fits without scrolling. */
+        @media (max-height: 820px) and (min-width: 600px) {
+            .card { padding-top: 1.4rem; padding-bottom: 1.3rem; }
+            .header { margin-top: 0.25rem; margin-bottom: 1.2rem; }
+            .brand-mark { width: 50px; height: 50px; margin-bottom: 0.75rem; }
+            .brand-mark svg { width: 26px; height: 26px; }
+            .title { font-size: 2.3rem; margin-bottom: 0.35rem; }
+            .form-group { margin-bottom: 0.85rem; }
+            input[type="text"], input[type="password"] { min-height: 50px; }
+            .btn { min-height: 52px; }
+        }
     </style>
 </head>
 <body>
